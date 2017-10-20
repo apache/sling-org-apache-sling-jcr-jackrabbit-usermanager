@@ -37,15 +37,9 @@
     </description>
 
     <scm>
-        <connection>
-            scm:svn:http://svn.apache.org/repos/asf/sling/trunk/bundles/jcr/jackrabbit-usermanager
-        </connection>
-        <developerConnection>
-            scm:svn:https://svn.apache.org/repos/asf/sling/trunk/bundles/jcr/jackrabbit-usermanager
-        </developerConnection>
-        <url>
-            http://svn.apache.org/viewvc/sling/trunk/bundles/jcr/jackrabbit-usermanager
-        </url>
+        <connection>scm:git:https://gitbox.apache.org/repos/asf/sling-org-apache-sling-jcr-jackrabbit-usermanager.git</conncetion>
+        <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/sling-org-apache-sling-jcr-jackrabbit-usermanager.git</developerConnection>
+        <url>https://gitbox.apache.org/repos/asf?p=sling-org-apache-sling-jcr-jackrabbit-usermanager.git</url>
     </scm>
 
     <build>
