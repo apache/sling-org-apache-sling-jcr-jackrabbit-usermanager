@@ -44,17 +44,15 @@ public class AuthorizableAdapterFactory implements AdapterFactory {
     @Override
     @SuppressWarnings("unchecked")
     public <AdapterType> AdapterType getAdapter(final Object adaptable, final Class<AdapterType> type) {
-        if (adaptable instanceof ResourceResolver && type == User.class) {
-            Session session = ((ResourceResolver) adaptable).adaptTo(Session.class);
-            if (session instanceof JackrabbitSession) {
-                JackrabbitSession jackrabbitSession = (JackrabbitSession) session;
-                try {
-                    UserManager um = jackrabbitSession.getUserManager();
-                    Authorizable authorizable = um.getAuthorizable(jackrabbitSession.getUserID());
-                    return (AdapterType) authorizable;
-                } catch (RepositoryException e) {
-                    log.warn("User cannot read own authorizable.", e);
-                }
+        Session session = ((ResourceResolver) adaptable).adaptTo(Session.class);
+        if (session instanceof JackrabbitSession) {
+            JackrabbitSession jackrabbitSession = (JackrabbitSession) session;
+            try {
+                UserManager um = jackrabbitSession.getUserManager();
+                Authorizable authorizable = um.getAuthorizable(jackrabbitSession.getUserID());
+                return type.cast(authorizable);
+            } catch (RepositoryException e) {
+                log.warn("User cannot read own authorizable.", e);
             }
         }
         return null;
