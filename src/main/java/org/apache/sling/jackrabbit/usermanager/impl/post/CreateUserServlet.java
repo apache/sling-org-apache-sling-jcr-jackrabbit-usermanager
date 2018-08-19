@@ -34,15 +34,18 @@ import org.apache.sling.jackrabbit.usermanager.CreateUser;
 import org.apache.sling.jackrabbit.usermanager.impl.resource.AuthorizableResourceProvider;
 import org.apache.sling.jcr.api.SlingRepository;
 import org.apache.sling.jcr.base.util.AccessControlUtil;
-import org.apache.sling.servlets.post.AbstractPostResponse;
 import org.apache.sling.servlets.post.Modification;
 import org.apache.sling.servlets.post.ModificationType;
+import org.apache.sling.servlets.post.PostResponse;
+import org.apache.sling.servlets.post.PostResponseCreator;
 import org.apache.sling.servlets.post.SlingPostConstants;
 import org.apache.sling.servlets.post.impl.helper.RequestProperty;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferenceCardinality;
+import org.osgi.service.component.annotations.ReferencePolicy;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.Designate;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
@@ -167,6 +170,27 @@ public class CreateUserServlet extends AbstractAuthorizablePostServlet implement
         super.deactivate();
     }
 
+    /**
+     * Overridden since the @Reference annotation is not inherited from the super method
+     *  
+	 * @see org.apache.sling.jackrabbit.usermanager.impl.post.AbstractPostServlet#bindPostResponseCreator(org.apache.sling.servlets.post.PostResponseCreator, java.util.Map)
+	 */
+	@Override
+    @Reference(service = PostResponseCreator.class,
+	    cardinality = ReferenceCardinality.MULTIPLE,
+	    policy = ReferencePolicy.DYNAMIC)
+	protected void bindPostResponseCreator(PostResponseCreator creator, Map<String, Object> properties) {
+		super.bindPostResponseCreator(creator, properties);
+	}
+	
+	/* (non-Javadoc)
+	 * @see org.apache.sling.jackrabbit.usermanager.impl.post.AbstractPostServlet#unbindPostResponseCreator(org.apache.sling.servlets.post.PostResponseCreator, java.util.Map)
+	 */
+	@Override
+	protected void unbindPostResponseCreator(PostResponseCreator creator, Map<String, Object> properties) {
+		super.unbindPostResponseCreator(creator, properties);
+	}
+    
     /*
      * (non-Javadoc)
      * @see
@@ -176,7 +200,7 @@ public class CreateUserServlet extends AbstractAuthorizablePostServlet implement
      */
     @Override
     protected void handleOperation(SlingHttpServletRequest request,
-    		AbstractPostResponse response, List<Modification> changes)
+    		PostResponse response, List<Modification> changes)
             throws RepositoryException {
 
 

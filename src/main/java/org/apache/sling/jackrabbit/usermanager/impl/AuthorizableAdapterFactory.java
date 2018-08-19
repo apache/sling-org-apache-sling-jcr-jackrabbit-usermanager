@@ -22,7 +22,6 @@ import javax.jcr.Session;
 
 import org.apache.jackrabbit.api.JackrabbitSession;
 import org.apache.jackrabbit.api.security.user.Authorizable;
-import org.apache.jackrabbit.api.security.user.User;
 import org.apache.jackrabbit.api.security.user.UserManager;
 import org.apache.sling.api.adapter.AdapterFactory;
 import org.apache.sling.api.resource.ResourceResolver;
@@ -42,7 +41,6 @@ public class AuthorizableAdapterFactory implements AdapterFactory {
     private final Logger log = LoggerFactory.getLogger(getClass());
 
     @Override
-    @SuppressWarnings("unchecked")
     public <AdapterType> AdapterType getAdapter(final Object adaptable, final Class<AdapterType> type) {
         Session session = ((ResourceResolver) adaptable).adaptTo(Session.class);
         if (session instanceof JackrabbitSession) {

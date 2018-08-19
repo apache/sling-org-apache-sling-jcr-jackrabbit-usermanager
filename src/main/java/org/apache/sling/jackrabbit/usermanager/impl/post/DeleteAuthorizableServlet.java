@@ -18,6 +18,7 @@ package org.apache.sling.jackrabbit.usermanager.impl.post;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 
 import javax.jcr.RepositoryException;
@@ -38,10 +39,14 @@ import org.apache.sling.jackrabbit.usermanager.DeleteGroup;
 import org.apache.sling.jackrabbit.usermanager.DeleteUser;
 import org.apache.sling.jackrabbit.usermanager.impl.resource.AuthorizableResourceProvider;
 import org.apache.sling.jcr.base.util.AccessControlUtil;
-import org.apache.sling.servlets.post.AbstractPostResponse;
 import org.apache.sling.servlets.post.Modification;
+import org.apache.sling.servlets.post.PostResponse;
+import org.apache.sling.servlets.post.PostResponseCreator;
 import org.apache.sling.servlets.post.SlingPostConstants;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferenceCardinality;
+import org.osgi.service.component.annotations.ReferencePolicy;
 
 /**
  * <h2>Rest Service Description</h2>
@@ -89,6 +94,27 @@ public class DeleteAuthorizableServlet extends AbstractPostServlet
         implements DeleteUser, DeleteGroup, DeleteAuthorizables {
     private static final long serialVersionUID = 5874621724096106496L;
 
+    /**
+     * Overridden since the @Reference annotation is not inherited from the super method
+     *  
+	 * @see org.apache.sling.jackrabbit.usermanager.impl.post.AbstractPostServlet#bindPostResponseCreator(org.apache.sling.servlets.post.PostResponseCreator, java.util.Map)
+	 */
+	@Override
+    @Reference(service = PostResponseCreator.class,
+	    cardinality = ReferenceCardinality.MULTIPLE,
+	    policy = ReferencePolicy.DYNAMIC)
+	protected void bindPostResponseCreator(PostResponseCreator creator, Map<String, Object> properties) {
+		super.bindPostResponseCreator(creator, properties);
+	}
+	
+	/* (non-Javadoc)
+	 * @see org.apache.sling.jackrabbit.usermanager.impl.post.AbstractPostServlet#unbindPostResponseCreator(org.apache.sling.servlets.post.PostResponseCreator, java.util.Map)
+	 */
+	@Override
+	protected void unbindPostResponseCreator(PostResponseCreator creator, Map<String, Object> properties) {
+		super.unbindPostResponseCreator(creator, properties);
+	}
+
     /*
      * (non-Javadoc)
      * @see
@@ -98,7 +124,7 @@ public class DeleteAuthorizableServlet extends AbstractPostServlet
      */
     @Override
     protected void handleOperation(SlingHttpServletRequest request,
-    		AbstractPostResponse response, List<Modification> changes)
+    		PostResponse response, List<Modification> changes)
             throws RepositoryException {
 
         Session session = request.getResourceResolver().adaptTo(Session.class);

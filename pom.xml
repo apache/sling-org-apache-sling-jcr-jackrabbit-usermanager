@@ -66,7 +66,8 @@
                         <Embed-Dependency>
                             org.apache.sling.servlets.post;inline="org/apache/sling/servlets/post/impl/helper/RequestProperty*
                                 |org/apache/sling/servlets/post/impl/helper/DateParser*
-                                |org/apache/sling/servlets/post/impl/helper/JSONResponse*"
+                                |org/apache/sling/servlets/post/impl/helper/JSONResponse*
+                                |org/apache/sling/servlets/post/impl/helper/MediaRangeList*"
                         </Embed-Dependency>
                     </instructions>
                 </configuration>
