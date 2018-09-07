@@ -19,24 +19,28 @@ package org.apache.sling.jackrabbit.usermanager.impl;
 import java.io.UnsupportedEncodingException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.util.Collection;
 import java.util.Map;
 
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
-import javax.servlet.Servlet;
+import javax.jcr.security.AccessControlManager;
+import javax.jcr.security.Privilege;
 
 import org.apache.jackrabbit.api.security.user.Authorizable;
 import org.apache.jackrabbit.api.security.user.User;
 import org.apache.jackrabbit.api.security.user.UserManager;
+import org.apache.jackrabbit.oak.spi.security.privilege.PrivilegeConstants;
+import org.apache.jackrabbit.oak.spi.security.user.UserConfiguration;
+import org.apache.jackrabbit.oak.spi.security.user.UserConstants;
 import org.apache.sling.commons.osgi.OsgiUtil;
 import org.apache.sling.jackrabbit.usermanager.AuthorizablePrivilegesInfo;
+import org.apache.sling.jackrabbit.usermanager.CreateUser;
 import org.apache.sling.jcr.base.util.AccessControlUtil;
 import org.osgi.framework.BundleContext;
-import org.osgi.framework.InvalidSyntaxException;
-import org.osgi.framework.ServiceReference;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -87,7 +91,31 @@ public class AuthorizablePrivilegesInfoImpl implements AuthorizablePrivilegesInf
      * 'Group administrator' group name.
      */
     static final String PAR_GROUP_ADMIN_GROUP_NAME = "group.admin.group.name";
+
+    private String usersPath;
+    private String groupsPath;
+    private boolean selfRegistrationEnabled;
     
+    @Reference(cardinality=ReferenceCardinality.OPTIONAL)
+    private void bindUserConfiguration(UserConfiguration userConfig, Map<String, Object> properties) {
+    	usersPath = (String)properties.get(UserConstants.PARAM_USER_PATH);
+    	groupsPath = (String)properties.get(UserConstants.PARAM_GROUP_PATH);
+    }
+    @SuppressWarnings("unused")
+	private void unbindUserConfiguration(UserConfiguration userConfig, Map<String, Object> properties) {
+    	usersPath = null;
+    	groupsPath = null;
+    }
+
+    @Reference(cardinality=ReferenceCardinality.OPTIONAL)
+    private void bindCreateUser(CreateUser createUser, Map<String, Object> properties) {
+    	selfRegistrationEnabled = Boolean.TRUE.equals(properties.get("self.registration.enabled"));
+    }
+    @SuppressWarnings("unused")
+	private void unbindCreateUser(CreateUser createUser, Map<String, Object> properties) {
+    	selfRegistrationEnabled = false;
+    }
+
     /* (non-Javadoc)
      * @see org.apache.sling.jackrabbit.usermanager.AuthorizablePrivilegesInfo#canAddGroup(javax.jcr.Session)
      */
@@ -101,6 +129,19 @@ public class AuthorizablePrivilegesInfoImpl implements AuthorizablePrivilegesInf
                     return true; //admin user has full control
                 }
             }
+            
+            if (groupsPath != null) {
+                //check if the non-admin user has sufficient rights on the home folder
+                AccessControlManager acm = jcrSession.getAccessControlManager();
+                boolean hasRights = acm.hasPrivileges(groupsPath, new Privilege[] {
+        				        		acm.privilegeFromName(Privilege.JCR_READ),
+        				        		acm.privilegeFromName(Privilege.JCR_READ_ACCESS_CONTROL),
+        				        		acm.privilegeFromName(Privilege.JCR_MODIFY_ACCESS_CONTROL),
+        				        		acm.privilegeFromName(PrivilegeConstants.REP_WRITE),
+        				        		acm.privilegeFromName(PrivilegeConstants.REP_USER_MANAGEMENT)
+        				        });
+                return hasRights;
+            }
         } catch (RepositoryException e) {
             log.warn("Failed to determine if {} can add a new group", jcrSession.getUserID());
         }
@@ -113,23 +154,9 @@ public class AuthorizablePrivilegesInfoImpl implements AuthorizablePrivilegesInf
     public boolean canAddUser(Session jcrSession) {
         try {
             //if self-registration is enabled, then anyone can create a user
-            if (bundleContext != null) {
-                String filter = "(&(sling.servlet.resourceTypes=sling/users)(|(sling.servlet.methods=POST)(sling.servlet.selectors=create)))";
-                Collection<ServiceReference<Servlet>> serviceReferences = bundleContext.getServiceReferences(Servlet.class, filter);
-                if (serviceReferences != null) {
-                    String propName = "self.registration.enabled";
-                    for (ServiceReference<Servlet> serviceReference : serviceReferences) {
-                        Object propValue = serviceReference.getProperty(propName);
-                        if (propValue != null) {
-                            boolean selfRegEnabled = Boolean.TRUE.equals(propValue);
-                            if (selfRegEnabled) {
-                                return true;
-                            }
-                            break;
-                        }
-                    }
-                }
-            }
+        	if (selfRegistrationEnabled) {
+        		return true;
+        	}
 
             UserManager userManager = AccessControlUtil.getUserManager(jcrSession);
             Authorizable currentUser = userManager.getAuthorizable(jcrSession.getUserID());
@@ -138,9 +165,20 @@ public class AuthorizablePrivilegesInfoImpl implements AuthorizablePrivilegesInf
                     return true; //admin user has full control
                 }
             }
+            
+            if (usersPath != null) {
+                //check if the non-admin user has sufficient rights on the home folder
+                AccessControlManager acm = jcrSession.getAccessControlManager();
+                boolean hasRights = acm.hasPrivileges(usersPath, new Privilege[] {
+        				        		acm.privilegeFromName(Privilege.JCR_READ),
+        				        		acm.privilegeFromName(Privilege.JCR_READ_ACCESS_CONTROL),
+        				        		acm.privilegeFromName(Privilege.JCR_MODIFY_ACCESS_CONTROL),
+        				        		acm.privilegeFromName(PrivilegeConstants.REP_WRITE),
+        				        		acm.privilegeFromName(PrivilegeConstants.REP_USER_MANAGEMENT)
+        				        });
+                return hasRights;
+            }
         } catch (RepositoryException e) {
-            log.warn("Failed to determine if {} can add a new user", jcrSession.getUserID());
-        } catch (InvalidSyntaxException e) {
             log.warn("Failed to determine if {} can add a new user", jcrSession.getUserID());
         }
         return false;
@@ -156,6 +194,19 @@ public class AuthorizablePrivilegesInfoImpl implements AuthorizablePrivilegesInf
 
             if (((User)currentUser).isAdmin()) {
                 return true; //admin user has full control
+            }
+            
+            if (usersPath != null) {
+                //check if the non-admin user has sufficient rights on the home folder
+                AccessControlManager acm = jcrSession.getAccessControlManager();
+                boolean hasRights = acm.hasPrivileges("/home/users", new Privilege[] {
+        				        		acm.privilegeFromName(Privilege.JCR_READ),
+        				        		acm.privilegeFromName(Privilege.JCR_READ_ACCESS_CONTROL),
+        				        		acm.privilegeFromName(Privilege.JCR_MODIFY_ACCESS_CONTROL),
+        				        		acm.privilegeFromName(PrivilegeConstants.REP_WRITE),
+        				        		acm.privilegeFromName(PrivilegeConstants.REP_USER_MANAGEMENT)
+        				        });
+                return hasRights;
             }
         } catch (RepositoryException e) {
             log.warn("Failed to determine if {} can remove authorizable {}", jcrSession.getUserID(), principalId);
@@ -173,6 +224,19 @@ public class AuthorizablePrivilegesInfoImpl implements AuthorizablePrivilegesInf
 
             if (((User)currentUser).isAdmin()) {
                 return true; //admin user has full control
+            }
+            
+            if (groupsPath != null) {
+                //check if the non-admin user has sufficient rights on the home folder
+                AccessControlManager acm = jcrSession.getAccessControlManager();
+                boolean hasRights = acm.hasPrivileges(groupsPath, new Privilege[] {
+        				        		acm.privilegeFromName(Privilege.JCR_READ),
+        				        		acm.privilegeFromName(Privilege.JCR_READ_ACCESS_CONTROL),
+        				        		acm.privilegeFromName(Privilege.JCR_MODIFY_ACCESS_CONTROL),
+        				        		acm.privilegeFromName(PrivilegeConstants.REP_WRITE),
+        				        		acm.privilegeFromName(PrivilegeConstants.REP_USER_MANAGEMENT)
+        				        });
+                return hasRights;
             }
         } catch (RepositoryException e) {
             log.warn("Failed to determine if {} can remove authorizable {}", jcrSession.getUserID(), groupId);
@@ -196,6 +260,20 @@ public class AuthorizablePrivilegesInfoImpl implements AuthorizablePrivilegesInf
             if (((User)currentUser).isAdmin()) {
                 return true; //admin user has full control
             }
+            
+            String path = currentUser.isGroup() ? groupsPath : usersPath;
+            if (path != null) {
+                //check if the non-admin user has sufficient rights on the home folder
+                AccessControlManager acm = jcrSession.getAccessControlManager();
+                boolean hasRights = acm.hasPrivileges(path, new Privilege[] {
+        				        		acm.privilegeFromName(Privilege.JCR_READ),
+        				        		acm.privilegeFromName(Privilege.JCR_READ_ACCESS_CONTROL),
+        				        		acm.privilegeFromName(Privilege.JCR_MODIFY_ACCESS_CONTROL),
+        				        		acm.privilegeFromName(PrivilegeConstants.REP_WRITE),
+        				        		acm.privilegeFromName(PrivilegeConstants.REP_USER_MANAGEMENT)
+        				        });
+                return hasRights;
+            }
         } catch (RepositoryException e) {
             log.warn("Failed to determine if {} can remove authorizable {}", jcrSession.getUserID(), principalId);
         }
@@ -205,16 +283,12 @@ public class AuthorizablePrivilegesInfoImpl implements AuthorizablePrivilegesInf
 
     // ---------- SCR Integration ----------------------------------------------
 
-    //keep track of the bundle context
-    private BundleContext bundleContext;
 
     @Activate
     protected void activate(BundleContext bundleContext, Map<String, Object> properties)
             throws InvalidKeyException, NoSuchAlgorithmException,
             IllegalStateException, UnsupportedEncodingException {
 
-        this.bundleContext = bundleContext;
-        
         String userAdminGroupName = OsgiUtil.toString(properties.get(PAR_USER_ADMIN_GROUP_NAME), null);
         if ( userAdminGroupName != null && ! DEFAULT_USER_ADMIN_GROUP_NAME.equals(userAdminGroupName)) {
             log.warn("Configuration setting for {} is deprecated and will not have any effect", PAR_USER_ADMIN_GROUP_NAME);

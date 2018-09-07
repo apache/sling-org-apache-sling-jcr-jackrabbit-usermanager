@@ -22,12 +22,16 @@ import java.util.Map;
 
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
+import javax.jcr.security.AccessControlManager;
+import javax.jcr.security.Privilege;
 import javax.servlet.Servlet;
 
 import org.apache.jackrabbit.api.security.user.Authorizable;
-import org.apache.jackrabbit.api.security.user.Group;
 import org.apache.jackrabbit.api.security.user.User;
 import org.apache.jackrabbit.api.security.user.UserManager;
+import org.apache.jackrabbit.oak.spi.security.privilege.PrivilegeConstants;
+import org.apache.jackrabbit.oak.spi.security.user.UserConfiguration;
+import org.apache.jackrabbit.oak.spi.security.user.UserConstants;
 import org.apache.sling.api.SlingHttpServletRequest;
 import org.apache.sling.commons.osgi.OsgiUtil;
 import org.apache.sling.jackrabbit.usermanager.CreateUser;
@@ -132,6 +136,17 @@ public class CreateUserServlet extends AbstractAuthorizablePostServlet implement
     @Reference
     private SlingRepository repository;
 
+    private String usersPath;
+    
+    @Reference(cardinality=ReferenceCardinality.OPTIONAL)
+    private void bindUserConfiguration(UserConfiguration userConfig, Map<String, Object> properties) {
+    	usersPath = (String)properties.get(UserConstants.PARAM_USER_PATH);
+    }
+    @SuppressWarnings("unused")
+	private void unbindUserConfiguration(UserConfiguration userConfig, Map<String, Object> properties) {
+    	usersPath = null;
+    }
+    
     /**
      * Returns an administrative session to the default workspace.
      */
@@ -257,15 +272,17 @@ public class CreateUserServlet extends AbstractAuthorizablePostServlet implement
             administrator = currentUser.isAdmin();
 
             if (!administrator) {
-                //check if the user is a member of the 'User administrator' group
-                Authorizable userAdmin = um.getAuthorizable(this.userAdminGroupName);
-                if (userAdmin instanceof Group) {
-                    boolean isMember = ((Group)userAdmin).isMember(currentUser);
-                    if (isMember) {
-                        administrator = true;
-                    }
-                }
-
+            	if (usersPath != null) {
+                    //check if the current user has the minimum privileges needed to create a user
+                    AccessControlManager acm = jcrSession.getAccessControlManager();
+                    administrator = acm.hasPrivileges(usersPath, new Privilege[] {
+            				        		acm.privilegeFromName(Privilege.JCR_READ),
+            				        		acm.privilegeFromName(Privilege.JCR_READ_ACCESS_CONTROL),
+            				        		acm.privilegeFromName(Privilege.JCR_MODIFY_ACCESS_CONTROL),
+            				        		acm.privilegeFromName(PrivilegeConstants.REP_WRITE),
+            				        		acm.privilegeFromName(PrivilegeConstants.REP_USER_MANAGEMENT)
+            				        });
+            	}
             }
         } catch ( Exception ex ) {
             log.warn("Failed to determine if the user is an admin, assuming not. Cause: "+ex.getMessage());
