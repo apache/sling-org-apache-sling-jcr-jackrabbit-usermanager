@@ -138,7 +138,7 @@ public class CreateUserServlet extends AbstractAuthorizablePostServlet implement
 
     private String usersPath;
     
-    @Reference(cardinality=ReferenceCardinality.OPTIONAL)
+    @Reference(cardinality=ReferenceCardinality.OPTIONAL, policy = ReferencePolicy.DYNAMIC)
     private void bindUserConfiguration(UserConfiguration userConfig, Map<String, Object> properties) {
     	usersPath = (String)properties.get(UserConstants.PARAM_USER_PATH);
     }

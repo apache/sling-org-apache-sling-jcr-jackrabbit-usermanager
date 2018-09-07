@@ -41,6 +41,7 @@ import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferenceCardinality;
+import org.osgi.service.component.annotations.ReferencePolicy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -96,7 +97,7 @@ public class AuthorizablePrivilegesInfoImpl implements AuthorizablePrivilegesInf
     private String groupsPath;
     private boolean selfRegistrationEnabled;
     
-    @Reference(cardinality=ReferenceCardinality.OPTIONAL)
+    @Reference(cardinality=ReferenceCardinality.OPTIONAL, policy = ReferencePolicy.DYNAMIC)
     private void bindUserConfiguration(UserConfiguration userConfig, Map<String, Object> properties) {
     	usersPath = (String)properties.get(UserConstants.PARAM_USER_PATH);
     	groupsPath = (String)properties.get(UserConstants.PARAM_GROUP_PATH);
@@ -107,7 +108,7 @@ public class AuthorizablePrivilegesInfoImpl implements AuthorizablePrivilegesInf
     	groupsPath = null;
     }
 
-    @Reference(cardinality=ReferenceCardinality.OPTIONAL)
+    @Reference(cardinality=ReferenceCardinality.OPTIONAL, policy = ReferencePolicy.DYNAMIC)
     private void bindCreateUser(CreateUser createUser, Map<String, Object> properties) {
     	selfRegistrationEnabled = Boolean.TRUE.equals(properties.get("self.registration.enabled"));
     }
