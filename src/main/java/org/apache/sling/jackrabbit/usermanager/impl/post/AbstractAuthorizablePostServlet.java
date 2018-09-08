@@ -262,9 +262,12 @@ public abstract class AbstractAuthorizablePostServlet extends
 
         for (RequestProperty property : reqProperties) {
             if (property.isDelete()) {
-                if (authorizable.hasProperty(property.getName())) {
-                    authorizable.removeProperty(property.getName());
-                    changes.add(Modification.onDeleted(property.getPath()));
+                // SLING-7901 - remove artificial "/" prepended to the prop path
+                String relativePath = property.getPath().substring(1);
+            	
+                if (authorizable.hasProperty(relativePath)) {
+                    authorizable.removeProperty(relativePath);
+                    changes.add(Modification.onDeleted(relativePath));
                 }
             }
         }
