@@ -29,7 +29,7 @@
 
     <artifactId>org.apache.sling.jcr.jackrabbit.usermanager</artifactId>
     <packaging>bundle</packaging>
-    <version>2.2.7-SNAPSHOT</version>
+    <version>2.2.8</version>
     <name>Apache Sling Jackrabbit UserManager Support</name>
     <description>
         Provides ResourceProvider and SlingPostOperations for the Jackrabbit
@@ -40,7 +40,8 @@
         <connection>scm:git:https://gitbox.apache.org/repos/asf/sling-org-apache-sling-jcr-jackrabbit-usermanager.git</connection>
         <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/sling-org-apache-sling-jcr-jackrabbit-usermanager.git</developerConnection>
         <url>https://gitbox.apache.org/repos/asf?p=sling-org-apache-sling-jcr-jackrabbit-usermanager.git</url>
-    </scm>
+      <tag>org.apache.sling.jcr.jackrabbit.usermanager-2.2.8</tag>
+  </scm>
 
     <build>
         <plugins>
