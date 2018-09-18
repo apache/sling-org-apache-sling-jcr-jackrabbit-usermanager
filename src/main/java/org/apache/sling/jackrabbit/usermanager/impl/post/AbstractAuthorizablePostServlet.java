@@ -392,7 +392,7 @@ public abstract class AbstractAuthorizablePostServlet extends
                         } else {
                             Value cVal = session.getValueFactory().createValue(
                                 c);
-                            parent.setProperty(prop.getName(), cVal);
+                            parent.setProperty(relativePath, cVal);
                             changes.add(Modification.onModified(parentPath
                                 + "/" + relativePath));
                         }
