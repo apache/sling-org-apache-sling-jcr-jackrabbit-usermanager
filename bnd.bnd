@@ -1,0 +1,7 @@
+-includeresource:\
+  @org.apache.sling.servlets.post-*.jar!/org/apache/sling/servlets/post/impl/helper/(RequestProperty*|DateParser*|MediaRangeList*),\
+  ${project.build.directory}/adapter-plugin-generated
+
+-removeheaders:\
+  Include-Resource,\
+  Private-Package
