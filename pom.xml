@@ -35,6 +35,10 @@
         UserManager.
     </description>
 
+    <properties>
+        <project.build.outputTimestamp>2020-07-27T15:10:15Z</project.build.outputTimestamp>
+    </properties>
+
     <scm>
         <connection>scm:git:https://gitbox.apache.org/repos/asf/sling-org-apache-sling-jcr-jackrabbit-usermanager.git</connection>
         <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/sling-org-apache-sling-jcr-jackrabbit-usermanager.git</developerConnection>
