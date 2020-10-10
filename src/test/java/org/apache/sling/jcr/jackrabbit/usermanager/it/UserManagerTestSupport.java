@@ -20,27 +20,65 @@ package org.apache.sling.jcr.jackrabbit.usermanager.it;
 
 import static org.apache.sling.testing.paxexam.SlingOptions.sling;
 import static org.apache.sling.testing.paxexam.SlingOptions.slingQuickstartOakTar;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.ops4j.pax.exam.CoreOptions.composite;
 import static org.ops4j.pax.exam.CoreOptions.junitBundles;
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
 import static org.ops4j.pax.exam.CoreOptions.vmOption;
+
+import java.util.Dictionary;
+import java.util.Enumeration;
+import java.util.Hashtable;
 
 import org.apache.sling.testing.paxexam.SlingOptions;
 import org.apache.sling.testing.paxexam.TestSupport;
 import org.ops4j.pax.exam.Option;
 import org.ops4j.pax.exam.options.ModifiableCompositeOption;
 import org.ops4j.pax.exam.options.extra.VMOption;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceReference;
 
 /**
  * Base class for UserManager related paxexam tests
  */
 public abstract class UserManagerTestSupport extends TestSupport {
 
+    /**
+     * Use after using ConfigurationAdmin to change the configuration of
+     * a service and you need to wait for the component to be re-activated
+     * with the new configuration.
+     */
+    public static final class WaitForServiceUpdated extends Retry {
+        private BundleContext bundleContext;
+        private String expectedKey;
+        private Object expectedValue;
+        private Class<?> serviceClass;
+
+        public WaitForServiceUpdated(long timeoutMsec, long nextIterationDelay, BundleContext bundleContext, 
+                Class<?> serviceClass, String expectedKey, Object expectedValue) throws InterruptedException {
+            super(timeoutMsec, nextIterationDelay, false);
+            this.bundleContext = bundleContext;
+            this.serviceClass = serviceClass;
+            this.expectedKey = expectedKey;
+            this.expectedValue = expectedValue;
+            run();
+        }
+
+        @Override
+        protected void exec() throws Exception {
+            ServiceReference<?> serviceReference = bundleContext.getServiceReference(serviceClass);
+            assertNotNull(serviceReference);
+            assertEquals(expectedValue, serviceReference.getProperty(expectedKey));
+        }
+    }
+
+
     public ModifiableCompositeOption baseConfiguration() {
         final Option usermanager = mavenBundle()
-        		.groupId("org.apache.sling")
-        		.artifactId("org.apache.sling.jcr.jackrabbit.usermanager")
-        		.version(SlingOptions.versionResolver.getVersion("org.apache.sling", "org.apache.sling.jcr.jackrabbit.usermanager"));
+                .groupId("org.apache.sling")
+                .artifactId("org.apache.sling.jcr.jackrabbit.usermanager")
+                .version(SlingOptions.versionResolver.getVersion("org.apache.sling", "org.apache.sling.jcr.jackrabbit.usermanager"));
         return composite(
             super.baseConfiguration(),
             optionalRemoteDebug(),
@@ -60,12 +98,12 @@ public abstract class UserManagerTestSupport extends TestSupport {
      * system property.
      */
     protected ModifiableCompositeOption optionalRemoteDebug() {
-    	VMOption option = null;
-    	String property = System.getProperty("debugPort");
-		if (property != null) {			
-    		option = vmOption(String.format("-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=%s", property));
-    	}
-    	return composite(option);
+        VMOption option = null;
+        String property = System.getProperty("debugPort");
+        if (property != null) {
+            option = vmOption(String.format("-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=%s", property));
+        }
+        return composite(option);
     }
     protected ModifiableCompositeOption quickstart() {
         final int httpPort = findFreePort();
@@ -73,4 +111,20 @@ public abstract class UserManagerTestSupport extends TestSupport {
         return slingQuickstartOakTar(workingDirectory, httpPort);
     }
 
+    protected Dictionary<String, Object> replaceConfigProp(Dictionary<String, Object> originalProps, String newPropKey, Object newPropValue) {
+        Hashtable<String, Object> newProps = new Hashtable<>();
+        if (originalProps != null) {
+            Enumeration<String> keys = originalProps.keys();
+            while (keys.hasMoreElements()) {
+                String key = keys.nextElement();
+                Object value = originalProps.get(key);
+                newProps.put(key, value);
+            }
+        }
+
+        newProps.put(newPropKey, newPropValue);
+        
+        return newProps;
+    }
+    
 }

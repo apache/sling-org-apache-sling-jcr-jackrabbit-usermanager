@@ -21,18 +21,22 @@ import java.util.Map;
 
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
+import javax.jcr.security.AccessControlManager;
+import javax.jcr.security.Privilege;
 import javax.servlet.Servlet;
 
 import org.apache.jackrabbit.api.security.user.Authorizable;
 import org.apache.jackrabbit.api.security.user.Group;
 import org.apache.jackrabbit.api.security.user.User;
 import org.apache.jackrabbit.api.security.user.UserManager;
+import org.apache.jackrabbit.oak.spi.security.privilege.PrivilegeConstants;
 import org.apache.sling.api.SlingHttpServletRequest;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ResourceNotFoundException;
 import org.apache.sling.commons.osgi.OsgiUtil;
 import org.apache.sling.jackrabbit.usermanager.ChangeUserPassword;
 import org.apache.sling.jackrabbit.usermanager.impl.resource.AuthorizableResourceProvider;
+import org.apache.sling.jcr.api.SlingRepository;
 import org.apache.sling.jcr.base.util.AccessControlUtil;
 import org.apache.sling.servlets.post.Modification;
 import org.apache.sling.servlets.post.PostResponse;
@@ -43,6 +47,9 @@ import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.annotations.ReferencePolicy;
+import org.osgi.service.metatype.annotations.AttributeDefinition;
+import org.osgi.service.metatype.annotations.Designate;
+import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,18 +93,31 @@ import org.slf4j.LoggerFactory;
 
 @Component(service = {Servlet.class, ChangeUserPassword.class},
            property = {
-        		   "sling.servlet.resourceTypes=sling/user",
-        		   "sling.servlet.methods=POST",
-        		   "sling.servlet.selectors=changePassword",
-        		   AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=EEE MMM dd yyyy HH:mm:ss 'GMT'Z", 
-        		   AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=yyyy-MM-dd'T'HH:mm:ss.SSSZ", 
-        		   AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=yyyy-MM-dd'T'HH:mm:ss", 
-        		   AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=yyyy-MM-dd", 
-        		   AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=dd.MM.yyyy HH:mm:ss", 
-        		   AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=dd.MM.yyyy",
-        		   ChangeUserPasswordServlet.PAR_USER_ADMIN_GROUP_NAME + "=" + ChangeUserPasswordServlet.DEFAULT_USER_ADMIN_GROUP_NAME
+                   "sling.servlet.resourceTypes=sling/user",
+                   "sling.servlet.methods=POST",
+                   "sling.servlet.selectors=changePassword",
+                   AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=EEE MMM dd yyyy HH:mm:ss 'GMT'Z",
+                   AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=yyyy-MM-dd'T'HH:mm:ss.SSSZ",
+                   AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=yyyy-MM-dd'T'HH:mm:ss",
+                   AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=yyyy-MM-dd",
+                   AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=dd.MM.yyyy HH:mm:ss",
+                   AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=dd.MM.yyyy"
            })
+@Designate(ocd=ChangeUserPasswordServlet.Config.class)
 public class ChangeUserPasswordServlet extends AbstractAuthorizablePostServlet implements ChangeUserPassword {
+
+    @ObjectClassDefinition(name ="Apache Sling Change User Password")
+    public @interface Config {
+
+        @AttributeDefinition(name = "User Admin Group Name",
+                description = "Specifies the name of the group whose members are allowed to reset the password of another user.")
+        String user_admin_group_name() default DEFAULT_USER_ADMIN_GROUP_NAME;
+
+        @AttributeDefinition(name = "Always Allow Self Password Change",
+                description = "Specifies whether a user is allowed to change their own password even if they haven't been granted the rep:userManagement privilege.")
+        boolean alwaysAllowSelfChangePassword() default false;
+    }
+
     private static final long serialVersionUID = 1923614318474654502L;
 
     /**
@@ -121,7 +141,13 @@ public class ChangeUserPasswordServlet extends AbstractAuthorizablePostServlet i
 
     private String userAdminGroupName = DEFAULT_USER_ADMIN_GROUP_NAME;
 
-    // ---------- SCR integration ---------------------------------------------
+    private boolean alwaysAllowSelfChangePassword = true;
+
+    /**
+     * The JCR Repository we access to resolve resources
+     */
+    @Reference
+    private SlingRepository repository;
 
     /**
      * Activates this component.
@@ -132,6 +158,8 @@ public class ChangeUserPasswordServlet extends AbstractAuthorizablePostServlet i
     @Activate
     protected void activate(final Map<String, Object> props) {
         super.activate(props);
+
+        alwaysAllowSelfChangePassword = OsgiUtil.toBoolean(props.get("alwaysAllowSelfChangePassword"), false);
 
         this.userAdminGroupName = OsgiUtil.toString(props.get(PAR_USER_ADMIN_GROUP_NAME),
                 DEFAULT_USER_ADMIN_GROUP_NAME);
@@ -147,25 +175,25 @@ public class ChangeUserPasswordServlet extends AbstractAuthorizablePostServlet i
     /**
      * Overridden since the @Reference annotation is not inherited from the super method
      *  
-	 * @see org.apache.sling.jackrabbit.usermanager.impl.post.AbstractPostServlet#bindPostResponseCreator(org.apache.sling.servlets.post.PostResponseCreator, java.util.Map)
-	 */
-	@Override
+     * @see org.apache.sling.jackrabbit.usermanager.impl.post.AbstractPostServlet#bindPostResponseCreator(org.apache.sling.servlets.post.PostResponseCreator, java.util.Map)
+     */
+    @Override
     @Reference(service = PostResponseCreator.class,
-	    cardinality = ReferenceCardinality.MULTIPLE,
-	    policy = ReferencePolicy.DYNAMIC)
-	protected void bindPostResponseCreator(PostResponseCreator creator, Map<String, Object> properties) {
-		super.bindPostResponseCreator(creator, properties);
-	}
-	
-	/* (non-Javadoc)
-	 * @see org.apache.sling.jackrabbit.usermanager.impl.post.AbstractPostServlet#unbindPostResponseCreator(org.apache.sling.servlets.post.PostResponseCreator, java.util.Map)
-	 */
-	@Override
-	protected void unbindPostResponseCreator(PostResponseCreator creator, Map<String, Object> properties) {
-		super.unbindPostResponseCreator(creator, properties);
-	}
+        cardinality = ReferenceCardinality.MULTIPLE,
+        policy = ReferencePolicy.DYNAMIC)
+    protected void bindPostResponseCreator(PostResponseCreator creator, Map<String, Object> properties) {
+        super.bindPostResponseCreator(creator, properties);
+    }
 
-	/*
+    /* (non-Javadoc)
+     * @see org.apache.sling.jackrabbit.usermanager.impl.post.AbstractPostServlet#unbindPostResponseCreator(org.apache.sling.servlets.post.PostResponseCreator, java.util.Map)
+     */
+    @Override
+    protected void unbindPostResponseCreator(PostResponseCreator creator, Map<String, Object> properties) {
+        super.unbindPostResponseCreator(creator, properties);
+    }
+
+    /*
      * (non-Javadoc)
      * @see
      * org.apache.sling.jackrabbit.usermanager.post.AbstractAuthorizablePostServlet
@@ -174,7 +202,7 @@ public class ChangeUserPasswordServlet extends AbstractAuthorizablePostServlet i
      */
     @Override
     protected void handleOperation(SlingHttpServletRequest request,
-    		PostResponse response, List<Modification> changes)
+            PostResponse response, List<Modification> changes)
             throws RepositoryException {
 
         Resource resource = request.getResource();
@@ -253,7 +281,38 @@ public class ChangeUserPasswordServlet extends AbstractAuthorizablePostServlet i
 
         if (oldPassword != null && oldPassword.length() > 0) {
             // verify old password
-            user.changePassword(newPassword, oldPassword);
+            if (alwaysAllowSelfChangePassword && jcrSession.getUserID().equals(name)) {
+                // first check if the current user has enough permissions to do this without
+                //   the aid of a service session
+                AccessControlManager acm = jcrSession.getAccessControlManager();
+                boolean hasRights = acm.hasPrivileges(authorizable.getPath(), new Privilege[] {
+                                        acm.privilegeFromName(PrivilegeConstants.REP_USER_MANAGEMENT)
+                                });
+
+                if (hasRights) {
+                    // we are good to do this without an extra service session
+                    user.changePassword(newPassword, oldPassword);
+                } else {
+                    // the current user doesn't have enough permissions, so we'll need do
+                    //   do the work on their behalf as a service user
+                    Session svcSession = null;
+                    try {
+                        svcSession = repository.loginAdministrative(null);
+                        UserManager um = AccessControlUtil.getUserManager(svcSession);
+                        User user2 = (User) um.getAuthorizable(name);
+                        user2.changePassword(newPassword, oldPassword);
+                        if (svcSession.hasPendingChanges()) {
+                            svcSession.save();
+                        }
+                    } finally {
+                        if (svcSession != null) {
+                            svcSession.logout();
+                        }
+                    }
+                }
+            } else {
+                user.changePassword(newPassword, oldPassword);
+            }
         } else {
             user.changePassword(newPassword);
         }
