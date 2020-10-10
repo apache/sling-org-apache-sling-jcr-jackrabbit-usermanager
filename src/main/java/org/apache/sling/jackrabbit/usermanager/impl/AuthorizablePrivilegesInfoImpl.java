@@ -19,7 +19,9 @@ package org.apache.sling.jackrabbit.usermanager.impl;
 import java.io.UnsupportedEncodingException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
@@ -59,8 +61,8 @@ import org.slf4j.LoggerFactory;
  */
 @Component(service=AuthorizablePrivilegesInfo.class,
     property={
-    		AuthorizablePrivilegesInfoImpl.PAR_USER_ADMIN_GROUP_NAME + "=" + AuthorizablePrivilegesInfoImpl.DEFAULT_USER_ADMIN_GROUP_NAME,
-    		AuthorizablePrivilegesInfoImpl.PAR_GROUP_ADMIN_GROUP_NAME + "=" + AuthorizablePrivilegesInfoImpl.DEFAULT_GROUP_ADMIN_GROUP_NAME		
+            AuthorizablePrivilegesInfoImpl.PAR_USER_ADMIN_GROUP_NAME + "=" + AuthorizablePrivilegesInfoImpl.DEFAULT_USER_ADMIN_GROUP_NAME,
+            AuthorizablePrivilegesInfoImpl.PAR_GROUP_ADMIN_GROUP_NAME + "=" + AuthorizablePrivilegesInfoImpl.DEFAULT_GROUP_ADMIN_GROUP_NAME
     })
 public class AuthorizablePrivilegesInfoImpl implements AuthorizablePrivilegesInfo {
 
@@ -99,186 +101,225 @@ public class AuthorizablePrivilegesInfoImpl implements AuthorizablePrivilegesInf
     
     @Reference(cardinality=ReferenceCardinality.OPTIONAL, policy = ReferencePolicy.DYNAMIC)
     private void bindUserConfiguration(UserConfiguration userConfig, Map<String, Object> properties) {
-    	usersPath = (String)properties.get(UserConstants.PARAM_USER_PATH);
-    	groupsPath = (String)properties.get(UserConstants.PARAM_GROUP_PATH);
+        usersPath = (String)properties.get(UserConstants.PARAM_USER_PATH);
+        groupsPath = (String)properties.get(UserConstants.PARAM_GROUP_PATH);
     }
     @SuppressWarnings("unused")
-	private void unbindUserConfiguration(UserConfiguration userConfig, Map<String, Object> properties) {
-    	usersPath = null;
-    	groupsPath = null;
+    private void unbindUserConfiguration(UserConfiguration userConfig, Map<String, Object> properties) {
+        usersPath = null;
+        groupsPath = null;
     }
 
     @Reference(cardinality=ReferenceCardinality.OPTIONAL, policy = ReferencePolicy.DYNAMIC)
     private void bindCreateUser(CreateUser createUser, Map<String, Object> properties) {
-    	selfRegistrationEnabled = Boolean.TRUE.equals(properties.get("self.registration.enabled"));
+        selfRegistrationEnabled = Boolean.TRUE.equals(properties.get("self.registration.enabled"));
     }
     @SuppressWarnings("unused")
-	private void unbindCreateUser(CreateUser createUser, Map<String, Object> properties) {
-    	selfRegistrationEnabled = false;
+    private void unbindCreateUser(CreateUser createUser, Map<String, Object> properties) {
+        selfRegistrationEnabled = false;
     }
 
     /* (non-Javadoc)
      * @see org.apache.sling.jackrabbit.usermanager.AuthorizablePrivilegesInfo#canAddGroup(javax.jcr.Session)
      */
     public boolean canAddGroup(Session jcrSession) {
+        boolean hasRights = false;
         try {
             UserManager userManager = AccessControlUtil.getUserManager(jcrSession);
             Authorizable currentUser = userManager.getAuthorizable(jcrSession.getUserID());
 
-            if (currentUser != null) {
-                if (((User)currentUser).isAdmin()) {
-                    return true; //admin user has full control
+            if (currentUser instanceof User && ((User)currentUser).isAdmin()) {
+                hasRights = true; //admin user has full control
+            } else {
+                if (groupsPath != null) {
+                    //check if the non-admin user has sufficient rights on the home folder
+                    AccessControlManager acm = jcrSession.getAccessControlManager();
+                    hasRights = acm.hasPrivileges(groupsPath, new Privilege[] {
+                                            acm.privilegeFromName(Privilege.JCR_READ),
+                                            acm.privilegeFromName(Privilege.JCR_READ_ACCESS_CONTROL),
+                                            acm.privilegeFromName(Privilege.JCR_MODIFY_ACCESS_CONTROL),
+                                            acm.privilegeFromName(PrivilegeConstants.REP_WRITE),
+                                            acm.privilegeFromName(PrivilegeConstants.REP_USER_MANAGEMENT)
+                                    });
                 }
-            }
-            
-            if (groupsPath != null) {
-                //check if the non-admin user has sufficient rights on the home folder
-                AccessControlManager acm = jcrSession.getAccessControlManager();
-                boolean hasRights = acm.hasPrivileges(groupsPath, new Privilege[] {
-        				        		acm.privilegeFromName(Privilege.JCR_READ),
-        				        		acm.privilegeFromName(Privilege.JCR_READ_ACCESS_CONTROL),
-        				        		acm.privilegeFromName(Privilege.JCR_MODIFY_ACCESS_CONTROL),
-        				        		acm.privilegeFromName(PrivilegeConstants.REP_WRITE),
-        				        		acm.privilegeFromName(PrivilegeConstants.REP_USER_MANAGEMENT)
-        				        });
-                return hasRights;
             }
         } catch (RepositoryException e) {
             log.warn("Failed to determine if {} can add a new group", jcrSession.getUserID());
         }
-        return false;
+        return hasRights;
     }
 
     /* (non-Javadoc)
      * @see org.apache.sling.jackrabbit.usermanager.AuthorizablePrivilegesInfo#canAddUser(javax.jcr.Session)
      */
     public boolean canAddUser(Session jcrSession) {
+        boolean hasRights = false;
         try {
             //if self-registration is enabled, then anyone can create a user
-        	if (selfRegistrationEnabled) {
-        		return true;
-        	}
-
-            UserManager userManager = AccessControlUtil.getUserManager(jcrSession);
-            Authorizable currentUser = userManager.getAuthorizable(jcrSession.getUserID());
-            if (currentUser != null) {
-                if (((User)currentUser).isAdmin()) {
-                    return true; //admin user has full control
+            if (selfRegistrationEnabled) {
+                hasRights = true;
+            } else {
+                UserManager userManager = AccessControlUtil.getUserManager(jcrSession);
+                Authorizable currentUser = userManager.getAuthorizable(jcrSession.getUserID());
+                if (currentUser instanceof User && ((User)currentUser).isAdmin()) {
+                    hasRights = true;  //admin user has full control
+                } else {
+                    if (usersPath != null) {
+                        //check if the non-admin user has sufficient rights on the home folder
+                        AccessControlManager acm = jcrSession.getAccessControlManager();
+                        hasRights = acm.hasPrivileges(usersPath, new Privilege[] {
+                                                acm.privilegeFromName(Privilege.JCR_READ),
+                                                acm.privilegeFromName(Privilege.JCR_READ_ACCESS_CONTROL),
+                                                acm.privilegeFromName(Privilege.JCR_MODIFY_ACCESS_CONTROL),
+                                                acm.privilegeFromName(PrivilegeConstants.REP_WRITE),
+                                                acm.privilegeFromName(PrivilegeConstants.REP_USER_MANAGEMENT)
+                                        });
+                    }
                 }
-            }
-            
-            if (usersPath != null) {
-                //check if the non-admin user has sufficient rights on the home folder
-                AccessControlManager acm = jcrSession.getAccessControlManager();
-                boolean hasRights = acm.hasPrivileges(usersPath, new Privilege[] {
-        				        		acm.privilegeFromName(Privilege.JCR_READ),
-        				        		acm.privilegeFromName(Privilege.JCR_READ_ACCESS_CONTROL),
-        				        		acm.privilegeFromName(Privilege.JCR_MODIFY_ACCESS_CONTROL),
-        				        		acm.privilegeFromName(PrivilegeConstants.REP_WRITE),
-        				        		acm.privilegeFromName(PrivilegeConstants.REP_USER_MANAGEMENT)
-        				        });
-                return hasRights;
             }
         } catch (RepositoryException e) {
             log.warn("Failed to determine if {} can add a new user", jcrSession.getUserID());
         }
-        return false;
+        return hasRights;
     }
 
     /* (non-Javadoc)
      * @see org.apache.sling.jackrabbit.usermanager.AuthorizablePrivilegesInfo#canRemove(javax.jcr.Session, java.lang.String)
      */
     public boolean canRemove(Session jcrSession, String principalId) {
+        boolean hasRights = false;
         try {
             UserManager userManager = AccessControlUtil.getUserManager(jcrSession);
             Authorizable currentUser = userManager.getAuthorizable(jcrSession.getUserID());
 
-            if (((User)currentUser).isAdmin()) {
-                return true; //admin user has full control
-            }
-            
-            if (usersPath != null) {
-                //check if the non-admin user has sufficient rights on the home folder
-                AccessControlManager acm = jcrSession.getAccessControlManager();
-                boolean hasRights = acm.hasPrivileges("/home/users", new Privilege[] {
-        				        		acm.privilegeFromName(Privilege.JCR_READ),
-        				        		acm.privilegeFromName(Privilege.JCR_READ_ACCESS_CONTROL),
-        				        		acm.privilegeFromName(Privilege.JCR_MODIFY_ACCESS_CONTROL),
-        				        		acm.privilegeFromName(PrivilegeConstants.REP_WRITE),
-        				        		acm.privilegeFromName(PrivilegeConstants.REP_USER_MANAGEMENT)
-        				        });
-                return hasRights;
+            if (currentUser instanceof User && ((User)currentUser).isAdmin()) {
+                hasRights = true; //admin user has full control
+            } else {
+                Authorizable authorizable = userManager.getAuthorizable(principalId);
+                if (authorizable == null) {
+                    log.debug("Failed to find authorizable: {}", principalId);
+                } else {
+                    String path = authorizable.getPath();
+                    if (path != null) {
+                        //check if the non-admin user has sufficient rights on the home folder
+                        AccessControlManager acm = jcrSession.getAccessControlManager();
+                        hasRights = acm.hasPrivileges(path, new Privilege[] {
+                                                acm.privilegeFromName(Privilege.JCR_READ),
+                                                acm.privilegeFromName(PrivilegeConstants.REP_USER_MANAGEMENT)
+                                        });
+                    }
+                }
             }
         } catch (RepositoryException e) {
             log.warn("Failed to determine if {} can remove authorizable {}", jcrSession.getUserID(), principalId);
         }
-        return false;
+        return hasRights;
     }
 
     /* (non-Javadoc)
      * @see org.apache.sling.jackrabbit.usermanager.AuthorizablePrivilegesInfo#canUpdateGroupMembers(javax.jcr.Session, java.lang.String)
      */
     public boolean canUpdateGroupMembers(Session jcrSession, String groupId) {
+        boolean hasRights = false;
         try {
             UserManager userManager = AccessControlUtil.getUserManager(jcrSession);
             Authorizable currentUser = userManager.getAuthorizable(jcrSession.getUserID());
 
-            if (((User)currentUser).isAdmin()) {
-                return true; //admin user has full control
-            }
-            
-            if (groupsPath != null) {
-                //check if the non-admin user has sufficient rights on the home folder
-                AccessControlManager acm = jcrSession.getAccessControlManager();
-                boolean hasRights = acm.hasPrivileges(groupsPath, new Privilege[] {
-        				        		acm.privilegeFromName(Privilege.JCR_READ),
-        				        		acm.privilegeFromName(Privilege.JCR_READ_ACCESS_CONTROL),
-        				        		acm.privilegeFromName(Privilege.JCR_MODIFY_ACCESS_CONTROL),
-        				        		acm.privilegeFromName(PrivilegeConstants.REP_WRITE),
-        				        		acm.privilegeFromName(PrivilegeConstants.REP_USER_MANAGEMENT)
-        				        });
-                return hasRights;
+            if (currentUser instanceof User && ((User)currentUser).isAdmin()) {
+                hasRights = true; //admin user has full control
+            } else {
+                Authorizable authorizable = userManager.getAuthorizable(groupId);
+                if (authorizable == null) {
+                    log.debug("Failed to find group: {}", groupId);
+                } else {
+                    String path = authorizable.getPath();
+                    if (path != null) {
+                        //check if the non-admin user has sufficient rights on the home folder
+                        AccessControlManager acm = jcrSession.getAccessControlManager();
+                        hasRights = acm.hasPrivileges(path, new Privilege[] {
+                                                acm.privilegeFromName(Privilege.JCR_READ),
+                                                acm.privilegeFromName(PrivilegeConstants.REP_USER_MANAGEMENT)
+                                        });
+                    }
+                }
             }
         } catch (RepositoryException e) {
             log.warn("Failed to determine if {} can remove authorizable {}", jcrSession.getUserID(), groupId);
         }
-        return false;
+        return hasRights;
     }
 
     /* (non-Javadoc)
      * @see org.apache.sling.jackrabbit.usermanager.AuthorizablePrivilegesInfo#canUpdateProperties(javax.jcr.Session, java.lang.String)
      */
     public boolean canUpdateProperties(Session jcrSession, String principalId) {
+        return canUpdateProperties(jcrSession, principalId,
+                PropertyUpdateTypes.addProperty, PropertyUpdateTypes.addNestedProperty,
+                PropertyUpdateTypes.alterProperty, PropertyUpdateTypes.removeProperty);
+    }
+
+    /* (non-Javadoc)
+     * @see org.apache.sling.jackrabbit.usermanager.AuthorizablePrivilegesInfo#canUpdateProperties(javax.jcr.Session, java.lang.String, org.apache.sling.jackrabbit.usermanager.AuthorizablePrivilegesInfo.PropertyUpdateTypes[])
+     */
+    @Override
+    public boolean canUpdateProperties(Session jcrSession, String principalId,
+            PropertyUpdateTypes... propertyUpdateTypes) {
+        boolean hasRights = false;
         try {
             if (jcrSession.getUserID().equals(principalId)) {
                 //user is allowed to update it's own properties
-                return true;
-            }
-            
-            UserManager userManager = AccessControlUtil.getUserManager(jcrSession);
-            Authorizable currentUser = userManager.getAuthorizable(jcrSession.getUserID());
+                hasRights = true;
+            } else {
+                UserManager userManager = AccessControlUtil.getUserManager(jcrSession);
+                Authorizable currentUser = userManager.getAuthorizable(jcrSession.getUserID());
 
-            if (((User)currentUser).isAdmin()) {
-                return true; //admin user has full control
-            }
-            
-            String path = currentUser.isGroup() ? groupsPath : usersPath;
-            if (path != null) {
-                //check if the non-admin user has sufficient rights on the home folder
-                AccessControlManager acm = jcrSession.getAccessControlManager();
-                boolean hasRights = acm.hasPrivileges(path, new Privilege[] {
-        				        		acm.privilegeFromName(Privilege.JCR_READ),
-        				        		acm.privilegeFromName(Privilege.JCR_READ_ACCESS_CONTROL),
-        				        		acm.privilegeFromName(Privilege.JCR_MODIFY_ACCESS_CONTROL),
-        				        		acm.privilegeFromName(PrivilegeConstants.REP_WRITE),
-        				        		acm.privilegeFromName(PrivilegeConstants.REP_USER_MANAGEMENT)
-        				        });
-                return hasRights;
+                if (currentUser instanceof User) {
+                    if (((User)currentUser).isAdmin()) {
+                        return true; //admin user has full control
+                    }
+                }
+
+                Authorizable authorizable = userManager.getAuthorizable(principalId);
+                if (authorizable == null) {
+                    log.debug("Failed to find authorizable: {}", principalId);
+                } else {
+                    String path = authorizable.getPath();
+                    if (path != null) {
+                        //check if the non-admin user has sufficient rights on the home folder
+                        AccessControlManager acm = jcrSession.getAccessControlManager();
+                        Set<Privilege> requiredPrivileges = new HashSet<>();
+                        requiredPrivileges.add(acm.privilegeFromName(Privilege.JCR_READ));
+                        if (propertyUpdateTypes != null) {
+                            for (PropertyUpdateTypes updateType : propertyUpdateTypes) {
+                                switch (updateType) {
+                                case addNestedProperty:
+                                    requiredPrivileges.add(acm.privilegeFromName(PrivilegeConstants.REP_ADD_PROPERTIES));
+                                    requiredPrivileges.add(acm.privilegeFromName(Privilege.JCR_ADD_CHILD_NODES));
+                                    break;
+                                case addProperty:
+                                    requiredPrivileges.add(acm.privilegeFromName(PrivilegeConstants.REP_ADD_PROPERTIES));
+                                    break;
+                                case alterProperty:
+                                    requiredPrivileges.add(acm.privilegeFromName(PrivilegeConstants.REP_ALTER_PROPERTIES));
+                                    break;
+                                case removeProperty:
+                                    requiredPrivileges.add(acm.privilegeFromName(PrivilegeConstants.REP_REMOVE_PROPERTIES));
+                                    break;
+                                default:
+                                    log.warn("Unexpected property update type: {}", updateType);
+                                    break;
+                                }
+                            }
+                        }
+
+                        hasRights = acm.hasPrivileges(path, requiredPrivileges.toArray(new Privilege[requiredPrivileges.size()]));
+                    }
+                }
             }
         } catch (RepositoryException e) {
-            log.warn("Failed to determine if {} can remove authorizable {}", jcrSession.getUserID(), principalId);
+            log.warn("Failed to determine if {} can update properties of authorizable {}", jcrSession.getUserID(), principalId);
         }
-        return false;
+        return hasRights;
     }
 
 

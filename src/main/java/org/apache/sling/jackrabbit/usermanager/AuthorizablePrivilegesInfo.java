@@ -21,6 +21,16 @@ import javax.jcr.Session;
 public interface AuthorizablePrivilegesInfo {
 
     /**
+     * An enumeration of the possible types of property changes
+     */
+    public enum PropertyUpdateTypes {
+        addProperty,
+        addNestedProperty,
+        alterProperty,
+        removeProperty
+    }
+
+    /**
      * Checks whether the current user has been granted privileges
      * to add a new user.
      *  
@@ -41,6 +51,7 @@ public interface AuthorizablePrivilegesInfo {
     /**
      * Checks whether the current user has been granted privileges
      * to update the properties of the specified user or group.
+     * Equivalent of: #canUpdateProperties(Session, String, PropertyUpdateTypes.addProperty, PropertyUpdateTypes.addNestedProperty, PropertyUpdateTypes.alterProperty, PropertyUpdateTypes.removeProperty)
      *  
      * @param jcrSession the JCR session of the current user
      * @param principalId the user or group id to check
@@ -48,6 +59,20 @@ public interface AuthorizablePrivilegesInfo {
      */
     boolean canUpdateProperties(Session jcrSession,
             String principalId);
+
+    /**
+     * Checks whether the current user has been granted privileges
+     * to update the properties of the specified user or group.
+     *
+     * @param jcrSession the JCR session of the current user
+     * @param principalId the user or group id to check
+     * @param propertyUpdateTypes specify the types of property updates that may be supplied. See: {@link PropertyUpdateTypes}
+     * @return true if the current user has the privileges, false otherwise
+     */
+    default boolean canUpdateProperties(Session jcrSession,
+            String principalId, PropertyUpdateTypes ... propertyUpdateTypes) {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * Checks whether the current user has been granted privileges
