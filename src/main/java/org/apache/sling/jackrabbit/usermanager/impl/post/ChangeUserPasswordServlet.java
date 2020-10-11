@@ -297,7 +297,7 @@ public class ChangeUserPasswordServlet extends AbstractAuthorizablePostServlet i
                     //   do the work on their behalf as a service user
                     Session svcSession = null;
                     try {
-                        svcSession = repository.loginAdministrative(null);
+                        svcSession = repository.loginService(null, null);
                         UserManager um = AccessControlUtil.getUserManager(svcSession);
                         User user2 = (User) um.getAuthorizable(name);
                         user2.changePassword(newPassword, oldPassword);

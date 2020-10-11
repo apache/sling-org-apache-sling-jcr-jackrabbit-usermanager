@@ -151,7 +151,7 @@ public class CreateUserServlet extends AbstractAuthorizablePostServlet implement
      * Returns an administrative session to the default workspace.
      */
     private Session getSession() throws RepositoryException {
-        return repository.loginAdministrative(null);
+        return repository.loginService(null, null);
     }
 
     /**

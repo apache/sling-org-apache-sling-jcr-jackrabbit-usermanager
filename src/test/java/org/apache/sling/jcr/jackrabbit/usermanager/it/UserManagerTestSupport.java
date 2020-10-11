@@ -26,6 +26,7 @@ import static org.ops4j.pax.exam.CoreOptions.composite;
 import static org.ops4j.pax.exam.CoreOptions.junitBundles;
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
 import static org.ops4j.pax.exam.CoreOptions.vmOption;
+import static org.ops4j.pax.exam.cm.ConfigurationAdminOptions.factoryConfiguration;
 
 import java.util.Dictionary;
 import java.util.Enumeration;
@@ -84,6 +85,19 @@ public abstract class UserManagerTestSupport extends TestSupport {
             optionalRemoteDebug(),
             quickstart(),
             sling(),
+            // SLING-9809 - add server user for the o.a.s.jcr.jackrabbit.usermanager bundle
+            factoryConfiguration("org.apache.sling.jcr.repoinit.RepositoryInitializer")
+                .put("scripts", new String[] {
+                        "create service user sling-jcr-usermanager with path system/sling\n" +
+                        "\n" +
+                        "set ACL for sling-jcr-usermanager\n" +
+                        "    allow jcr:read,jcr:readAccessControl,jcr:modifyAccessControl,rep:write,rep:userManagement on /home\n" +
+                        "end"})
+                .asOption(),
+            factoryConfiguration("org.apache.sling.serviceusermapping.impl.ServiceUserMapperImpl.amended")
+                .put("user.mapping", new String[]{"org.apache.sling.jcr.jackrabbit.usermanager=sling-jcr-usermanager"})
+                .asOption(),
+            
             // Sling JCR UserManager
             testBundle("bundle.filename"),
             mavenBundle().groupId("org.apache.sling").artifactId("org.apache.sling.jcr.jackrabbit.accessmanager").versionAsInProject(),
