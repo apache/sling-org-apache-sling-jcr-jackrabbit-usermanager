@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
@@ -274,6 +275,10 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
         }
 
         public Resource next() {
+            if (!hasNext()) {
+                throw new NoSuchElementException();
+            }
+
             Principal nextPrincipal = principals.nextPrincipal();
             try {
                 ResourceResolver resourceResolver = parent.getResourceResolver();
