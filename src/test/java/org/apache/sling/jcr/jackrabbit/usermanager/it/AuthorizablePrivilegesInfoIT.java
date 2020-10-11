@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 import javax.inject.Inject;
+import javax.jcr.AccessDeniedException;
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
 import javax.jcr.SimpleCredentials;
@@ -420,13 +421,13 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
 			// verify that the user can not add nested property
 			propsMap = new HashMap<>();
 			propsMap.put("nested/prop2", "value2");
+			updateUser.updateUser(user1Session, user2.getID(), propsMap, new ArrayList<>());
+			updateGroup.updateGroup(user1Session, group1.getID(), propsMap, new ArrayList<>());
+			assertTrue("Expected pending changes in the jcr session", user1Session.hasPendingChanges());
 			try {
-				updateUser.updateUser(user1Session, user2.getID(), propsMap, new ArrayList<>());
-				updateGroup.updateGroup(user1Session, group1.getID(), propsMap, new ArrayList<>());
-				assertTrue("Expected pending changes in the jcr session", user1Session.hasPendingChanges());
 				user1Session.save();
-				fail("Expected AccessDenied exception when adding nested property");
-			} catch (RepositoryException e) {
+				fail("Expected AccessDeniedException when adding nested property");
+			} catch (AccessDeniedException e) {
 				// expected
 				user1Session.refresh(false);
 			}
@@ -476,13 +477,13 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
 			}
 			// verify that the user can not add nested property
 			propsMap.put("nested/prop2", "value2");
+			updateUser.updateUser(user1Session, user2.getID(), propsMap, new ArrayList<>());
+			updateGroup.updateGroup(user1Session, group1.getID(), propsMap, new ArrayList<>());
+			assertTrue("Expected pending changes in the jcr session", user1Session.hasPendingChanges());
 			try {
-				updateUser.updateUser(user1Session, user2.getID(), propsMap, new ArrayList<>());
-				updateGroup.updateGroup(user1Session, group1.getID(), propsMap, new ArrayList<>());
-				assertTrue("Expected pending changes in the jcr session", user1Session.hasPendingChanges());
 				user1Session.save();
-				fail("Expected AccessDenied exception when adding nested property");
-			} catch (RepositoryException e) {
+				fail("Expected AccessDeniedException when adding nested property");
+			} catch (AccessDeniedException e) {
 				// expected
 				user1Session.refresh(false);
 			}
