@@ -17,6 +17,8 @@
 package org.apache.sling.jackrabbit.usermanager.impl.post;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -77,7 +79,7 @@ public abstract class AbstractPostServlet extends
             SlingHttpServletResponse httpResponse) throws ServletException,
             IOException {
         // prepare the response
-    	PostResponse response = createPostResponse(request);
+        PostResponse response = createPostResponse(request);
         response.setReferer(request.getHeader("referer"));
 
         // calculate the paths
@@ -179,7 +181,7 @@ public abstract class AbstractPostServlet extends
      */
     @Deprecated
     protected AbstractPostResponse createHtmlResponse(SlingHttpServletRequest req) {
-    	return (AbstractPostResponse)createPostResponse(req);
+        return (AbstractPostResponse)createPostResponse(req);
     }
     
     /**
@@ -206,16 +208,16 @@ public abstract class AbstractPostServlet extends
         MediaRangeList mediaRangeList = null;
         String queryParam = req.getParameter(MediaRangeList.PARAM_ACCEPT);
         if (queryParam == null || queryParam.trim().length() == 0) {
-        	String headerValue = req.getHeader(MediaRangeList.HEADER_ACCEPT);
-        	if (headerValue == null || headerValue.trim().length() == 0) {
-        		//no param or header supplied, so try the response content type
-        		mediaRangeList = new MediaRangeList(req.getResponseContentType());
-        	}
+            String headerValue = req.getHeader(MediaRangeList.HEADER_ACCEPT);
+            if (headerValue == null || headerValue.trim().length() == 0) {
+                //no param or header supplied, so try the response content type
+                mediaRangeList = new MediaRangeList(req.getResponseContentType());
+            }
         }
 
         // Fall through to default behavior
         if (mediaRangeList == null) {
-        	mediaRangeList = new MediaRangeList(req);
+            mediaRangeList = new MediaRangeList(req);
         }
         if (JSONResponse.RESPONSE_CONTENT_TYPE.equals(mediaRangeList.prefer("text/html", JSONResponse.RESPONSE_CONTENT_TYPE))) {
             return new JSONResponse();
@@ -236,9 +238,9 @@ public abstract class AbstractPostServlet extends
      */
     @Deprecated
     protected void handleOperation(SlingHttpServletRequest request,
-    		AbstractPostResponse response, List<Modification> changes)
+            AbstractPostResponse response, List<Modification> changes)
             throws RepositoryException {
-    	handleOperation(request, (PostResponse)response, changes);
+        handleOperation(request, (PostResponse)response, changes);
     }
     
     /**
@@ -250,7 +252,7 @@ public abstract class AbstractPostServlet extends
      * @throws RepositoryException in case of exceptions during the operation
      */
     abstract protected void handleOperation(SlingHttpServletRequest request,
-    		PostResponse response, List<Modification> changes)
+            PostResponse response, List<Modification> changes)
             throws RepositoryException;
 
     /**
@@ -263,7 +265,7 @@ public abstract class AbstractPostServlet extends
      */
     @Deprecated
     protected String getRedirectUrl(HttpServletRequest request, AbstractPostResponse ctx) {
-    	return getRedirectUrl(request, (PostResponse)ctx);
+        return getRedirectUrl(request, (PostResponse)ctx);
     }
     
     /**
@@ -275,37 +277,52 @@ public abstract class AbstractPostServlet extends
     protected String getRedirectUrl(HttpServletRequest request, PostResponse ctx) {
         // redirect param has priority (but see below, magic star)
         String result = request.getParameter(SlingPostConstants.RP_REDIRECT_TO);
-        if (result != null && ctx.getPath() != null) {
-
-            // redirect to created/modified Resource
-            int star = result.indexOf('*');
-            if (star >= 0) {
-                StringBuffer buf = new StringBuffer();
-
-                // anything before the star
-                if (star > 0) {
-                    buf.append(result.substring(0, star));
+        if (result != null) {
+            try {
+                URI redirectUri = new URI(result);
+                if (redirectUri.getAuthority() != null) {
+                    // if it has a host information
+                    log.warn("redirect target ({}) does include host information ({}). This is not allowed for security reasons!", result, redirectUri.getAuthority());
+                    return null;
                 }
-
-                // append the name of the manipulated node
-                buf.append(ResourceUtil.getName(ctx.getPath()));
-
-                // anything after the star
-                if (star < result.length() - 1) {
-                    buf.append(result.substring(star + 1));
-                }
-
-                // use the created path as the redirect result
-                result = buf.toString();
-
-            } else if (result.endsWith(SlingPostConstants.DEFAULT_CREATE_SUFFIX)) {
-                // if the redirect has a trailing slash, append modified node
-                // name
-                result = result.concat(ResourceUtil.getName(ctx.getPath()));
+            } catch (URISyntaxException e) {
+                log.warn("given redirect target ({}) is not a valid uri: {}", result, e);
+                return null;
             }
 
-            if (log.isDebugEnabled()) {
-                log.debug("Will redirect to " + result);
+            log.debug("redirect requested as [{}] for path [{}]", result, ctx.getPath());
+
+            if (ctx.getPath() != null) {
+                // redirect to created/modified Resource
+                final int star = result.indexOf('*');
+                if (star >= 0) {
+                    StringBuffer buf = new StringBuffer();
+
+                    // anything before the star
+                    if (star > 0) {
+                        buf.append(result.substring(0, star));
+                    }
+
+                    // append the name of the manipulated node
+                    buf.append(ResourceUtil.getName(ctx.getPath()));
+
+                    // anything after the star
+                    if (star < result.length() - 1) {
+                        buf.append(result.substring(star + 1));
+                    }
+
+                    // use the created path as the redirect result
+                    result = buf.toString();
+
+                } else if (result.endsWith(SlingPostConstants.DEFAULT_CREATE_SUFFIX)) {
+                    // if the redirect has a trailing slash, append modified node
+                    // name
+                    result = result.concat(ResourceUtil.getName(ctx.getPath()));
+                }
+
+                if (log.isDebugEnabled()) {
+                    log.debug("Will redirect to " + result);
+                }
             }
         }
         return result;
@@ -384,21 +401,19 @@ public abstract class AbstractPostServlet extends
     /**
      * Bind a new post response creator
      */
-	// NOTE: the @Reference annotation is not inherited, so subclasses will need to override the #bindPostResponseCreator 
-	// and #unbindPostResponseCreator methods to provide the @Reference annotation.     
-	//
-	// @Reference(service = PostResponseCreator.class,
-	//         cardinality = ReferenceCardinality.MULTIPLE,
-	//         policy = ReferencePolicy.DYNAMIC)
+    // NOTE: the @Reference annotation is not inherited, so subclasses will need to override the #bindPostResponseCreator
+    // and #unbindPostResponseCreator methods to provide the @Reference annotation.
+    //
+    // @Reference(service = PostResponseCreator.class,
+    //         cardinality = ReferenceCardinality.MULTIPLE,
+    //         policy = ReferencePolicy.DYNAMIC)
     protected void bindPostResponseCreator(final PostResponseCreator creator, final Map<String, Object> properties) {
-        final PostResponseCreatorHolder nngh = new PostResponseCreatorHolder();
-        nngh.creator = creator;
-        nngh.ranking = getRanking(properties);
+        final PostResponseCreatorHolder nngh = new PostResponseCreatorHolder(creator, getRanking(properties));
 
         synchronized ( this.postResponseCreators ) {
             int index = 0;
             while ( index < this.postResponseCreators.size() &&
-                    nngh.ranking < this.postResponseCreators.get(index).ranking ) {
+                    nngh.getRanking() < this.postResponseCreators.get(index).getRanking() ) {
                 index++;
             }
             if ( index == this.postResponseCreators.size() ) {
@@ -418,7 +433,7 @@ public abstract class AbstractPostServlet extends
             final Iterator<PostResponseCreatorHolder> i = this.postResponseCreators.iterator();
             while ( i.hasNext() ) {
                 final PostResponseCreatorHolder current = i.next();
-                if ( current.creator == creator ) {
+                if ( current.getCreator() == creator ) {
                     i.remove();
                 }
             }
@@ -446,7 +461,19 @@ public abstract class AbstractPostServlet extends
     }
     
     private static final class PostResponseCreatorHolder {
-        public PostResponseCreator creator;
-        public int ranking;
+        private final PostResponseCreator creator;
+        private final int ranking;
+
+        public PostResponseCreatorHolder(PostResponseCreator creator, int ranking) {
+			this.creator = creator;
+			this.ranking = ranking;
+		}
+		public PostResponseCreator getCreator() {
+			return creator;
+		}
+		public int getRanking() {
+			return ranking;
+		}
+        
     }    
 }
