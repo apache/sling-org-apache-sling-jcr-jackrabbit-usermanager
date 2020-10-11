@@ -35,7 +35,7 @@ import org.apache.sling.api.resource.ResourceNotFoundException;
 import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.api.resource.ResourceResolverFactory;
 import org.apache.sling.jackrabbit.usermanager.UpdateGroup;
-import org.apache.sling.jackrabbit.usermanager.impl.resource.AuthorizableResourceProvider;
+import org.apache.sling.jackrabbit.usermanager.resource.SystemUserManagerPaths;
 import org.apache.sling.jcr.base.util.AccessControlUtil;
 import org.apache.sling.servlets.post.Modification;
 import org.apache.sling.servlets.post.PostResponse;
@@ -119,6 +119,15 @@ public class UpdateGroupServlet extends AbstractGroupPostServlet
         super.deactivate();
     }
 
+	/* (non-Javadoc)
+	 * @see org.apache.sling.jackrabbit.usermanager.impl.post.AbstractAuthorizablePostServlet#bindSystemUserManagerPaths(org.apache.sling.jackrabbit.usermanager.impl.resource.SystemUserManagerPaths)
+	 */
+    @Reference
+	@Override
+	protected void bindSystemUserManagerPaths(SystemUserManagerPaths sump) {
+		super.bindSystemUserManagerPaths(sump);
+	}
+
     /**
      * Overridden since the @Reference annotation is not inherited from the super method
      *  
@@ -178,7 +187,8 @@ public class UpdateGroupServlet extends AbstractGroupPostServlet
                 "Group to update could not be determined");
         }
         
-        String groupPath = AuthorizableResourceProvider.SYSTEM_USER_MANAGER_GROUP_PREFIX
+        
+        String groupPath = systemUserManagerPaths.getGroupPrefix()
             + group.getID();
 
         Collection<RequestProperty> reqProperties = collectContent(properties);

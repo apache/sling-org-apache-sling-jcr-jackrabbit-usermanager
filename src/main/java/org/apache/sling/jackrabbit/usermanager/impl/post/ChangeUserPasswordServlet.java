@@ -35,7 +35,7 @@ import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ResourceNotFoundException;
 import org.apache.sling.commons.osgi.OsgiUtil;
 import org.apache.sling.jackrabbit.usermanager.ChangeUserPassword;
-import org.apache.sling.jackrabbit.usermanager.impl.resource.AuthorizableResourceProvider;
+import org.apache.sling.jackrabbit.usermanager.resource.SystemUserManagerPaths;
 import org.apache.sling.jcr.api.SlingRepository;
 import org.apache.sling.jcr.base.util.AccessControlUtil;
 import org.apache.sling.servlets.post.Modification;
@@ -113,9 +113,9 @@ public class ChangeUserPasswordServlet extends AbstractAuthorizablePostServlet i
                 description = "Specifies the name of the group whose members are allowed to reset the password of another user.")
         String user_admin_group_name() default DEFAULT_USER_ADMIN_GROUP_NAME;
 
-        @AttributeDefinition(name = "Always Allow Self Password Change",
-                description = "Specifies whether a user is allowed to change their own password even if they haven't been granted the rep:userManagement privilege.")
-        boolean alwaysAllowSelfChangePassword() default false;
+		@AttributeDefinition(name = "Allow Self Password Change",
+                description = "Specifies whether a user is allowed to change their own password.")
+        boolean allowSelfChangePassword() default true;
     }
 
     private static final long serialVersionUID = 1923614318474654502L;
@@ -172,6 +172,15 @@ public class ChangeUserPasswordServlet extends AbstractAuthorizablePostServlet i
         super.deactivate();
     }
 
+	/* (non-Javadoc)
+	 * @see org.apache.sling.jackrabbit.usermanager.impl.post.AbstractAuthorizablePostServlet#bindSystemUserManagerPaths(org.apache.sling.jackrabbit.usermanager.impl.resource.SystemUserManagerPaths)
+	 */
+    @Reference
+	@Override
+	protected void bindSystemUserManagerPaths(SystemUserManagerPaths sump) {
+		super.bindSystemUserManagerPaths(sump);
+	}
+    
     /**
      * Overridden since the @Reference annotation is not inherited from the super method
      *  
@@ -317,7 +326,7 @@ public class ChangeUserPasswordServlet extends AbstractAuthorizablePostServlet i
             user.changePassword(newPassword);
         }
 
-        final String passwordPath = AuthorizableResourceProvider.SYSTEM_USER_MANAGER_USER_PREFIX + user.getID() + "/rep:password";
+        final String passwordPath = systemUserManagerPaths.getUserPrefix() + user.getID() + "/rep:password";
 
         changes.add(Modification.onModified(passwordPath));
 

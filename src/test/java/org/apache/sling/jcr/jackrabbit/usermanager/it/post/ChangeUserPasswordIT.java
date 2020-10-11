@@ -140,14 +140,18 @@ public class ChangeUserPasswordIT extends UserManagerTestSupport {
 
     @After
     public void teardown() {
-        if (user1 != null) {
-            try {
-                adminSession.refresh(false);
-                deleteUser.deleteUser(adminSession, user1.getID(), new ArrayList<>());
-            } catch (RepositoryException e) {
-                logger.warn("Failed to delete user: " + e.getMessage(), e);
-            }
-        }
+    	try {
+			adminSession.refresh(false);
+			if (user1 != null) {
+				deleteUser.deleteUser(adminSession, user1.getID(), new ArrayList<>());
+			}
+			if (adminSession.hasPendingChanges()) {
+				adminSession.save();
+			}
+		} catch (RepositoryException e) {
+			logger.warn("Failed to delete user: " + e.getMessage(), e);
+		}
+
         user1Session.logout();
         adminSession.logout();
     }

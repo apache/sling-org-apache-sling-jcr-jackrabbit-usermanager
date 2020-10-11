@@ -36,7 +36,7 @@ import org.apache.jackrabbit.api.security.user.Authorizable;
 import org.apache.sling.api.SlingIOException;
 import org.apache.sling.api.request.RequestParameter;
 import org.apache.sling.commons.osgi.OsgiUtil;
-import org.apache.sling.jackrabbit.usermanager.impl.resource.AuthorizableResourceProvider;
+import org.apache.sling.jackrabbit.usermanager.resource.SystemUserManagerPaths;
 import org.apache.sling.servlets.post.Modification;
 import org.apache.sling.servlets.post.SlingPostConstants;
 import org.apache.sling.servlets.post.impl.helper.DateParser;
@@ -56,6 +56,12 @@ public abstract class AbstractAuthorizablePostServlet extends
     private static final Logger LOG = LoggerFactory.getLogger(AbstractAuthorizablePostServlet.class);
 
     private DateParser dateParser;
+
+    protected SystemUserManagerPaths systemUserManagerPaths;
+
+    protected void bindSystemUserManagerPaths(SystemUserManagerPaths sump) {
+    	this.systemUserManagerPaths = sump;
+    }
 
     // ---------- SCR Integration ----------------------------------------------
 
@@ -333,10 +339,10 @@ public abstract class AbstractAuthorizablePostServlet extends
 
         String parentPath;
         if (parent.isGroup()) {
-            parentPath = AuthorizableResourceProvider.SYSTEM_USER_MANAGER_GROUP_PREFIX
+            parentPath = systemUserManagerPaths.getGroupPrefix()
                 + parent.getID();
         } else {
-            parentPath = AuthorizableResourceProvider.SYSTEM_USER_MANAGER_USER_PREFIX
+            parentPath = systemUserManagerPaths.getUserPrefix()
                 + parent.getID();
         }
 
@@ -369,10 +375,10 @@ public abstract class AbstractAuthorizablePostServlet extends
                     + relativePath));
             }
         } else if (values.length == 1) {
-            boolean removedProp = removePropertyIfExists(parent, relativePath);
             // if the provided value is the empty string, we don't have to do
             // anything.
             if (values[0].length() == 0) {
+                boolean removedProp = removePropertyIfExists(parent, relativePath);
                 if (removedProp) {
                     changes.add(Modification.onDeleted(parentPath + "/"
                         + relativePath));
@@ -420,7 +426,6 @@ public abstract class AbstractAuthorizablePostServlet extends
                     + relativePath));
             }
         } else {
-            removePropertyIfExists(parent, relativePath);
             if (type == PropertyType.DATE) {
                 // try conversion
                 ValueFactory valFac = session.getValueFactory();

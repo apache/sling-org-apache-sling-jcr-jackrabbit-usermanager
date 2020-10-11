@@ -134,20 +134,29 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
 				Collections.emptyMap(), new ArrayList<Modification>());
 		assertNotNull("Expected user1 to not be null", user1);
 		
+		if (adminSession.hasPendingChanges()) {
+			adminSession.save();
+		}
+		
 		user1Session = repository.login(new SimpleCredentials(user1.getID(), "testPwd".toCharArray()));
 		assertNotNull("Expected user1Session to not be null", user1Session);
     }
 
     @After
     public void teardown() {
-		if (user1 != null) {
-			try {
-				adminSession.refresh(false);
+    	try {
+			adminSession.refresh(false);
+			if (user1 != null) {
 				deleteUser.deleteUser(adminSession, user1.getID(), new ArrayList<>());
-			} catch (RepositoryException e) {
-				logger.warn("Failed to delete user: " + e.getMessage(), e);			
 			}
+
+			if (adminSession.hasPendingChanges()) {
+				adminSession.save();
+			}
+		} catch (RepositoryException e) {
+			logger.warn("Failed to delete user: " + e.getMessage(), e);
 		}
+
     	user1Session.logout();
         adminSession.logout();
     }

@@ -37,7 +37,7 @@ import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.jackrabbit.usermanager.DeleteAuthorizables;
 import org.apache.sling.jackrabbit.usermanager.DeleteGroup;
 import org.apache.sling.jackrabbit.usermanager.DeleteUser;
-import org.apache.sling.jackrabbit.usermanager.impl.resource.AuthorizableResourceProvider;
+import org.apache.sling.jackrabbit.usermanager.resource.SystemUserManagerPaths;
 import org.apache.sling.jcr.base.util.AccessControlUtil;
 import org.apache.sling.servlets.post.Modification;
 import org.apache.sling.servlets.post.PostResponse;
@@ -93,6 +93,9 @@ import org.osgi.service.component.annotations.ReferencePolicy;
 public class DeleteAuthorizableServlet extends AbstractPostServlet
         implements DeleteUser, DeleteGroup, DeleteAuthorizables {
     private static final long serialVersionUID = 5874621724096106496L;
+
+    @Reference 
+    private SystemUserManagerPaths systemUserManagerPaths;
 
     /**
      * Overridden since the @Reference annotation is not inherited from the super method
@@ -168,7 +171,7 @@ public class DeleteAuthorizableServlet extends AbstractPostServlet
                 "User to delete could not be determined");
         }
         
-        String userPath = AuthorizableResourceProvider.SYSTEM_USER_MANAGER_USER_PREFIX
+        String userPath = systemUserManagerPaths.getUserPrefix()
                             + user.getID();
         user.remove();
         changes.add(Modification.onDeleted(userPath));
@@ -191,7 +194,7 @@ public class DeleteAuthorizableServlet extends AbstractPostServlet
                 "Group to delete could not be determined");
         }
         
-        String groupPath = AuthorizableResourceProvider.SYSTEM_USER_MANAGER_GROUP_PREFIX
+        String groupPath = systemUserManagerPaths.getGroupPrefix()
                                 + group.getID();
         group.remove();
         changes.add(Modification.onDeleted(groupPath));

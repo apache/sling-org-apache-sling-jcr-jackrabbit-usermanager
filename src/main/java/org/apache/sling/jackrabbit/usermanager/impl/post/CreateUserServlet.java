@@ -35,7 +35,7 @@ import org.apache.jackrabbit.oak.spi.security.user.UserConstants;
 import org.apache.sling.api.SlingHttpServletRequest;
 import org.apache.sling.commons.osgi.OsgiUtil;
 import org.apache.sling.jackrabbit.usermanager.CreateUser;
-import org.apache.sling.jackrabbit.usermanager.impl.resource.AuthorizableResourceProvider;
+import org.apache.sling.jackrabbit.usermanager.resource.SystemUserManagerPaths;
 import org.apache.sling.jcr.api.SlingRepository;
 import org.apache.sling.jcr.base.util.AccessControlUtil;
 import org.apache.sling.servlets.post.Modification;
@@ -95,7 +95,6 @@ import org.slf4j.LoggerFactory;
  * curl -F:name=ieb -Fpwd=password -FpwdConfirm=password -Fproperty1=value1 http://localhost:8080/system/userManager/user.create.html
  * </code>
  */
-@Designate(ocd = CreateUserServlet.Config.class)
 @Component(service = {Servlet.class, CreateUser.class},
     property = {
 		   "sling.servlet.resourceTypes=sling/users",
@@ -109,6 +108,7 @@ import org.slf4j.LoggerFactory;
 		   AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=dd.MM.yyyy",
 		   ChangeUserPasswordServlet.PAR_USER_ADMIN_GROUP_NAME + "=" + ChangeUserPasswordServlet.DEFAULT_USER_ADMIN_GROUP_NAME
 })
+@Designate(ocd = CreateUserServlet.Config.class)
 public class CreateUserServlet extends AbstractAuthorizablePostServlet implements CreateUser {
     private static final long serialVersionUID = 6871481922737658675L;
 
@@ -185,6 +185,15 @@ public class CreateUserServlet extends AbstractAuthorizablePostServlet implement
         super.deactivate();
     }
 
+	/* (non-Javadoc)
+	 * @see org.apache.sling.jackrabbit.usermanager.impl.post.AbstractAuthorizablePostServlet#bindSystemUserManagerPaths(org.apache.sling.jackrabbit.usermanager.impl.resource.SystemUserManagerPaths)
+	 */
+    @Reference
+	@Override
+	protected void bindSystemUserManagerPaths(SystemUserManagerPaths sump) {
+		super.bindSystemUserManagerPaths(sump);
+	}
+
     /**
      * Overridden since the @Reference annotation is not inherited from the super method
      *  
@@ -237,7 +246,7 @@ public class CreateUserServlet extends AbstractAuthorizablePostServlet implement
                 }
             }
         } else {
-            userPath = AuthorizableResourceProvider.SYSTEM_USER_MANAGER_USER_PREFIX
+            userPath = systemUserManagerPaths.getUserPrefix()
                     + user.getID();
         }
 
@@ -246,7 +255,7 @@ public class CreateUserServlet extends AbstractAuthorizablePostServlet implement
             response.setLocation(externalizePath(request, userPath));
         }
         response.setParentLocation(externalizePath(request,
-            AuthorizableResourceProvider.SYSTEM_USER_MANAGER_USER_PATH));
+        		systemUserManagerPaths.getUsersPath()));
     }
 
     /* (non-Javadoc)
@@ -330,7 +339,7 @@ public class CreateUserServlet extends AbstractAuthorizablePostServlet implement
                         + name);
             } else {
                 user = userManager.createUser(name, password);
-                String userPath = AuthorizableResourceProvider.SYSTEM_USER_MANAGER_USER_PREFIX
+                String userPath = systemUserManagerPaths.getUserPrefix()
                     + user.getID();
 
                 Collection<RequestProperty> reqProperties = collectContent(properties);

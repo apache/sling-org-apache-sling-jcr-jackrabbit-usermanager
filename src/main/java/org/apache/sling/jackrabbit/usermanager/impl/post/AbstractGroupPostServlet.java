@@ -27,7 +27,6 @@ import org.apache.jackrabbit.api.security.user.Group;
 import org.apache.jackrabbit.api.security.user.UserManager;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ResourceResolver;
-import org.apache.sling.jackrabbit.usermanager.impl.resource.AuthorizableResourceProvider;
 import org.apache.sling.jcr.base.util.AccessControlUtil;
 import org.apache.sling.servlets.post.Modification;
 import org.apache.sling.servlets.post.SlingPostConstants;
@@ -57,7 +56,7 @@ public abstract class AbstractGroupPostServlet extends
             throws RepositoryException {
         if (authorizable.isGroup()) {
             Group group = ((Group) authorizable);
-            String groupPath = AuthorizableResourceProvider.SYSTEM_USER_MANAGER_GROUP_PREFIX
+            String groupPath = systemUserManagerPaths.getGroupPrefix()
                 + group.getID();
 
             ResourceResolver resolver = baseResource.getResourceResolver();

@@ -31,6 +31,7 @@ import org.apache.sling.api.SlingHttpServletRequest;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ResourceNotFoundException;
 import org.apache.sling.jackrabbit.usermanager.UpdateUser;
+import org.apache.sling.jackrabbit.usermanager.resource.SystemUserManagerPaths;
 import org.apache.sling.jcr.base.util.AccessControlUtil;
 import org.apache.sling.servlets.post.Modification;
 import org.apache.sling.servlets.post.PostResponse;
@@ -111,6 +112,15 @@ public class UpdateUserServlet extends AbstractAuthorizablePostServlet
         super.deactivate();
     }
 
+	/* (non-Javadoc)
+	 * @see org.apache.sling.jackrabbit.usermanager.impl.post.AbstractAuthorizablePostServlet#bindSystemUserManagerPaths(org.apache.sling.jackrabbit.usermanager.impl.resource.SystemUserManagerPaths)
+	 */
+    @Reference
+	@Override
+	protected void bindSystemUserManagerPaths(SystemUserManagerPaths sump) {
+		super.bindSystemUserManagerPaths(sump);
+	}
+    
     /**
      * Overridden since the @Reference annotation is not inherited from the super method
      *  

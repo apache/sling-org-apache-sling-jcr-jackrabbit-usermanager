@@ -39,6 +39,7 @@ import javax.jcr.ValueFormatException;
 import org.apache.jackrabbit.api.security.user.Authorizable;
 import org.apache.jackrabbit.api.security.user.Group;
 import org.apache.sling.api.resource.ValueMap;
+import org.apache.sling.jackrabbit.usermanager.resource.SystemUserManagerPaths;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,10 +66,13 @@ public class AuthorizableValueMap implements ValueMap {
 
     private Authorizable authorizable;
 
-    public AuthorizableValueMap(Authorizable authorizable) {
+	private final SystemUserManagerPaths systemUserManagerPaths;
+
+    public AuthorizableValueMap(Authorizable authorizable, SystemUserManagerPaths systemUserManagerPaths) {
         this.authorizable = authorizable;
         this.cache = new LinkedHashMap<String, Object>();
         this.fullyRead = false;
+        this.systemUserManagerPaths = systemUserManagerPaths;
     }
 
     @SuppressWarnings("unchecked")
@@ -395,9 +399,9 @@ public class AuthorizableValueMap implements ValueMap {
                 it.hasNext();) {
             Authorizable auth = it.next();
             if (auth.isGroup()) {
-                results.add(AuthorizableResourceProvider.SYSTEM_USER_MANAGER_GROUP_PREFIX + auth.getID());
+                results.add(systemUserManagerPaths.getGroupPrefix() + auth.getID());
             } else {
-                results.add(AuthorizableResourceProvider.SYSTEM_USER_MANAGER_USER_PREFIX + auth.getID());
+                results.add(systemUserManagerPaths.getUserPrefix() + auth.getID());
             }
         }
         return results.toArray(new String[results.size()]);
@@ -408,7 +412,7 @@ public class AuthorizableValueMap implements ValueMap {
         for (Iterator<Group> it = includeAll ? authorizable.memberOf() : authorizable.declaredMemberOf();
                 it.hasNext();) {
             Group group = it.next();
-            results.add(AuthorizableResourceProvider.SYSTEM_USER_MANAGER_GROUP_PREFIX + group.getID());
+            results.add(systemUserManagerPaths.getGroupPrefix() + group.getID());
         }
         return results.toArray(new String[results.size()]);
     }
