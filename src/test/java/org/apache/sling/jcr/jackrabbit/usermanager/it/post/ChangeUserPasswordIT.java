@@ -52,6 +52,7 @@ import org.apache.sling.jcr.jackrabbit.accessmanager.DeleteAces;
 import org.apache.sling.jcr.jackrabbit.accessmanager.ModifyAce;
 import org.apache.sling.jcr.jackrabbit.usermanager.it.UserManagerTestSupport;
 import org.apache.sling.servlets.post.Modification;
+import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -296,9 +297,11 @@ public class ChangeUserPasswordIT extends UserManagerTestSupport {
                     privilegesInfo.canChangePassword(user1Session, user1.getID()));
 
             // no oldPassword submitted
+            @NotNull
+			String user1Id = user1.getID();
             try {
-                changeUserPassword.changePassword(user1Session,
-                        user1.getID(),
+				changeUserPassword.changePassword(user1Session,
+                        user1Id,
                         null,
                         "testPwdChanged",
                         "testPwdChanged",
@@ -312,7 +315,7 @@ public class ChangeUserPasswordIT extends UserManagerTestSupport {
             // empty oldPassword submitted
             try {
                 changeUserPassword.changePassword(user1Session,
-                        user1.getID(),
+                        user1Id,
                         "",
                         "testPwdChanged2",
                         "testPwdChanged2",
