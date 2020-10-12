@@ -36,6 +36,7 @@ import org.apache.jackrabbit.oak.spi.security.user.UserConfiguration;
 import org.apache.jackrabbit.oak.spi.security.user.UserConstants;
 import org.apache.sling.commons.osgi.OsgiUtil;
 import org.apache.sling.jackrabbit.usermanager.AuthorizablePrivilegesInfo;
+import org.apache.sling.jackrabbit.usermanager.ChangeUserPassword;
 import org.apache.sling.jackrabbit.usermanager.CreateUser;
 import org.apache.sling.jcr.base.util.AccessControlUtil;
 import org.osgi.framework.BundleContext;
@@ -98,6 +99,16 @@ public class AuthorizablePrivilegesInfoImpl implements AuthorizablePrivilegesInf
     private String usersPath;
     private String groupsPath;
     private boolean selfRegistrationEnabled;
+    private boolean alwaysAllowSelfChangePassword = false;
+
+    @Reference(cardinality=ReferenceCardinality.OPTIONAL, policy = ReferencePolicy.DYNAMIC)
+    private void bindChangeUserPassword(ChangeUserPassword changeUserPassword, Map<String, Object> properties) {
+        alwaysAllowSelfChangePassword = OsgiUtil.toBoolean(properties.get("alwaysAllowSelfChangePassword"), false);
+    }
+    @SuppressWarnings("unused")
+    private void unbindChangeUserPassword(ChangeUserPassword changeUserPassword, Map<String, Object> properties) {
+        alwaysAllowSelfChangePassword = false;
+    }
     
     @Reference(cardinality=ReferenceCardinality.OPTIONAL, policy = ReferencePolicy.DYNAMIC)
     private void bindUserConfiguration(UserConfiguration userConfig, Map<String, Object> properties) {
@@ -266,19 +277,12 @@ public class AuthorizablePrivilegesInfoImpl implements AuthorizablePrivilegesInf
             PropertyUpdateTypes... propertyUpdateTypes) {
         boolean hasRights = false;
         try {
-            if (jcrSession.getUserID().equals(principalId)) {
-                //user is allowed to update it's own properties
-                hasRights = true;
+            UserManager userManager = AccessControlUtil.getUserManager(jcrSession);
+            Authorizable currentUser = userManager.getAuthorizable(jcrSession.getUserID());
+
+            if (currentUser instanceof User && ((User)currentUser).isAdmin()) {
+                hasRights = true; //admin user has full control
             } else {
-                UserManager userManager = AccessControlUtil.getUserManager(jcrSession);
-                Authorizable currentUser = userManager.getAuthorizable(jcrSession.getUserID());
-
-                if (currentUser instanceof User) {
-                    if (((User)currentUser).isAdmin()) {
-                        return true; //admin user has full control
-                    }
-                }
-
                 Authorizable authorizable = userManager.getAuthorizable(principalId);
                 if (authorizable == null) {
                     log.debug("Failed to find authorizable: {}", principalId);
@@ -322,9 +326,84 @@ public class AuthorizablePrivilegesInfoImpl implements AuthorizablePrivilegesInf
         return hasRights;
     }
 
+    /* (non-Javadoc)
+     * @see org.apache.sling.jackrabbit.usermanager.AuthorizablePrivilegesInfo#canDisable(javax.jcr.Session, java.lang.String)
+     */
+    @Override
+    public boolean canDisable(Session jcrSession, String userId) {
+        boolean hasRights = false;
+        try {
+            UserManager userManager = AccessControlUtil.getUserManager(jcrSession);
+            Authorizable currentUser = userManager.getAuthorizable(jcrSession.getUserID());
+
+            if (currentUser instanceof User && ((User)currentUser).isAdmin()) {
+                hasRights = true; //admin user has full control
+            } else {
+                Authorizable authorizable = userManager.getAuthorizable(userId);
+                if (!(authorizable instanceof User)) {
+                    log.debug("Failed to find user: {}", userId);
+                } else {
+                    String path = authorizable.getPath();
+                    if (path != null) {
+                        //check if the non-admin user has sufficient rights on the home folder
+                        AccessControlManager acm = jcrSession.getAccessControlManager();
+                        Set<Privilege> requiredPrivileges = new HashSet<>();
+                        requiredPrivileges.add(acm.privilegeFromName(Privilege.JCR_READ));
+                        requiredPrivileges.add(acm.privilegeFromName(PrivilegeConstants.REP_USER_MANAGEMENT));
+                        hasRights = acm.hasPrivileges(path, requiredPrivileges.toArray(new Privilege[requiredPrivileges.size()]));
+                    }
+                }
+            }
+        } catch (RepositoryException e) {
+            log.warn("Failed to determine if {} can disable user {}", jcrSession.getUserID(), userId);
+        }
+        return hasRights;
+    }
+
+    /* (non-Javadoc)
+     * @see org.apache.sling.jackrabbit.usermanager.AuthorizablePrivilegesInfo#canChangePassword(javax.jcr.Session, java.lang.String)
+     */
+    @Override
+    public boolean canChangePassword(Session jcrSession, String userId) {
+        boolean hasRights = false;
+        try {
+            UserManager userManager = AccessControlUtil.getUserManager(jcrSession);
+            Authorizable currentUser = userManager.getAuthorizable(jcrSession.getUserID());
+
+            Authorizable authorizable = userManager.getAuthorizable(userId);
+            if (!(authorizable instanceof User)) {
+                log.debug("Failed to find user: {}", userId);
+            } else {
+                if (((User)authorizable).isSystemUser() || "anonymous".equals(authorizable.getID())) {
+                    hasRights = false; //system users and anonymous have no passwords
+                } else if (currentUser instanceof User && ((User)currentUser).isAdmin()) {
+                    hasRights = true; //admin user has full control
+                } else {
+                    // otherwise let's check the granted privileges
+                    String path = authorizable.getPath();
+                    if (path != null) {
+                        //check if the non-admin user has sufficient rights on the home folder
+                        AccessControlManager acm = jcrSession.getAccessControlManager();
+                        Set<Privilege> requiredPrivileges = new HashSet<>();
+                        requiredPrivileges.add(acm.privilegeFromName(Privilege.JCR_READ));
+                        requiredPrivileges.add(acm.privilegeFromName(PrivilegeConstants.REP_USER_MANAGEMENT));
+                        hasRights = acm.hasPrivileges(path, requiredPrivileges.toArray(new Privilege[requiredPrivileges.size()]));
+                    }
+
+                    if (!hasRights && jcrSession.getUserID().equals(userId)) {
+                        // check if the ChangeUserPassword service is configured to always allow
+                        // a user to change their own password.
+                        hasRights = alwaysAllowSelfChangePassword;
+                    }
+                }
+            }
+        } catch (RepositoryException e) {
+            log.warn("Failed to determine if {} can change the password of user {}", jcrSession.getUserID(), userId);
+        }
+        return hasRights;
+    }
 
     // ---------- SCR Integration ----------------------------------------------
-
 
     @Activate
     protected void activate(BundleContext bundleContext, Map<String, Object> properties)

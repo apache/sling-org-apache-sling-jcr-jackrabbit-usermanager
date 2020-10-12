@@ -96,4 +96,30 @@ public interface AuthorizablePrivilegesInfo {
     boolean canUpdateGroupMembers(Session jcrSession,
             String groupId);
 
+    /**
+     * Checks whether the current user has been granted privileges
+     * to disable the specified user.
+     *
+     * @param jcrSession the JCR session of the current user
+     * @param userId the user id to check
+     * @return true if the current user has the privileges, false otherwise
+     */
+    default boolean canDisable(Session jcrSession,
+            String userId) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Checks whether the current user has been granted privileges
+     * to change the password of the specified user.
+     *
+     * @param jcrSession the JCR session of the current user
+     * @param userId the user id to check
+     * @return true if the current user has the privileges, false otherwise
+     */
+    default boolean canChangePassword(Session jcrSession,
+            String userId) {
+        throw new UnsupportedOperationException();
+    }
+
 }
