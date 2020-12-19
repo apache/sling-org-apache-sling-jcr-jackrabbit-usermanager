@@ -38,6 +38,7 @@ import org.apache.sling.jackrabbit.usermanager.ChangeUserPassword;
 import org.apache.sling.jackrabbit.usermanager.resource.SystemUserManagerPaths;
 import org.apache.sling.jcr.api.SlingRepository;
 import org.apache.sling.jcr.base.util.AccessControlUtil;
+import org.apache.sling.serviceusermapping.ServiceUserMapped;
 import org.apache.sling.servlets.post.Modification;
 import org.apache.sling.servlets.post.PostResponse;
 import org.apache.sling.servlets.post.PostResponseCreator;
@@ -148,6 +149,12 @@ public class ChangeUserPasswordServlet extends AbstractAuthorizablePostServlet i
      */
     @Reference
     private SlingRepository repository;
+
+    /**
+     * SLING-10014 - To require a service user before becoming active
+     */
+    @Reference
+    private ServiceUserMapped serviceUserMapped;
 
     /**
      * Activates this component.

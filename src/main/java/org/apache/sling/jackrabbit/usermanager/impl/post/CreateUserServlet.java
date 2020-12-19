@@ -38,6 +38,7 @@ import org.apache.sling.jackrabbit.usermanager.CreateUser;
 import org.apache.sling.jackrabbit.usermanager.resource.SystemUserManagerPaths;
 import org.apache.sling.jcr.api.SlingRepository;
 import org.apache.sling.jcr.base.util.AccessControlUtil;
+import org.apache.sling.serviceusermapping.ServiceUserMapped;
 import org.apache.sling.servlets.post.Modification;
 import org.apache.sling.servlets.post.ModificationType;
 import org.apache.sling.servlets.post.PostResponse;
@@ -136,6 +137,12 @@ public class CreateUserServlet extends AbstractAuthorizablePostServlet implement
     @Reference
     private SlingRepository repository;
 
+    /**
+     * SLING-10014 - To require a service user before becoming active
+     */
+    @Reference
+    private ServiceUserMapped serviceUserMapped;
+    
     private String usersPath;
     
     @Reference(cardinality=ReferenceCardinality.OPTIONAL, policy = ReferencePolicy.DYNAMIC)
