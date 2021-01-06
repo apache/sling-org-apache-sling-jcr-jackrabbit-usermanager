@@ -53,19 +53,19 @@ import org.slf4j.LoggerFactory;
  */
 @Component(service = { ResourceProvider.class, SystemUserManagerPaths.class },
     property={
-    		"service.description=Resource provider implementation for UserManager resources",
-    		"service.vendor=The Apache Software Foundation",
-    		ResourceProvider.PROPERTY_ROOT + "=" + AuthorizableResourceProvider.DEFAULT_SYSTEM_USER_MANAGER_PATH
+            "service.description=Resource provider implementation for UserManager resources",
+            "service.vendor=The Apache Software Foundation",
+            ResourceProvider.PROPERTY_ROOT + "=" + AuthorizableResourceProvider.DEFAULT_SYSTEM_USER_MANAGER_PATH
     })
 @Designate(ocd=AuthorizableResourceProvider.Config.class)
 public class AuthorizableResourceProvider extends ResourceProvider<Object> implements SystemUserManagerPaths {
-	
-	@ObjectClassDefinition(name ="Apache Sling UserManager Resource Provider")
+
+    @ObjectClassDefinition(name ="Apache Sling UserManager Resource Provider")
     public @interface Config {
 
-		@AttributeDefinition(name = "Provider Root",
+        @AttributeDefinition(name = "Provider Root",
                 description = "Specifies the root path for the UserManager resources.")
-        String provider_root() default DEFAULT_SYSTEM_USER_MANAGER_PATH;
+        String provider_root() default DEFAULT_SYSTEM_USER_MANAGER_PATH; //NOSONAR
     }
 
     /**
@@ -73,102 +73,102 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
      */
     private final Logger log = LoggerFactory.getLogger(getClass());
 
-	private String systemUserManagerPath;
-	private String systemUserManagerUserPath;
-	private String systemUserManagerUserPrefix;
-	private String systemUserManagerGroupPath;
-	private String systemUserManagerGroupPrefix;
+    private String systemUserManagerPath;
+    private String systemUserManagerUserPath;
+    private String systemUserManagerUserPrefix;
+    private String systemUserManagerGroupPath;
+    private String systemUserManagerGroupPrefix;
 
-    public static final String DEFAULT_SYSTEM_USER_MANAGER_PATH = "/system/userManager";
-
-    /**
-     * @deprecated no longer used.  Use {@link SystemUserManagerPaths} service instead.
-     */
-    @Deprecated
-    public static final String SYSTEM_USER_MANAGER_PATH = "/system/userManager";
+    public static final String DEFAULT_SYSTEM_USER_MANAGER_PATH = "/system/userManager"; //NOSONAR
 
     /**
      * @deprecated no longer used.  Use {@link SystemUserManagerPaths} service instead.
      */
     @Deprecated
-    public static final String SYSTEM_USER_MANAGER_USER_PATH = SYSTEM_USER_MANAGER_PATH
+    public static final String SYSTEM_USER_MANAGER_PATH = "/system/userManager";  //NOSONAR
+
+    /**
+     * @deprecated no longer used.  Use {@link SystemUserManagerPaths} service instead.
+     */
+    @Deprecated
+    public static final String SYSTEM_USER_MANAGER_USER_PATH = SYSTEM_USER_MANAGER_PATH //NOSONAR
         + "/user";
 
     /**
      * @deprecated no longer used.  Use {@link SystemUserManagerPaths} service instead.
      */
     @Deprecated
-    public static final String SYSTEM_USER_MANAGER_GROUP_PATH = SYSTEM_USER_MANAGER_PATH
+    public static final String SYSTEM_USER_MANAGER_GROUP_PATH = SYSTEM_USER_MANAGER_PATH //NOSONAR
         + "/group";
 
     /**
      * @deprecated no longer used.  Use {@link SystemUserManagerPaths} service instead.
      */
     @Deprecated
-    public static final String SYSTEM_USER_MANAGER_USER_PREFIX = SYSTEM_USER_MANAGER_USER_PATH
+    public static final String SYSTEM_USER_MANAGER_USER_PREFIX = SYSTEM_USER_MANAGER_USER_PATH //NOSONAR
         + "/";
 
     /**
      * @deprecated no longer used.  Use {@link SystemUserManagerPaths} service instead.
      */
     @Deprecated
-    public static final String SYSTEM_USER_MANAGER_GROUP_PREFIX = SYSTEM_USER_MANAGER_GROUP_PATH
+    public static final String SYSTEM_USER_MANAGER_GROUP_PREFIX = SYSTEM_USER_MANAGER_GROUP_PATH //NOSONAR
         + "/";
 
     @Activate
     protected void activate(final Map<String, Object> props) {
-    	systemUserManagerPath = OsgiUtil.toString(props.get(ResourceProvider.PROPERTY_ROOT), DEFAULT_SYSTEM_USER_MANAGER_PATH);
-    	systemUserManagerUserPath = String.format("%s/user", systemUserManagerPath);
-    	systemUserManagerUserPrefix = String.format("%s/", systemUserManagerUserPath);
-    	systemUserManagerGroupPath = String.format("%s/group", systemUserManagerPath);
-    	systemUserManagerGroupPrefix = String.format("%s/", systemUserManagerGroupPath);
+        systemUserManagerPath = OsgiUtil.toString(props.get(ResourceProvider.PROPERTY_ROOT), DEFAULT_SYSTEM_USER_MANAGER_PATH);
+        systemUserManagerUserPath = String.format("%s/user", systemUserManagerPath);
+        systemUserManagerUserPrefix = String.format("%s/", systemUserManagerUserPath);
+        systemUserManagerGroupPath = String.format("%s/group", systemUserManagerPath);
+        systemUserManagerGroupPrefix = String.format("%s/", systemUserManagerGroupPath);
     }
     
-	/* (non-Javadoc)
-	 * @see org.apache.sling.jackrabbit.usermanager.impl.resource.SystemUserManagerPaths#getPath()
-	 */
-	@Override
-	public String getRootPath() {
-		return systemUserManagerPath;
-	}
+    /* (non-Javadoc)
+     * @see org.apache.sling.jackrabbit.usermanager.impl.resource.SystemUserManagerPaths#getPath()
+     */
+    @Override
+    public String getRootPath() {
+        return systemUserManagerPath;
+    }
 
-	/* (non-Javadoc)
-	 * @see org.apache.sling.jackrabbit.usermanager.impl.resource.SystemUserManagerPaths#getUserPath()
-	 */
-	@Override
-	public String getUsersPath() {
-		return systemUserManagerUserPath;
-	}
+    /* (non-Javadoc)
+     * @see org.apache.sling.jackrabbit.usermanager.impl.resource.SystemUserManagerPaths#getUserPath()
+     */
+    @Override
+    public String getUsersPath() {
+        return systemUserManagerUserPath;
+    }
 
-	/* (non-Javadoc)
-	 * @see org.apache.sling.jackrabbit.usermanager.impl.resource.SystemUserManagerPaths#getUserPrefix()
-	 */
-	@Override
-	public String getUserPrefix() {
-		return systemUserManagerUserPrefix;
-	}
+    /* (non-Javadoc)
+     * @see org.apache.sling.jackrabbit.usermanager.impl.resource.SystemUserManagerPaths#getUserPrefix()
+     */
+    @Override
+    public String getUserPrefix() {
+        return systemUserManagerUserPrefix;
+    }
 
-	/* (non-Javadoc)
-	 * @see org.apache.sling.jackrabbit.usermanager.impl.resource.SystemUserManagerPaths#getGroupPath()
-	 */
-	@Override
-	public String getGroupsPath() {
-		return systemUserManagerGroupPath;
-	}
+    /* (non-Javadoc)
+     * @see org.apache.sling.jackrabbit.usermanager.impl.resource.SystemUserManagerPaths#getGroupPath()
+     */
+    @Override
+    public String getGroupsPath() {
+        return systemUserManagerGroupPath;
+    }
 
-	/* (non-Javadoc)
-	 * @see org.apache.sling.jackrabbit.usermanager.impl.resource.SystemUserManagerPaths#getGroupPrefix()
-	 */
-	@Override
-	public String getGroupPrefix() {
-		return systemUserManagerGroupPrefix;
-	}
+    /* (non-Javadoc)
+     * @see org.apache.sling.jackrabbit.usermanager.impl.resource.SystemUserManagerPaths#getGroupPrefix()
+     */
+    @Override
+    public String getGroupPrefix() {
+        return systemUserManagerGroupPrefix;
+    }
 
-	@Override
-	public Resource getResource(ResolveContext<Object> ctx, 
-		    String path, 
-		    ResourceContext resourceContext,
-			Resource parent) {
+    @Override
+    public Resource getResource(ResolveContext<Object> ctx,
+            String path,
+            ResourceContext resourceContext,
+            Resource parent) {
 
         // handle resources for the virtual container resources
         if (path.equals(systemUserManagerPath)) {
@@ -203,8 +203,8 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
                             // found the Authorizable, so return the resource
                             // that wraps it.
                             return new AuthorizableResource(authorizable,
-                            		ctx.getResourceResolver(), path, 
-                            		AuthorizableResourceProvider.this);
+                                    ctx.getResourceResolver(), path,
+                                    AuthorizableResourceProvider.this);
                         }
                     }
                 }
@@ -216,21 +216,18 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
         return null;
     }
 
-	@Override
-	public Iterator<Resource> listChildren(ResolveContext<Object> ctx, Resource parent) {
+    @Override
+    public Iterator<Resource> listChildren(ResolveContext<Object> ctx, Resource parent) {
         try {
             String path = parent.getPath();
-            ResourceResolver resourceResolver = parent.getResourceResolver();
 
             // handle children of /system/userManager
             if (systemUserManagerPath.equals(path)) {
-                List<Resource> resources = new ArrayList<Resource>();
-                if (resourceResolver != null) {
-                    resources.add(getResource(ctx,
+                List<Resource> resources = new ArrayList<>();
+                resources.add(getResource(ctx,
                         systemUserManagerUserPath, null, null));
                     resources.add(getResource(ctx,
                         systemUserManagerGroupPath, null, null));
-                }
                 return resources.iterator();
             }
 
@@ -242,6 +239,7 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
             }
             if (searchType != -1) {
                 PrincipalIterator principals = null;
+                ResourceResolver resourceResolver = parent.getResourceResolver();
                 Session session = resourceResolver.adaptTo(Session.class);
                 if (session != null) {
                     PrincipalManager principalManager = AccessControlUtil.getPrincipalManager(session);
@@ -282,25 +280,23 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
             Principal nextPrincipal = principals.nextPrincipal();
             try {
                 ResourceResolver resourceResolver = parent.getResourceResolver();
-                if (resourceResolver != null) {
-                    Session session = resourceResolver.adaptTo(Session.class);
-                    if (session != null) {
-                        UserManager userManager = AccessControlUtil.getUserManager(session);
-                        if (userManager != null) {
-                            Authorizable authorizable = userManager.getAuthorizable(nextPrincipal.getName());
-                            if (authorizable != null) {
-                                String path;
-                                if (authorizable.isGroup()) {
-                                    path = systemUserManagerGroupPrefix
-                                        + nextPrincipal.getName();
-                                } else {
-                                    path = systemUserManagerUserPrefix
-                                        + nextPrincipal.getName();
-                                }
-                                return new AuthorizableResource(authorizable,
-                                    resourceResolver, path,
-                                    AuthorizableResourceProvider.this);
+                Session session = resourceResolver.adaptTo(Session.class);
+                if (session != null) {
+                    UserManager userManager = AccessControlUtil.getUserManager(session);
+                    if (userManager != null) {
+                        Authorizable authorizable = userManager.getAuthorizable(nextPrincipal.getName());
+                        if (authorizable != null) {
+                            String path;
+                            if (authorizable.isGroup()) {
+                                path = systemUserManagerGroupPrefix
+                                    + nextPrincipal.getName();
+                            } else {
+                                path = systemUserManagerUserPrefix
+                                    + nextPrincipal.getName();
                             }
+                            return new AuthorizableResource(authorizable,
+                                resourceResolver, path,
+                                AuthorizableResourceProvider.this);
                         }
                     }
                 }
@@ -311,6 +307,7 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
             return null;
         }
 
+        @Override
         public void remove() {
             throw new UnsupportedOperationException();
         }

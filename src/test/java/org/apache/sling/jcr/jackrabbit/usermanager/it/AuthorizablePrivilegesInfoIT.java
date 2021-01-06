@@ -56,7 +56,6 @@ import org.apache.sling.jcr.api.SlingRepository;
 import org.apache.sling.jcr.base.util.AccessControlUtil;
 import org.apache.sling.jcr.jackrabbit.accessmanager.DeleteAces;
 import org.apache.sling.jcr.jackrabbit.accessmanager.ModifyAce;
-import org.apache.sling.servlets.post.Modification;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -135,12 +134,12 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
     }
 
     @Before
-    public void setup() throws Exception {
+    public void setup() throws RepositoryException {
         adminSession = repository.login(new SimpleCredentials("admin", "admin".toCharArray()));
         assertNotNull("Expected adminSession to not be null", adminSession);
 
         user1 = createUser.createUser(adminSession, createUniqueName("user"), "testPwd", "testPwd", 
-                Collections.emptyMap(), new ArrayList<Modification>());
+                Collections.emptyMap(), new ArrayList<>());
         assertNotNull("Expected user1 to not be null", user1);
         
         if (adminSession.hasPendingChanges()) {
@@ -163,7 +162,7 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
                 adminSession.save();
             }
         } catch (RepositoryException e) {
-            logger.warn("Failed to delete user: " + e.getMessage(), e);
+            logger.warn(String.format("Failed to delete user: %s", e.getMessage()), e);
         }
 
         user1Session.logout();
@@ -179,7 +178,7 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
      * to add a new user.  Equivalent of: #canAddUser(Session, PropertyUpdateTypes.addProperty, PropertyUpdateTypes.addNestedProperty)
      */
     @Test
-    public void canAddUser() throws Exception {
+    public void canAddUser() throws RepositoryException {
         assertNotNull("Expected privilegesInfo to not be null", privilegesInfo);
 
         User user2 = null;
@@ -188,7 +187,7 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
             assertFalse("Should not be allowed to add user",
                     privilegesInfo.canAddUser(user1Session));
 
-            String usersPath = userConfig.getParameters().getConfigValue("usersPath", (String)null);
+            String usersPath = userConfig.getParameters().getConfigValue("usersPath", null, String.class);
             assertNotNull("Users Path should not be null", usersPath);
             assertTrue("Users Path should exist",
                     adminSession.itemExists(usersPath));
@@ -212,10 +211,10 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
                 propMap.put("prop1", "value1");
                 propMap.put("nested/prop2", "value2");
                 user2 = createUser.createUser(user1Session, createUniqueName("user"), "testPwd", "testPwd", 
-                        propMap, new ArrayList<Modification>());
+                        propMap, new ArrayList<>());
                 assertNotNull("Expected user2 to not be null", user2);
             } catch (RepositoryException e) {
-                logger.error("Did not expect RepositoryException when adding user: " + e.getMessage(), e);
+                logger.error(String.format("Did not expect RepositoryException when adding user: %s", e.getMessage()), e);
                 fail("Did not expect RepositoryException when adding user: " + e.getMessage());
             }
         } finally {
@@ -230,7 +229,7 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
      * to add a new group.  Equivalent of: #canAddGroup(Session, PropertyUpdateTypes.addProperty, PropertyUpdateTypes.addNestedProperty)
      */
     @Test
-    public void canAddGroup() throws Exception {
+    public void canAddGroup() throws RepositoryException {
         assertNotNull("Expected privilegesInfo to not be null", privilegesInfo);
 
         workaroundMissingGroupsPath();
@@ -241,7 +240,7 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
             assertFalse("Should not be allowed to add group",
                     privilegesInfo.canAddGroup(user1Session));
 
-            String groupsPath = userConfig.getParameters().getConfigValue("groupsPath", (String)null);
+            String groupsPath = userConfig.getParameters().getConfigValue("groupsPath", null, String.class);
             assertNotNull("Groups Path should not be null", groupsPath);
             assertTrue("Groups Path should exist",
                     adminSession.itemExists(groupsPath));
@@ -265,10 +264,10 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
                 propMap.put("prop1", "value1");
                 propMap.put("nested/prop2", "value2");
                 group1 = createGroup.createGroup(user1Session, createUniqueName("group"),
-                        propMap, new ArrayList<Modification>());
+                        propMap, new ArrayList<>());
                 assertNotNull("Expected group1 to not be null", group1);
             } catch (RepositoryException e) {
-                logger.error("Did not expect RepositoryException when adding group: " + e.getMessage(), e);
+                logger.error(String.format("Did not expect RepositoryException when adding group: %s", e.getMessage()), e);
                 fail("Did not expect RepositoryException when adding group: " + e.getMessage());
             }
         } finally {
@@ -285,12 +284,12 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
      * rights to the intermediate parents of the groupsPath folder.
      */
     protected void workaroundMissingGroupsPath() throws RepositoryException {
-        String groupsPath = userConfig.getParameters().getConfigValue("groupsPath", (String)null);
+        String groupsPath = userConfig.getParameters().getConfigValue("groupsPath", null, String.class);
         assertNotNull("Groups Path should not be null", groupsPath);
         if (!adminSession.itemExists(groupsPath)) {
             // create a group and the remove it
             Group tempGroup = createGroup.createGroup(adminSession, createUniqueName("group"),
-                    Collections.emptyMap(), new ArrayList<Modification>());
+                    Collections.emptyMap(), new ArrayList<>());
             deleteGroup.deleteGroup(adminSession, tempGroup.getID(), new ArrayList<>());
         }
         assertTrue("Groups Path should exist",
@@ -302,7 +301,7 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
      * to update the properties of the specified user or group.
      */
     @Test
-    public void canUpdateProperties() throws Exception {
+    public void canUpdateProperties() throws RepositoryException {
         assertNotNull("Expected privilegesInfo to not be null", privilegesInfo);
 
         workaroundMissingGroupsPath();
@@ -313,11 +312,11 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
         try {
             // create a couple of test users
             user2 = createUser.createUser(adminSession, createUniqueName("user"), "testPwd", "testPwd",
-                    Collections.singletonMap("prop1", "value1"), new ArrayList<Modification>());
+                    Collections.singletonMap("prop1", "value1"), new ArrayList<>());
             assertNotNull("Expected user2 to not be null", user2);
 
             group1 = createGroup.createGroup(adminSession, createUniqueName("group"),
-                    Collections.singletonMap("prop1", "value1"), new ArrayList<Modification>());
+                    Collections.singletonMap("prop1", "value1"), new ArrayList<>());
             assertNotNull("Expected group1 to not be null", group1);
 
             String [] principalIds = new String[] { user2.getID(), group1.getID() };
@@ -341,19 +340,19 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
                 assertFalse("Should not be allowed to update properties for: " + pid,
                         privilegesInfo.canUpdateProperties(user1Session, pid));
                 assertFalse("Should not be allowed to update properties for: " + pid,
-                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.addProperty, PropertyUpdateTypes.addNestedProperty, PropertyUpdateTypes.removeProperty));
+                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.ADD_PROPERTY, PropertyUpdateTypes.ADD_NESTED_PROPERTY, PropertyUpdateTypes.REMOVE_PROPERTY));
                 assertFalse("Should not be allowed to update properties for: " + pid,
-                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.addProperty, PropertyUpdateTypes.addNestedProperty));
+                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.ADD_PROPERTY, PropertyUpdateTypes.ADD_NESTED_PROPERTY));
                 assertFalse("Should not be allowed to update properties for: " + pid,
-                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.addProperty, PropertyUpdateTypes.removeProperty));
+                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.ADD_PROPERTY, PropertyUpdateTypes.REMOVE_PROPERTY));
                 assertFalse("Should not be allowed to update properties for: " + pid,
-                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.addProperty));
+                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.ADD_PROPERTY));
                 assertFalse("Should not be allowed to update properties for: " + pid,
-                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.addNestedProperty, PropertyUpdateTypes.removeProperty));
+                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.ADD_NESTED_PROPERTY, PropertyUpdateTypes.REMOVE_PROPERTY));
                 assertFalse("Should not be allowed to update properties for: " + pid,
-                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.addNestedProperty));
+                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.ADD_NESTED_PROPERTY));
                 assertFalse("Should not be allowed to update properties for: " + pid,
-                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.removeProperty));
+                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.REMOVE_PROPERTY));
             }
 
             // + grant user management rights
@@ -368,19 +367,19 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
                 assertFalse("Should not be allowed to update properties for: " + pid,
                         privilegesInfo.canUpdateProperties(user1Session, pid));
                 assertFalse("Should not be allowed to update properties for: " + pid,
-                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.addProperty, PropertyUpdateTypes.addNestedProperty, PropertyUpdateTypes.removeProperty));
+                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.ADD_PROPERTY, PropertyUpdateTypes.ADD_NESTED_PROPERTY, PropertyUpdateTypes.REMOVE_PROPERTY));
                 assertFalse("Should not be allowed to update properties for: " + pid,
-                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.addProperty, PropertyUpdateTypes.addNestedProperty));
+                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.ADD_PROPERTY, PropertyUpdateTypes.ADD_NESTED_PROPERTY));
                 assertFalse("Should not be allowed to update properties for: " + pid,
-                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.addProperty, PropertyUpdateTypes.removeProperty));
+                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.ADD_PROPERTY, PropertyUpdateTypes.REMOVE_PROPERTY));
                 assertFalse("Should not be allowed to update properties for: " + pid,
-                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.addProperty));
+                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.ADD_PROPERTY));
                 assertFalse("Should not be allowed to update properties for: " + pid,
-                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.addNestedProperty, PropertyUpdateTypes.removeProperty));
+                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.ADD_NESTED_PROPERTY, PropertyUpdateTypes.REMOVE_PROPERTY));
                 assertFalse("Should not be allowed to update properties for: " + pid,
-                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.addNestedProperty));
+                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.ADD_NESTED_PROPERTY));
                 assertFalse("Should not be allowed to update properties for: " + pid,
-                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.removeProperty));
+                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.REMOVE_PROPERTY));
             }
 
 
@@ -399,19 +398,19 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
                 assertFalse("Should not be allowed to update properties for: " + pid,
                         privilegesInfo.canUpdateProperties(user1Session, pid));
                 assertFalse("Should not be allowed to update properties for: " + pid,
-                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.addProperty, PropertyUpdateTypes.addNestedProperty, PropertyUpdateTypes.removeProperty));
+                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.ADD_PROPERTY, PropertyUpdateTypes.ADD_NESTED_PROPERTY, PropertyUpdateTypes.REMOVE_PROPERTY));
                 assertFalse("Should not be allowed to update properties for: " + pid,
-                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.addProperty, PropertyUpdateTypes.addNestedProperty));
+                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.ADD_PROPERTY, PropertyUpdateTypes.ADD_NESTED_PROPERTY));
                 assertFalse("Should not be allowed to update properties for: " + pid,
-                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.addProperty, PropertyUpdateTypes.removeProperty));
+                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.ADD_PROPERTY, PropertyUpdateTypes.REMOVE_PROPERTY));
                 assertFalse("Should not be allowed to update properties for: " + pid,
-                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.addProperty));
+                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.ADD_PROPERTY));
                 assertFalse("Should not be allowed to update properties for: " + pid,
-                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.addNestedProperty, PropertyUpdateTypes.removeProperty));
+                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.ADD_NESTED_PROPERTY, PropertyUpdateTypes.REMOVE_PROPERTY));
                 assertFalse("Should not be allowed to update properties for: " + pid,
-                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.addNestedProperty));
+                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.ADD_NESTED_PROPERTY));
                 assertTrue("Should be allowed to update properties for: " + pid,
-                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.removeProperty));
+                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.REMOVE_PROPERTY));
             }
 
             // verify that the user can actually delete property
@@ -423,7 +422,7 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
                 assertTrue("Expected pending changes in the jcr session", user1Session.hasPendingChanges());
                 user1Session.save();
             } catch (RepositoryException e) {
-                logger.error("Did not expect RepositoryException when deleting property: " + e.getMessage(), e);
+                logger.error(String.format("Did not expect RepositoryException when deleting property: %s", e.getMessage()), e);
                 fail("Did not expect RepositoryException when deleting property: " + e.getMessage());
             }
             // verify that the user can not add nested property
@@ -456,19 +455,19 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
                 assertFalse("Should not be allowed to update properties for: " + pid,
                         privilegesInfo.canUpdateProperties(user1Session, pid));
                 assertFalse("Should not be allowed to update properties for: " + pid,
-                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.addProperty, PropertyUpdateTypes.addNestedProperty, PropertyUpdateTypes.removeProperty));
+                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.ADD_PROPERTY, PropertyUpdateTypes.ADD_NESTED_PROPERTY, PropertyUpdateTypes.REMOVE_PROPERTY));
                 assertFalse("Should not be allowed to update properties for: " + pid,
-                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.addProperty, PropertyUpdateTypes.addNestedProperty));
+                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.ADD_PROPERTY, PropertyUpdateTypes.ADD_NESTED_PROPERTY));
                 assertFalse("Should not be allowed to update properties for: " + pid,
-                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.addProperty, PropertyUpdateTypes.removeProperty));
+                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.ADD_PROPERTY, PropertyUpdateTypes.REMOVE_PROPERTY));
                 assertTrue("Should be allowed to update properties for: " + pid,
-                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.addProperty));
+                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.ADD_PROPERTY));
                 assertFalse("Should not be allowed to update properties for: " + pid,
-                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.addNestedProperty, PropertyUpdateTypes.removeProperty));
+                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.ADD_NESTED_PROPERTY, PropertyUpdateTypes.REMOVE_PROPERTY));
                 assertFalse("Should not be allowed to update properties for: " + pid,
-                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.addNestedProperty));
+                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.ADD_NESTED_PROPERTY));
                 assertFalse("Should not be allowed to update properties for: " + pid,
-                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.removeProperty));
+                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.REMOVE_PROPERTY));
             }
 
             // verify that the user can actually add property
@@ -480,7 +479,7 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
                 assertTrue("Expected pending changes in the jcr session", user1Session.hasPendingChanges());
                 user1Session.save();
             } catch (RepositoryException e) {
-                logger.error("Did not expect RepositoryException when adding property: " + e.getMessage(), e);
+                logger.error(String.format("Did not expect RepositoryException when adding property: %s", e.getMessage()), e);
                 fail("Did not expect RepositoryException when adding property: " + e.getMessage());
             }
             // verify that the user can not add nested property
@@ -513,19 +512,19 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
                 assertFalse("Should not be allowed to update properties for: " + pid,
                         privilegesInfo.canUpdateProperties(user1Session, pid));
                 assertFalse("Should not be allowed to update properties for: " + pid,
-                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.addProperty, PropertyUpdateTypes.addNestedProperty, PropertyUpdateTypes.removeProperty));
+                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.ADD_PROPERTY, PropertyUpdateTypes.ADD_NESTED_PROPERTY, PropertyUpdateTypes.REMOVE_PROPERTY));
                 assertTrue("Should be allowed to update properties for: " + pid,
-                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.addProperty, PropertyUpdateTypes.addNestedProperty));
+                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.ADD_PROPERTY, PropertyUpdateTypes.ADD_NESTED_PROPERTY));
                 assertFalse("Should not be allowed to update properties for: " + pid,
-                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.addProperty, PropertyUpdateTypes.removeProperty));
+                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.ADD_PROPERTY, PropertyUpdateTypes.REMOVE_PROPERTY));
                 assertTrue("Should be allowed to update properties for: " + pid,
-                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.addProperty));
+                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.ADD_PROPERTY));
                 assertFalse("Should not be allowed to update properties for: " + pid,
-                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.addNestedProperty, PropertyUpdateTypes.removeProperty));
+                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.ADD_NESTED_PROPERTY, PropertyUpdateTypes.REMOVE_PROPERTY));
                 assertTrue("Should be allowed to update properties for: " + pid,
-                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.addNestedProperty));
+                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.ADD_NESTED_PROPERTY));
                 assertFalse("Should not be allowed to update properties for: " + pid,
-                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.removeProperty));
+                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.REMOVE_PROPERTY));
             }
 
             // verify that the user can actually add property and nested property
@@ -538,7 +537,7 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
                 assertTrue("Expected pending changes in the jcr session", user1Session.hasPendingChanges());
                 user1Session.save();
             } catch (RepositoryException e) {
-                logger.error("Did not expect RepositoryException when adding properties: " + e.getMessage(), e);
+                logger.error(String.format("Did not expect RepositoryException when adding properties: %s", e.getMessage()), e);
                 fail("Did not expect RepositoryException when adding properties: " + e.getMessage());
             }
 
@@ -559,19 +558,19 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
                 assertTrue("Should be allowed to update properties for: " + pid,
                         privilegesInfo.canUpdateProperties(user1Session, pid));
                 assertTrue("Should be allowed to update properties for: " + pid,
-                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.addProperty, PropertyUpdateTypes.addNestedProperty, PropertyUpdateTypes.removeProperty));
+                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.ADD_PROPERTY, PropertyUpdateTypes.ADD_NESTED_PROPERTY, PropertyUpdateTypes.REMOVE_PROPERTY));
                 assertTrue("Should be allowed to update properties for: " + pid,
-                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.addProperty, PropertyUpdateTypes.addNestedProperty));
+                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.ADD_PROPERTY, PropertyUpdateTypes.ADD_NESTED_PROPERTY));
                 assertTrue("Should be allowed to update properties for: " + pid,
-                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.addProperty, PropertyUpdateTypes.removeProperty));
+                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.ADD_PROPERTY, PropertyUpdateTypes.REMOVE_PROPERTY));
                 assertTrue("Should be allowed to update properties for: " + pid,
-                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.addProperty));
+                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.ADD_PROPERTY));
                 assertTrue("Should be allowed to update properties for: " + pid,
-                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.addNestedProperty, PropertyUpdateTypes.removeProperty));
+                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.ADD_NESTED_PROPERTY, PropertyUpdateTypes.REMOVE_PROPERTY));
                 assertTrue("Should be allowed to update properties for: " + pid,
-                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.addNestedProperty));
+                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.ADD_NESTED_PROPERTY));
                 assertTrue("Should be allowed to update properties for: " + pid,
-                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.removeProperty));
+                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.REMOVE_PROPERTY));
             }
 
             // verify that the user can actually add property and nested property
@@ -586,7 +585,7 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
                 assertTrue("Expected pending changes in the jcr session", user1Session.hasPendingChanges());
                 user1Session.save();
             } catch (RepositoryException e) {
-                logger.error("Did not expect RepositoryException when adding or deleting properties: " + e.getMessage(), e);
+                logger.error(String.format("Did not expect RepositoryException when adding or deleting properties: %s", e.getMessage()), e);
                 fail("Did not expect RepositoryException when adding or deleting properties: " + e.getMessage());
             }
         } finally {
@@ -601,7 +600,7 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
      * to remove the specified user or group.
      */
     @Test
-    public void canRemove() throws Exception {
+    public void canRemove() throws RepositoryException {
         assertNotNull("Expected privilegesInfo to not be null", privilegesInfo);
 
         workaroundMissingGroupsPath();
@@ -610,11 +609,11 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
         Group group1 = null;
         try {
             user2 = createUser.createUser(adminSession, createUniqueName("user"), "testPwd", "testPwd",
-                    Collections.singletonMap("prop1", "value1"), new ArrayList<Modification>());
+                    Collections.singletonMap("prop1", "value1"), new ArrayList<>());
             assertNotNull("Expected user2 to not be null", user2);
 
             group1 = createGroup.createGroup(adminSession, createUniqueName("group"),
-                    Collections.singletonMap("prop1", "value1"), new ArrayList<Modification>());
+                    Collections.singletonMap("prop1", "value1"), new ArrayList<>());
             assertNotNull("Expected group1 to not be null", group1);
 
             // initially user can't do the operations
@@ -677,7 +676,7 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
      * to update the membership of the specified group.
      */
     @Test
-    public void canUpdateGroupMembers() throws Exception {
+    public void canUpdateGroupMembers() throws RepositoryException {
         assertNotNull("Expected privilegesInfo to not be null", privilegesInfo);
 
         workaroundMissingGroupsPath();
@@ -685,7 +684,7 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
         Group group1 = null;
         try {
             group1 = createGroup.createGroup(adminSession, createUniqueName("group"),
-                    Collections.singletonMap("prop1", "value1"), new ArrayList<Modification>());
+                    Collections.singletonMap("prop1", "value1"), new ArrayList<>());
             assertNotNull("Expected group1 to not be null", group1);
 
             // initially user can't do the operations
@@ -716,7 +715,7 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
                 assertTrue("Expected pending changes in the jcr session", user1Session.hasPendingChanges());
                 user1Session.save();
             } catch (RepositoryException e) {
-                logger.error("Did not expect RepositoryException when adding member to group: " + e.getMessage(), e);
+                logger.error(String.format("Did not expect RepositoryException when adding member to group: %s", e.getMessage()), e);
                 fail("Did not expect RepositoryException when adding member to group: " + e.getMessage());
             }
         } finally {
@@ -746,7 +745,7 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
      * to disable a user.
      */
     @Test
-    public void canDisableUser() throws Exception {
+    public void canDisableUser() throws RepositoryException {
         assertNotNull("Expected privilegesInfo to not be null", privilegesInfo);
 
         User user2 = null;
@@ -756,7 +755,7 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
 
             // create another test user
             user2 = createUser.createUser(adminSession, createUniqueName("user"), "testPwd", "testPwd",
-                    Collections.singletonMap("prop1", "value1"), new ArrayList<Modification>());
+                    Collections.singletonMap("prop1", "value1"), new ArrayList<>());
             assertNotNull("Expected user2 to not be null", user2);
             // setup the user privileges
             configMinimumUserPrivileges(user2);
@@ -786,7 +785,7 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
                 assertTrue("Expected pending changes in the jcr session", user1Session.hasPendingChanges());
                 user1Session.save();
             } catch (RepositoryException e) {
-                logger.error("Did not expect RepositoryException when disabling the user: " + e.getMessage(), e);
+                logger.error(String.format("Did not expect RepositoryException when disabling the user: %s", e.getMessage()), e);
                 fail("Did not expect RepositoryException when disabling the user: " + e.getMessage());
             }
         } finally {
@@ -801,14 +800,14 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
      * to change a user's password.
      */
     @Test
-    public void canChangePassword() throws Exception {
+    public void canChangePassword() throws RepositoryException {
         assertNotNull("Expected privilegesInfo to not be null", privilegesInfo);
 
         User user2 = null;
         try {
             // create another test user
             user2 = createUser.createUser(adminSession, createUniqueName("user"), "testPwd", "testPwd",
-                    Collections.singletonMap("prop1", "value1"), new ArrayList<Modification>());
+                    Collections.singletonMap("prop1", "value1"), new ArrayList<>());
             assertNotNull("Expected user2 to not be null", user2);
 
             // initially user can't do the operations
@@ -831,7 +830,7 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
                 assertTrue("Expected pending changes in the jcr session", user1Session.hasPendingChanges());
                 user1Session.save();
             } catch (RepositoryException e) {
-                logger.error("Did not expect RepositoryException when changing the user password: " + e.getMessage(), e);
+                logger.error(String.format("Did not expect RepositoryException when changing the user password: %s", e.getMessage()), e);
                 fail("Did not expect RepositoryException when changing the user password: " + e.getMessage());
             }
         } finally {
@@ -846,7 +845,7 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
      * to change the anonymous user's password.
      */
     @Test
-    public void cannotChangePassword_for_anonymous() throws Exception {
+    public void cannotChangePasswordForAnonymous() {
         assertNotNull("Expected privilegesInfo to not be null", privilegesInfo);
 
         // anonymous user has no password to change
@@ -861,7 +860,7 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
      * to change the anonymous user's password.
      */
     @Test
-    public void cannotChangePassword_for_service_user() throws Exception {
+    public void cannotChangePasswordForServiceUser() {
         assertNotNull("Expected privilegesInfo to not be null", privilegesInfo);
 
         // service user has no password to change

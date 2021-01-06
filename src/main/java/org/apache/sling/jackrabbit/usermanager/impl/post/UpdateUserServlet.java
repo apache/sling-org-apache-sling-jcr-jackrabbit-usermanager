@@ -85,20 +85,20 @@ import org.osgi.service.component.annotations.ReferencePolicy;
 
 @Component(service = {Servlet.class, UpdateUser.class},
 property = {
-		   "sling.servlet.resourceTypes=sling/user",
-		   "sling.servlet.methods=POST",
-		   "sling.servlet.selectors=update",
-		   AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=EEE MMM dd yyyy HH:mm:ss 'GMT'Z", 
-		   AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=yyyy-MM-dd'T'HH:mm:ss.SSSZ", 
-		   AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=yyyy-MM-dd'T'HH:mm:ss", 
-		   AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=yyyy-MM-dd", 
-		   AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=dd.MM.yyyy HH:mm:ss", 
-		   AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=dd.MM.yyyy"
+           "sling.servlet.resourceTypes=sling/user",
+           "sling.servlet.methods=POST",
+           "sling.servlet.selectors=update",
+           AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=EEE MMM dd yyyy HH:mm:ss 'GMT'Z",
+           AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=yyyy-MM-dd'T'HH:mm:ss.SSSZ",
+           AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=yyyy-MM-dd'T'HH:mm:ss",
+           AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=yyyy-MM-dd",
+           AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=dd.MM.yyyy HH:mm:ss",
+           AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=dd.MM.yyyy"
 })
 public class UpdateUserServlet extends AbstractAuthorizablePostServlet
         implements UpdateUser {
     
-	private static final long serialVersionUID = 5874621724096106496L;
+    private static final long serialVersionUID = 5874621724096106496L;
 
     @Override
     @Activate
@@ -112,35 +112,35 @@ public class UpdateUserServlet extends AbstractAuthorizablePostServlet
         super.deactivate();
     }
 
-	/* (non-Javadoc)
-	 * @see org.apache.sling.jackrabbit.usermanager.impl.post.AbstractAuthorizablePostServlet#bindSystemUserManagerPaths(org.apache.sling.jackrabbit.usermanager.impl.resource.SystemUserManagerPaths)
-	 */
+    /* (non-Javadoc)
+     * @see org.apache.sling.jackrabbit.usermanager.impl.post.AbstractAuthorizablePostServlet#bindSystemUserManagerPaths(org.apache.sling.jackrabbit.usermanager.impl.resource.SystemUserManagerPaths)
+     */
     @Reference
-	@Override
-	protected void bindSystemUserManagerPaths(SystemUserManagerPaths sump) {
-		super.bindSystemUserManagerPaths(sump);
-	}
+    @Override
+    protected void bindSystemUserManagerPaths(SystemUserManagerPaths sump) {
+        super.bindSystemUserManagerPaths(sump);
+    }
     
     /**
      * Overridden since the @Reference annotation is not inherited from the super method
      *  
-	 * @see org.apache.sling.jackrabbit.usermanager.impl.post.AbstractPostServlet#bindPostResponseCreator(org.apache.sling.servlets.post.PostResponseCreator, java.util.Map)
-	 */
-	@Override
+     * @see org.apache.sling.jackrabbit.usermanager.impl.post.AbstractPostServlet#bindPostResponseCreator(org.apache.sling.servlets.post.PostResponseCreator, java.util.Map)
+     */
+    @Override
     @Reference(service = PostResponseCreator.class,
-	    cardinality = ReferenceCardinality.MULTIPLE,
-	    policy = ReferencePolicy.DYNAMIC)
-	protected void bindPostResponseCreator(PostResponseCreator creator, Map<String, Object> properties) {
-		super.bindPostResponseCreator(creator, properties);
-	}
-	
-	/* (non-Javadoc)
-	 * @see org.apache.sling.jackrabbit.usermanager.impl.post.AbstractPostServlet#unbindPostResponseCreator(org.apache.sling.servlets.post.PostResponseCreator, java.util.Map)
-	 */
-	@Override
-	protected void unbindPostResponseCreator(PostResponseCreator creator, Map<String, Object> properties) {
-		super.unbindPostResponseCreator(creator, properties);
-	}
+        cardinality = ReferenceCardinality.MULTIPLE,
+        policy = ReferencePolicy.DYNAMIC)
+    protected void bindPostResponseCreator(PostResponseCreator creator, Map<String, Object> properties) {
+        super.bindPostResponseCreator(creator, properties);
+    }
+
+    /* (non-Javadoc)
+     * @see org.apache.sling.jackrabbit.usermanager.impl.post.AbstractPostServlet#unbindPostResponseCreator(org.apache.sling.servlets.post.PostResponseCreator, java.util.Map)
+     */
+    @Override
+    protected void unbindPostResponseCreator(PostResponseCreator creator, Map<String, Object> properties) { //NOSONAR
+        super.unbindPostResponseCreator(creator, properties);
+    }
 
     /*
      * (non-Javadoc)
@@ -151,7 +151,7 @@ public class UpdateUserServlet extends AbstractAuthorizablePostServlet
      */
     @Override
     protected void handleOperation(SlingHttpServletRequest request,
-    		PostResponse response, List<Modification> changes)
+            PostResponse response, List<Modification> changes)
             throws RepositoryException {
         Resource resource = request.getResource();
         Session session = request.getResourceResolver().adaptTo(Session.class);

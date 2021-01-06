@@ -59,7 +59,7 @@ public abstract class AbstractPostServlet extends
     /**
      * default log
      */
-    private final Logger log = LoggerFactory.getLogger(getClass());
+    private final transient Logger log = LoggerFactory.getLogger(getClass());
 
     /** Sorted list of post response creator holders. */
     private final List<PostResponseCreatorHolder> postResponseCreators = new ArrayList<>();
@@ -97,12 +97,10 @@ public abstract class AbstractPostServlet extends
 
         Session session = request.getResourceResolver().adaptTo(Session.class);
 
-        final List<Modification> changes = new ArrayList<Modification>();
+        final List<Modification> changes = new ArrayList<>();
 
         try {
             handleOperation(request, response, changes);
-
-            // TODO: maybe handle SlingAuthorizablePostProcessor handlers here
 
             // set changes on html response
             for (Modification change : changes) {
@@ -139,10 +137,12 @@ public abstract class AbstractPostServlet extends
         } catch (ResourceNotFoundException rnfe) {
             response.setStatus(HttpServletResponse.SC_NOT_FOUND,
                 rnfe.getMessage());
-        } catch (Throwable throwable) {
-            log.debug("Exception while handling POST "
-                + request.getResource().getPath() + " with "
-                + getClass().getName(), throwable);
+        } catch (Exception throwable) {
+            if (log.isDebugEnabled()) {
+                log.debug(String.format("Exception while handling POST %s with %s",
+                        request.getResource().getPath(), getClass().getName()),
+                    throwable);
+            }
             response.setError(throwable);
         } finally {
             try {
@@ -251,7 +251,7 @@ public abstract class AbstractPostServlet extends
      * @param changes the changes to report
      * @throws RepositoryException in case of exceptions during the operation
      */
-    abstract protected void handleOperation(SlingHttpServletRequest request,
+    protected abstract void handleOperation(SlingHttpServletRequest request,
             PostResponse response, List<Modification> changes)
             throws RepositoryException;
 
@@ -296,7 +296,7 @@ public abstract class AbstractPostServlet extends
                 // redirect to created/modified Resource
                 final int star = result.indexOf('*');
                 if (star >= 0) {
-                    StringBuffer buf = new StringBuffer();
+                    StringBuilder buf = new StringBuilder();
 
                     // anything before the star
                     if (star > 0) {
@@ -321,7 +321,7 @@ public abstract class AbstractPostServlet extends
                 }
 
                 if (log.isDebugEnabled()) {
-                    log.debug("Will redirect to " + result);
+                    log.debug("Will redirect to {}", result);
                 }
             }
         }
@@ -352,7 +352,7 @@ public abstract class AbstractPostServlet extends
         }
 
         log.debug(
-            "getStatusMode: Parameter {} set to unknown value {}, assuming standard status code",
+            "getStatusMode: Parameter {} set to unknown value, assuming standard status code",
             SlingPostConstants.RP_STATUS);
         return true;
     }
@@ -381,7 +381,7 @@ public abstract class AbstractPostServlet extends
      */
     protected final String externalizePath(SlingHttpServletRequest request,
             String path) {
-        StringBuffer ret = new StringBuffer();
+        StringBuilder ret = new StringBuilder();
         ret.append(SlingRequestPaths.getContextPath(request));
         ret.append(request.getResourceResolver().map(path));
 
@@ -428,7 +428,7 @@ public abstract class AbstractPostServlet extends
     /**
      * Unbind a post response creator
      */
-    protected void unbindPostResponseCreator(final PostResponseCreator creator, final Map<String, Object> properties) {
+    protected void unbindPostResponseCreator(final PostResponseCreator creator, final Map<String, Object> properties) {  //NOSONAR
         synchronized ( this.postResponseCreators ) {
             final Iterator<PostResponseCreatorHolder> i = this.postResponseCreators.iterator();
             while ( i.hasNext() ) {
@@ -465,15 +465,15 @@ public abstract class AbstractPostServlet extends
         private final int ranking;
 
         public PostResponseCreatorHolder(PostResponseCreator creator, int ranking) {
-			this.creator = creator;
-			this.ranking = ranking;
-		}
-		public PostResponseCreator getCreator() {
-			return creator;
-		}
-		public int getRanking() {
-			return ranking;
-		}
+            this.creator = creator;
+            this.ranking = ranking;
+        }
+        public PostResponseCreator getCreator() {
+            return creator;
+        }
+        public int getRanking() {
+            return ranking;
+        }
         
     }    
 }

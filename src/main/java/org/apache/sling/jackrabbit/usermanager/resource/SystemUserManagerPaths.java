@@ -22,29 +22,29 @@ package org.apache.sling.jackrabbit.usermanager.resource;
  */
 public interface SystemUserManagerPaths {
 
-	/**
-	 * The root path for usermanager resources
-	 */
-	String getRootPath();
+    /**
+     * The root path for usermanager resources
+     */
+    String getRootPath();
 
-	/**
-	 * The root path for all user resources
-	 */
-	String getUsersPath();
+    /**
+     * The root path for all user resources
+     */
+    String getUsersPath();
 
-	/**
-	 * The path prefix (before the id) for users
-	 */
-	String getUserPrefix();
+    /**
+     * The path prefix (before the id) for users
+     */
+    String getUserPrefix();
 
-	/**
-	 * The root path for all group resources
-	 */
-	String getGroupsPath();
+    /**
+     * The root path for all group resources
+     */
+    String getGroupsPath();
 
-	/**
-	 * The path prefix (before the id) for groups
-	 */
-	String getGroupPrefix();
+    /**
+     * The path prefix (before the id) for groups
+     */
+    String getGroupPrefix();
 
 }

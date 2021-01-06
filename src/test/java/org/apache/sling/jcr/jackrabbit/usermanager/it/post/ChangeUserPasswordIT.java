@@ -25,6 +25,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.ops4j.pax.exam.CoreOptions.options;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Dictionary;
@@ -51,7 +52,6 @@ import org.apache.sling.jcr.api.SlingRepository;
 import org.apache.sling.jcr.jackrabbit.accessmanager.DeleteAces;
 import org.apache.sling.jcr.jackrabbit.accessmanager.ModifyAce;
 import org.apache.sling.jcr.jackrabbit.usermanager.it.UserManagerTestSupport;
-import org.apache.sling.servlets.post.Modification;
 import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
@@ -123,12 +123,12 @@ public class ChangeUserPasswordIT extends UserManagerTestSupport {
     }
 
     @Before
-    public void setup() throws Exception {
+    public void setup() throws RepositoryException {
         adminSession = repository.login(new SimpleCredentials("admin", "admin".toCharArray()));
         assertNotNull("Expected adminSession to not be null", adminSession);
 
         user1 = createUser.createUser(adminSession, createUniqueName("user"), "testPwd", "testPwd",
-                Collections.emptyMap(), new ArrayList<Modification>());
+                Collections.emptyMap(), new ArrayList<>());
         assertNotNull("Expected user1 to not be null", user1);
 
         user1Session = repository.login(new SimpleCredentials(user1.getID(), "testPwd".toCharArray()));
@@ -159,7 +159,7 @@ public class ChangeUserPasswordIT extends UserManagerTestSupport {
                 adminSession.save();
             }
         } catch (RepositoryException e) {
-            logger.warn("Failed to delete user: " + e.getMessage(), e);
+            logger.warn(String.format("Failed to delete user: %s", e.getMessage()), e);
         }
 
         user1Session.logout();
@@ -174,7 +174,7 @@ public class ChangeUserPasswordIT extends UserManagerTestSupport {
      * SLING-9808 test changing password when user doesn't have rep:userManagement privilege
      */
     @Test
-    public void changePasswordAsSelfGranted() throws Exception {
+    public void changePasswordAsSelfGranted() throws IOException, InterruptedException, RepositoryException {
         org.osgi.service.cm.Configuration configuration = configAdmin.getConfiguration("org.apache.sling.jackrabbit.usermanager.impl.post.ChangeUserPasswordServlet", null);
         Dictionary<String, Object> originalServiceProps = configuration.getProperties();
         ServiceReference<ChangeUserPassword> serviceReference = null;
@@ -203,7 +203,7 @@ public class ChangeUserPasswordIT extends UserManagerTestSupport {
             try {
                 user1Session.save();
             } catch (AccessDeniedException e) {
-                logger.error("Did not expect AccessDeniedException when changing user passsword: " + e.getMessage(), e);
+                logger.error(String.format("Did not expect AccessDeniedException when changing user passsword: %s", e.getMessage()), e);
                 fail("Did not expect AccessDeniedException when changing user passsword: " + e.getMessage());
             }
         } finally {
@@ -223,7 +223,7 @@ public class ChangeUserPasswordIT extends UserManagerTestSupport {
      * SLING-9808 test changing password when user doesn't have rep:userManagement privilege
      */
     @Test
-    public void changePasswordAsSelfDenied() throws Exception {
+    public void changePasswordAsSelfDenied() throws IOException, InterruptedException, RepositoryException {
         org.osgi.service.cm.Configuration configuration = configAdmin.getConfiguration("org.apache.sling.jackrabbit.usermanager.impl.post.ChangeUserPasswordServlet", null);
         Dictionary<String, Object> originalServiceProps = configuration.getProperties();
         ServiceReference<ChangeUserPassword> serviceReference = null;
@@ -276,7 +276,7 @@ public class ChangeUserPasswordIT extends UserManagerTestSupport {
      * test changing your own password without sending the old password is not allowed
      */
     @Test
-    public void changePasswordAsSelfWithoutOldPasswordFails() throws Exception {
+    public void changePasswordAsSelfWithoutOldPasswordFails() throws IOException, InterruptedException, RepositoryException {
         org.osgi.service.cm.Configuration configuration = configAdmin.getConfiguration("org.apache.sling.jackrabbit.usermanager.impl.post.ChangeUserPasswordServlet", null);
         Dictionary<String, Object> originalServiceProps = configuration.getProperties();
         ServiceReference<ChangeUserPassword> serviceReference = null;
@@ -298,9 +298,9 @@ public class ChangeUserPasswordIT extends UserManagerTestSupport {
 
             // no oldPassword submitted
             @NotNull
-			String user1Id = user1.getID();
+            String user1Id = user1.getID();
             try {
-				changeUserPassword.changePassword(user1Session,
+                changeUserPassword.changePassword(user1Session,
                         user1Id,
                         null,
                         "testPwdChanged",
@@ -344,13 +344,13 @@ public class ChangeUserPasswordIT extends UserManagerTestSupport {
      * user is a member of the UserAdmin group.
      */
     @Test
-    public void changePasswordAsUserAdminMemberWithoutOldPassword() throws Exception {
+    public void changePasswordAsUserAdminMemberWithoutOldPassword() throws RepositoryException {
         User user2 = null;
         ServiceReference<ChangeUserPassword> serviceReference = null;
         try {
             // create a second user to attempt the change password on
             user2 = createUser.createUser(adminSession, createUniqueName("user"), "testPwd", "testPwd",
-                    Collections.emptyMap(), new ArrayList<Modification>());
+                    Collections.emptyMap(), new ArrayList<>());
             if (adminSession.hasPendingChanges()) {
                 adminSession.save();
             }
@@ -407,7 +407,7 @@ public class ChangeUserPasswordIT extends UserManagerTestSupport {
             try {
                 user1Session.save();
             } catch (AccessDeniedException e) {
-                logger.error("Did not expect AccessDeniedException when changing user passsword: " + e.getMessage(), e);
+                logger.error(String.format("Did not expect AccessDeniedException when changing user passsword: %s", e.getMessage()), e);
                 fail("Did not expect AccessDeniedException when changing user passsword: " + e.getMessage());
             }
 
@@ -425,7 +425,7 @@ public class ChangeUserPasswordIT extends UserManagerTestSupport {
             try {
                 user1Session.save();
             } catch (AccessDeniedException e) {
-                logger.error("Did not expect AccessDeniedException when changing user passsword: " + e.getMessage(), e);
+                logger.error(String.format("Did not expect AccessDeniedException when changing user passsword: %s", e.getMessage()), e);
                 fail("Did not expect AccessDeniedException when changing user passsword: " + e.getMessage());
             }
 

@@ -67,7 +67,7 @@ public abstract class UserManagerTestSupport extends TestSupport {
         }
 
         @Override
-        protected void exec() throws Exception {
+        protected void exec() {
             ServiceReference<?> serviceReference = bundleContext.getServiceReference(serviceClass);
             assertNotNull(serviceReference);
             assertEquals(expectedValue, serviceReference.getProperty(expectedKey));
@@ -75,6 +75,7 @@ public abstract class UserManagerTestSupport extends TestSupport {
     }
 
 
+    @Override
     public ModifiableCompositeOption baseConfiguration() {
         final Option usermanager = mavenBundle()
                 .groupId("org.apache.sling")

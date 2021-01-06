@@ -112,9 +112,9 @@ public class ChangeUserPasswordServlet extends AbstractAuthorizablePostServlet i
 
         @AttributeDefinition(name = "User Admin Group Name",
                 description = "Specifies the name of the group whose members are allowed to reset the password of another user.")
-        String user_admin_group_name() default DEFAULT_USER_ADMIN_GROUP_NAME;
+        String user_admin_group_name() default DEFAULT_USER_ADMIN_GROUP_NAME; //NOSONAR
 
-		@AttributeDefinition(name = "Allow Self Password Change",
+        @AttributeDefinition(name = "Allow Self Password Change",
                 description = "Specifies whether a user is allowed to change their own password.")
         boolean allowSelfChangePassword() default true;
     }
@@ -124,7 +124,7 @@ public class ChangeUserPasswordServlet extends AbstractAuthorizablePostServlet i
     /**
      * default log
      */
-    private final Logger log = LoggerFactory.getLogger(getClass());
+    private final transient Logger log = LoggerFactory.getLogger(getClass());
 
     /**
      * The default 'User administrator' group name
@@ -179,14 +179,14 @@ public class ChangeUserPasswordServlet extends AbstractAuthorizablePostServlet i
         super.deactivate();
     }
 
-	/* (non-Javadoc)
-	 * @see org.apache.sling.jackrabbit.usermanager.impl.post.AbstractAuthorizablePostServlet#bindSystemUserManagerPaths(org.apache.sling.jackrabbit.usermanager.impl.resource.SystemUserManagerPaths)
-	 */
+    /* (non-Javadoc)
+     * @see org.apache.sling.jackrabbit.usermanager.impl.post.AbstractAuthorizablePostServlet#bindSystemUserManagerPaths(org.apache.sling.jackrabbit.usermanager.impl.resource.SystemUserManagerPaths)
+     */
     @Reference
-	@Override
-	protected void bindSystemUserManagerPaths(SystemUserManagerPaths sump) {
-		super.bindSystemUserManagerPaths(sump);
-	}
+    @Override
+    protected void bindSystemUserManagerPaths(SystemUserManagerPaths sump) {
+        super.bindSystemUserManagerPaths(sump);
+    }
     
     /**
      * Overridden since the @Reference annotation is not inherited from the super method
@@ -205,7 +205,7 @@ public class ChangeUserPasswordServlet extends AbstractAuthorizablePostServlet i
      * @see org.apache.sling.jackrabbit.usermanager.impl.post.AbstractPostServlet#unbindPostResponseCreator(org.apache.sling.servlets.post.PostResponseCreator, java.util.Map)
      */
     @Override
-    protected void unbindPostResponseCreator(PostResponseCreator creator, Map<String, Object> properties) {
+    protected void unbindPostResponseCreator(PostResponseCreator creator, Map<String, Object> properties) { //NOSONAR
         super.unbindPostResponseCreator(creator, properties);
     }
 
@@ -280,7 +280,7 @@ public class ChangeUserPasswordServlet extends AbstractAuthorizablePostServlet i
 
                 }
             } catch ( Exception ex ) {
-                log.warn("Failed to determine if the user is an admin, assuming not. Cause: "+ex.getMessage());
+                log.warn("Failed to determine if the user is an admin, assuming not. Cause: {}", ex.getMessage());
                 administrator = false;
             }
             if (!administrator) {

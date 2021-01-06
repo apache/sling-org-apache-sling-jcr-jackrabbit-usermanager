@@ -67,28 +67,22 @@ public abstract class AbstractGroupPostServlet extends
             // first remove any members posted as ":member@Delete"
             String[] membersToDelete = convertToStringArray(properties.get(SlingPostConstants.RP_PREFIX
                 + "member" + SlingPostConstants.SUFFIX_DELETE));
-            if (membersToDelete != null) {
-                for (String member : membersToDelete) {
-                    
-                    Authorizable memberAuthorizable = getAuthorizable(baseResource, member,userManager,resolver);
-                    if (memberAuthorizable != null) {
-                        group.removeMember(memberAuthorizable);
-                        changed = true;
-                    }
-
+            for (String member : membersToDelete) {
+                Authorizable memberAuthorizable = getAuthorizable(baseResource, member,userManager,resolver);
+                if (memberAuthorizable != null) {
+                    group.removeMember(memberAuthorizable);
+                    changed = true;
                 }
             }
 
             // second add any members posted as ":member"
             String[] membersToAdd = convertToStringArray(properties.get(SlingPostConstants.RP_PREFIX
                 + "member"));
-            if (membersToAdd != null) {
-                for (String member : membersToAdd) {
-                    Authorizable memberAuthorizable = getAuthorizable(baseResource, member,userManager,resolver);
-                    if (memberAuthorizable != null) {
-                        group.addMember(memberAuthorizable);
-                        changed = true;
-                    }
+            for (String member : membersToAdd) {
+                Authorizable memberAuthorizable = getAuthorizable(baseResource, member,userManager,resolver);
+                if (memberAuthorizable != null) {
+                    group.addMember(memberAuthorizable);
+                    changed = true;
                 }
             }
 

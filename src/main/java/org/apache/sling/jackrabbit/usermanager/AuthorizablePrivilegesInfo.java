@@ -24,10 +24,59 @@ public interface AuthorizablePrivilegesInfo {
      * An enumeration of the possible types of property changes
      */
     public enum PropertyUpdateTypes {
-        addProperty,
-        addNestedProperty,
-        alterProperty,
-        removeProperty
+
+        /**
+         * @deprecated use {@link #ADD_PROPERTY} instead
+         */
+        @Deprecated
+        addProperty, //NOSONAR
+        /**
+         * @deprecated use {@link #ADD_NESTED_PROPERTY} instead
+         */
+        @Deprecated
+        addNestedProperty, //NOSONAR
+        /**
+         * @deprecated use {@link #ALTER_PROPERTY} instead
+         */
+        @Deprecated
+        alterProperty, //NOSONAR
+        /**
+         * @deprecated use {@link #REMOVE_PROPERTY} instead
+         */
+        @Deprecated
+        removeProperty, //NOSONAR
+
+        ADD_PROPERTY,
+        ADD_NESTED_PROPERTY,
+        ALTER_PROPERTY,
+        REMOVE_PROPERTY;
+
+        /**
+         * If the supplied item is one of the deprecated ones, then return the
+         * equivalent item that replaced it.
+         *
+         * @param updateType the item to check
+         * @return the non-deprecated equivalent or the original if it is not one of the deprecated items
+         */
+        public static PropertyUpdateTypes convertDeprecated(PropertyUpdateTypes updateType) {
+            PropertyUpdateTypes converted = null;
+            if (addProperty.equals(updateType)) { //NOSONAR
+                converted = ADD_PROPERTY;
+            } else if (addNestedProperty.equals(updateType)) { //NOSONAR
+                converted = ADD_NESTED_PROPERTY;
+            } else if (alterProperty.equals(updateType)) { //NOSONAR
+                converted = ALTER_PROPERTY;
+            } else if (removeProperty.equals(updateType)) { //NOSONAR
+                converted = REMOVE_PROPERTY;
+            }
+
+            if (converted == null) {
+                // not one of the deprecated items, so just
+                //  return the original
+                converted = updateType;
+            }
+            return converted;
+        }
     }
 
     /**
