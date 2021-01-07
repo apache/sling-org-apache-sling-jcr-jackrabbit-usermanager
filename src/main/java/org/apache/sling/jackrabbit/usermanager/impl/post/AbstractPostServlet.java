@@ -282,14 +282,15 @@ public abstract class AbstractPostServlet extends
                 URI redirectUri = new URI(result);
                 if (redirectUri.getAuthority() != null) {
                     // if it has a host information
-                    log.warn("redirect target ({}) does include host information ({}). This is not allowed for security reasons!", result, redirectUri.getAuthority());
-                    return null;
+                    log.warn("redirect target includes host information ({}). This is not allowed for security reasons!", result, redirectUri.getAuthority());
+                    result = null;
                 }
             } catch (URISyntaxException e) {
-                log.warn("given redirect target ({}) is not a valid uri: {}", result, e);
-                return null;
+                log.warn("given redirect target is not a valid uri: {}", e);
+                result = null;
             }
-
+        }
+        if (result != null) {
             log.debug("redirect requested as [{}] for path [{}]", result, ctx.getPath());
 
             if (ctx.getPath() != null) {
