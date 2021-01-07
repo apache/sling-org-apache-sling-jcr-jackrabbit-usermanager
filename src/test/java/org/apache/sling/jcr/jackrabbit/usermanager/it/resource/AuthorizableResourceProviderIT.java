@@ -23,6 +23,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.ops4j.pax.exam.CoreOptions.options;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Dictionary;
@@ -35,6 +36,7 @@ import javax.jcr.SimpleCredentials;
 
 import org.apache.jackrabbit.api.security.user.Group;
 import org.apache.jackrabbit.api.security.user.User;
+import org.apache.sling.api.resource.LoginException;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.api.resource.ResourceResolverFactory;
@@ -47,7 +49,6 @@ import org.apache.sling.jackrabbit.usermanager.resource.SystemUserManagerPaths;
 import org.apache.sling.jcr.api.SlingRepository;
 import org.apache.sling.jcr.jackrabbit.usermanager.it.UserManagerTestSupport;
 import org.apache.sling.jcr.resource.api.JcrResourceConstants;
-import org.apache.sling.servlets.post.Modification;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -71,7 +72,7 @@ import org.slf4j.LoggerFactory;
 @RunWith(PaxExam.class)
 @ExamReactorStrategy(PerClass.class)
 public class AuthorizableResourceProviderIT extends UserManagerTestSupport {
-	private static AtomicLong counter = new AtomicLong(0);
+    private static AtomicLong counter = new AtomicLong(0);
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Inject
@@ -86,20 +87,20 @@ public class AuthorizableResourceProviderIT extends UserManagerTestSupport {
     @Inject
     protected ConfigurationAdmin configAdmin;
     
-	@Inject
-	private CreateUser createUser;
+    @Inject
+    private CreateUser createUser;
 
-	@Inject
-	private CreateGroup createGroup;
+    @Inject
+    private CreateGroup createGroup;
 
-	@Inject
-	private DeleteUser deleteUser;
+    @Inject
+    private DeleteUser deleteUser;
 
-	@Inject
-	private DeleteGroup deleteGroup;
+    @Inject
+    private DeleteGroup deleteGroup;
 
-	@Rule
-	public TestName testName = new TestName();
+    @Rule
+    public TestName testName = new TestName();
     
     protected Session adminSession;
     protected User user1;
@@ -113,65 +114,65 @@ public class AuthorizableResourceProviderIT extends UserManagerTestSupport {
     }
 
     @Before
-    public void setup() throws Exception {
+    public void setup() throws RepositoryException {
         adminSession = repository.login(new SimpleCredentials("admin", "admin".toCharArray()));
         assertNotNull("Expected adminSession to not be null", adminSession);
 
-		user1 = createUser.createUser(adminSession, createUniqueName("user"), "testPwd", "testPwd", 
-				Collections.emptyMap(), new ArrayList<Modification>());
-		assertNotNull("Expected user1 to not be null", user1);
+        user1 = createUser.createUser(adminSession, createUniqueName("user"), "testPwd", "testPwd",
+                Collections.emptyMap(), new ArrayList<>());
+        assertNotNull("Expected user1 to not be null", user1);
 
-		group1 = createGroup.createGroup(adminSession, createUniqueName("group"), 
-				Collections.emptyMap(), new ArrayList<Modification>());
-		assertNotNull("Expected group1 to not be null", group1);
-		
-		if (adminSession.hasPendingChanges()) {
-			adminSession.save();
-		}
+        group1 = createGroup.createGroup(adminSession, createUniqueName("group"),
+                Collections.emptyMap(), new ArrayList<>());
+        assertNotNull("Expected group1 to not be null", group1);
+
+        if (adminSession.hasPendingChanges()) {
+            adminSession.save();
+        }
     }
 
     @After
     public void teardown() {
-    	try {
-			adminSession.refresh(false);
-			if (user1 != null) {
-				deleteUser.deleteUser(adminSession, user1.getID(), new ArrayList<>());
-			}
+        try {
+            adminSession.refresh(false);
+            if (user1 != null) {
+                deleteUser.deleteUser(adminSession, user1.getID(), new ArrayList<>());
+            }
 
-			if (adminSession.hasPendingChanges()) {
-				adminSession.save();
-			}
-		} catch (RepositoryException e) {
-			logger.warn("Failed to delete user: " + e.getMessage(), e);
-		}
-    	try {
-			adminSession.refresh(false);
-			if (group1 != null) {
-				deleteGroup.deleteGroup(adminSession, group1.getID(), new ArrayList<>());
-			}
+            if (adminSession.hasPendingChanges()) {
+                adminSession.save();
+            }
+        } catch (RepositoryException e) {
+            logger.warn(String.format("Failed to delete user: %s", e.getMessage()), e);
+        }
+        try {
+            adminSession.refresh(false);
+            if (group1 != null) {
+                deleteGroup.deleteGroup(adminSession, group1.getID(), new ArrayList<>());
+            }
 
-			if (adminSession.hasPendingChanges()) {
-				adminSession.save();
-			}
-		} catch (RepositoryException e) {
-			logger.warn("Failed to delete group: " + e.getMessage(), e);
-		}
+            if (adminSession.hasPendingChanges()) {
+                adminSession.save();
+            }
+        } catch (RepositoryException e) {
+            logger.warn(String.format("Failed to delete group: %s", e.getMessage()), e);
+        }
 
-		adminSession.logout();
+        adminSession.logout();
     }
 
     protected String createUniqueName(String prefix) {
-		return String.format("%s_%s%d", prefix, testName.getMethodName(), counter.incrementAndGet());
-	}
+        return String.format("%s_%s%d", prefix, testName.getMethodName(), counter.incrementAndGet());
+    }
     
     /**
      * Test changing the usermanager provider.root value
      */
     @Test
-    public void changeProviderRoot() throws Exception {
+    public void changeProviderRoot() throws LoginException, RepositoryException, IOException, InterruptedException {
         // the userManager resource should be mounted under /system/userManager
-    	checkResourceTypes("/system/userManager", "/people");
-    	
+        checkResourceTypes("/system/userManager", "/people");
+
         org.osgi.service.cm.Configuration configuration = configAdmin.getConfiguration("org.apache.sling.jackrabbit.usermanager.impl.resource.AuthorizableResourceProvider", null);
         Dictionary<String, Object> originalServiceProps = configuration.getProperties();
         ServiceReference<SystemUserManagerPaths> serviceReference = null;
@@ -186,7 +187,7 @@ public class AuthorizableResourceProviderIT extends UserManagerTestSupport {
             assertEquals("/people", serviceReference.getProperty("provider.root"));
 
             // now the userManager resource should be mounted under /people
-        	checkResourceTypes("/people", "/system/userManager");
+            checkResourceTypes("/people", "/system/userManager");
         } finally {
             if (serviceReference != null) {
                 // done with this.
@@ -200,52 +201,52 @@ public class AuthorizableResourceProviderIT extends UserManagerTestSupport {
         }
     }
 
-	protected void checkResourceTypes(String expectedPrefix, String unexpectedPrefix) throws Exception {
-		try (ResourceResolver resourceResolver = resourceResolverFactory.getResourceResolver(Collections.singletonMap(JcrResourceConstants.AUTHENTICATION_INFO_SESSION, adminSession))) {
-    		// --- expected resources paths ----
-    		
-    		Resource resource = resourceResolver.resolve(expectedPrefix);
-    		assertTrue("Expected resource type of sling/userManager for: " + resource.getPath(), 
-    				resource.isResourceType("sling/userManager"));
+    protected void checkResourceTypes(String expectedPrefix, String unexpectedPrefix) throws LoginException, RepositoryException {
+        try (ResourceResolver resourceResolver = resourceResolverFactory.getResourceResolver(Collections.singletonMap(JcrResourceConstants.AUTHENTICATION_INFO_SESSION, adminSession))) {
+            // --- expected resources paths ----
 
-    		resource = resourceResolver.resolve(expectedPrefix + "/user");
-    		assertTrue("Expected resource type of sling/users for: " + resource.getPath(), 
-    				resource.isResourceType("sling/users"));
+            Resource resource = resourceResolver.resolve(expectedPrefix);
+            assertTrue("Expected resource type of sling/userManager for: " + resource.getPath(),
+                    resource.isResourceType("sling/userManager"));
 
-    		resource = resourceResolver.resolve(expectedPrefix + "/group");
-    		assertTrue("Expected resource type of sling/groups for: " + resource.getPath(), 
-    				resource.isResourceType("sling/groups"));
+            resource = resourceResolver.resolve(expectedPrefix + "/user");
+            assertTrue("Expected resource type of sling/users for: " + resource.getPath(),
+                    resource.isResourceType("sling/users"));
 
-    		resource = resourceResolver.resolve(expectedPrefix + "/user/" + user1.getID());
-    		assertTrue("Expected resource type of sling/user for: " + resource.getPath(), 
-    				resource.isResourceType("sling/user"));
+            resource = resourceResolver.resolve(expectedPrefix + "/group");
+            assertTrue("Expected resource type of sling/groups for: " + resource.getPath(),
+                    resource.isResourceType("sling/groups"));
 
-    		resource = resourceResolver.resolve(expectedPrefix + "/group/" + group1.getID());
-    		assertTrue("Expected resource type of sling/group for: " + resource.getPath(), 
-    				resource.isResourceType("sling/group"));
+            resource = resourceResolver.resolve(expectedPrefix + "/user/" + user1.getID());
+            assertTrue("Expected resource type of sling/user for: " + resource.getPath(),
+                    resource.isResourceType("sling/user"));
 
-    		// --- unexpected resources paths ----
-    		
-    		resource = resourceResolver.resolve(unexpectedPrefix);
-    		assertTrue("Expected resource type of sling:nonexisting for: " + resource.getPath(), 
-    				resource.isResourceType("sling:nonexisting"));
+            resource = resourceResolver.resolve(expectedPrefix + "/group/" + group1.getID());
+            assertTrue("Expected resource type of sling/group for: " + resource.getPath(),
+                    resource.isResourceType("sling/group"));
 
-    		resource = resourceResolver.resolve(unexpectedPrefix + "/user");
-    		assertTrue("Expected resource type of sling:nonexisting for: " + resource.getPath(), 
-    				resource.isResourceType("sling:nonexisting"));
+            // --- unexpected resources paths ----
 
-    		resource = resourceResolver.resolve(unexpectedPrefix + "/group");
-    		assertTrue("Expected resource type of sling:nonexisting for: " + resource.getPath(), 
-    				resource.isResourceType("sling:nonexisting"));
+            resource = resourceResolver.resolve(unexpectedPrefix);
+            assertTrue("Expected resource type of sling:nonexisting for: " + resource.getPath(),
+                    resource.isResourceType("sling:nonexisting"));
 
-    		resource = resourceResolver.resolve(unexpectedPrefix + "/user/" + user1.getID());
-    		assertTrue("Expected resource type of sling:nonexisting for: " + resource.getPath(), 
-    				resource.isResourceType("sling:nonexisting"));
+            resource = resourceResolver.resolve(unexpectedPrefix + "/user");
+            assertTrue("Expected resource type of sling:nonexisting for: " + resource.getPath(),
+                    resource.isResourceType("sling:nonexisting"));
 
-    		resource = resourceResolver.resolve(unexpectedPrefix + "/group/" + group1.getID());
-    		assertTrue("Expected resource type of sling:nonexisting for: " + resource.getPath(), 
-    				resource.isResourceType("sling:nonexisting"));
-		}
-	}
+            resource = resourceResolver.resolve(unexpectedPrefix + "/group");
+            assertTrue("Expected resource type of sling:nonexisting for: " + resource.getPath(),
+                    resource.isResourceType("sling:nonexisting"));
+
+            resource = resourceResolver.resolve(unexpectedPrefix + "/user/" + user1.getID());
+            assertTrue("Expected resource type of sling:nonexisting for: " + resource.getPath(),
+                    resource.isResourceType("sling:nonexisting"));
+
+            resource = resourceResolver.resolve(unexpectedPrefix + "/group/" + group1.getID());
+            assertTrue("Expected resource type of sling:nonexisting for: " + resource.getPath(),
+                    resource.isResourceType("sling:nonexisting"));
+        }
+    }
 
 }

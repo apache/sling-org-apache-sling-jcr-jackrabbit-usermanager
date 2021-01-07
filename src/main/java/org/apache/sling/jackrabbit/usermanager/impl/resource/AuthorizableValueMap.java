@@ -66,11 +66,11 @@ public class AuthorizableValueMap implements ValueMap {
 
     private Authorizable authorizable;
 
-	private final SystemUserManagerPaths systemUserManagerPaths;
+    private final SystemUserManagerPaths systemUserManagerPaths;
 
     public AuthorizableValueMap(Authorizable authorizable, SystemUserManagerPaths systemUserManagerPaths) {
         this.authorizable = authorizable;
-        this.cache = new LinkedHashMap<String, Object>();
+        this.cache = new LinkedHashMap<>();
         this.fullyRead = false;
         this.systemUserManagerPaths = systemUserManagerPaths;
     }
@@ -243,7 +243,7 @@ public class AuthorizableValueMap implements ValueMap {
                 // only direct property
                 Iterator<String> pi = authorizable.getPropertyNames();
                 while (pi.hasNext()) {
-                    String key = (String) pi.next();
+                    String key = pi.next();
                     if (!cache.containsKey(key)) {
                         Value[] property = authorizable.getProperty(key);
                         Object value = valuesToJavaObject(property);
@@ -308,7 +308,7 @@ public class AuthorizableValueMap implements ValueMap {
                         result = (T) convertToArray(values,
                             type.getComponentType());
                     } else if (values.length > 0) {
-                        result = convertToType(-1, values[0], type);
+                        result = convertToType(values[0], type);
                     }
                 } else {
                     Value value = values[0];
@@ -316,16 +316,15 @@ public class AuthorizableValueMap implements ValueMap {
                         result = (T) convertToArray(new Value[] { value },
                             type.getComponentType());
                     } else {
-                        result = convertToType(-1, value, type);
+                        result = convertToType(value, type);
                     }
                 }
             }
 
         } catch (ValueFormatException vfe) {
-            LOG.info("converToType: Cannot convert value of " + name
-                + " to " + type, vfe);
+            LOG.info(String.format("convertToType: Cannot convert value of %s to %s", name, type), vfe);
         } catch (RepositoryException re) {
-            LOG.info("converToType: Cannot get value of " + name, re);
+            LOG.info(String.format("convertToType: Cannot get value of %s", name), re);
         }
 
         // fall back to nothing
@@ -333,10 +332,10 @@ public class AuthorizableValueMap implements ValueMap {
     }
 
     private <T> T[] convertToArray(Value[] jcrValues, Class<T> type)
-            throws ValueFormatException, RepositoryException {
-        List<T> values = new ArrayList<T>();
+            throws RepositoryException {
+        List<T> values = new ArrayList<>();
         for (int i = 0; i < jcrValues.length; i++) {
-            T value = convertToType(i, jcrValues[i], type);
+            T value = convertToType(jcrValues[i], type);
             if (value != null) {
                 values.add(value);
             }
@@ -349,8 +348,8 @@ public class AuthorizableValueMap implements ValueMap {
     }
 
     @SuppressWarnings("unchecked")
-    private <T> T convertToType(int index, Value jcrValue, Class<T> type)
-            throws ValueFormatException, RepositoryException {
+    private <T> T convertToType(Value jcrValue, Class<T> type)
+            throws RepositoryException {
 
         if (String.class == type) {
             return (T) jcrValue.getString();
@@ -394,7 +393,7 @@ public class AuthorizableValueMap implements ValueMap {
     }
 
     private String[] getMembers(Group group, boolean includeAll) throws RepositoryException {
-        List<String> results = new ArrayList<String>();
+        List<String> results = new ArrayList<>();
         for (Iterator<Authorizable> it = includeAll ? group.getMembers() : group.getDeclaredMembers();
                 it.hasNext();) {
             Authorizable auth = it.next();
@@ -408,7 +407,7 @@ public class AuthorizableValueMap implements ValueMap {
     }
 
     private String[] getMemberships(boolean includeAll) throws RepositoryException {
-        List<String> results = new ArrayList<String>();
+        List<String> results = new ArrayList<>();
         for (Iterator<Group> it = includeAll ? authorizable.memberOf() : authorizable.declaredMemberOf();
                 it.hasNext();) {
             Group group = it.next();

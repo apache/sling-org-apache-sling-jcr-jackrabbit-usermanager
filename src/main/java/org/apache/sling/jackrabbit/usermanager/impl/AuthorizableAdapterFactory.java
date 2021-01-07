@@ -41,7 +41,7 @@ public class AuthorizableAdapterFactory implements AdapterFactory {
     private final Logger log = LoggerFactory.getLogger(getClass());
 
     @Override
-    public <AdapterType> AdapterType getAdapter(final Object adaptable, final Class<AdapterType> type) {
+    public <T> T getAdapter(final Object adaptable, final Class<T> type) {
         Session session = ((ResourceResolver) adaptable).adaptTo(Session.class);
         if (session instanceof JackrabbitSession) {
             JackrabbitSession jackrabbitSession = (JackrabbitSession) session;

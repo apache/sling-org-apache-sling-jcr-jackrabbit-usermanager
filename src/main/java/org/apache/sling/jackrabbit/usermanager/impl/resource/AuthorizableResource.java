@@ -51,7 +51,7 @@ public class AuthorizableResource extends AbstractResource {
 
     private final ResourceMetadata metadata;
 
-	private final SystemUserManagerPaths systemUserManagerPaths;
+    private final SystemUserManagerPaths systemUserManagerPaths;
 
     public AuthorizableResource(Authorizable authorizable,
             ResourceResolver resourceResolver, String path,
@@ -117,14 +117,14 @@ public class AuthorizableResource extends AbstractResource {
      * @see org.apache.sling.api.adapter.Adaptable#adaptTo(java.lang.Class)
      */
     @SuppressWarnings("unchecked")
-    public <AdapterType> AdapterType adaptTo(Class<AdapterType> type) {
+    public <T> T adaptTo(Class<T> type) {
         if (type == Map.class || type == ValueMap.class) {
-            return (AdapterType) new AuthorizableValueMap(authorizable, systemUserManagerPaths); // unchecked
+            return (T) new AuthorizableValueMap(authorizable, systemUserManagerPaths); // unchecked
                                                                          // cast
         } else if (type == Authorizable.class
             || (type == User.class && !authorizable.isGroup())
             || (type == Group.class && authorizable.isGroup())) {
-            return (AdapterType) authorizable;
+            return (T) authorizable;
         }
 
         return super.adaptTo(type);

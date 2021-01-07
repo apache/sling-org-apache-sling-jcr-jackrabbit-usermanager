@@ -16,9 +16,6 @@
  */
 package org.apache.sling.jackrabbit.usermanager.impl;
 
-import java.io.UnsupportedEncodingException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -211,14 +208,12 @@ public class AuthorizablePrivilegesInfoImpl implements AuthorizablePrivilegesInf
                     log.debug("Failed to find authorizable: {}", principalId);
                 } else {
                     String path = authorizable.getPath();
-                    if (path != null) {
-                        //check if the non-admin user has sufficient rights on the home folder
-                        AccessControlManager acm = jcrSession.getAccessControlManager();
-                        hasRights = acm.hasPrivileges(path, new Privilege[] {
-                                                acm.privilegeFromName(Privilege.JCR_READ),
-                                                acm.privilegeFromName(PrivilegeConstants.REP_USER_MANAGEMENT)
-                                        });
-                    }
+                    //check if the non-admin user has sufficient rights on the home folder
+                    AccessControlManager acm = jcrSession.getAccessControlManager();
+                    hasRights = acm.hasPrivileges(path, new Privilege[] {
+                                            acm.privilegeFromName(Privilege.JCR_READ),
+                                            acm.privilegeFromName(PrivilegeConstants.REP_USER_MANAGEMENT)
+                                    });
                 }
             }
         } catch (RepositoryException e) {
@@ -244,14 +239,12 @@ public class AuthorizablePrivilegesInfoImpl implements AuthorizablePrivilegesInf
                     log.debug("Failed to find group: {}", groupId);
                 } else {
                     String path = authorizable.getPath();
-                    if (path != null) {
-                        //check if the non-admin user has sufficient rights on the home folder
-                        AccessControlManager acm = jcrSession.getAccessControlManager();
-                        hasRights = acm.hasPrivileges(path, new Privilege[] {
-                                                acm.privilegeFromName(Privilege.JCR_READ),
-                                                acm.privilegeFromName(PrivilegeConstants.REP_USER_MANAGEMENT)
-                                        });
-                    }
+                    //check if the non-admin user has sufficient rights on the home folder
+                    AccessControlManager acm = jcrSession.getAccessControlManager();
+                    hasRights = acm.hasPrivileges(path, new Privilege[] {
+                                            acm.privilegeFromName(Privilege.JCR_READ),
+                                            acm.privilegeFromName(PrivilegeConstants.REP_USER_MANAGEMENT)
+                                    });
                 }
             }
         } catch (RepositoryException e) {
@@ -265,8 +258,8 @@ public class AuthorizablePrivilegesInfoImpl implements AuthorizablePrivilegesInf
      */
     public boolean canUpdateProperties(Session jcrSession, String principalId) {
         return canUpdateProperties(jcrSession, principalId,
-                PropertyUpdateTypes.addProperty, PropertyUpdateTypes.addNestedProperty,
-                PropertyUpdateTypes.alterProperty, PropertyUpdateTypes.removeProperty);
+                PropertyUpdateTypes.ADD_PROPERTY, PropertyUpdateTypes.ADD_NESTED_PROPERTY,
+                PropertyUpdateTypes.ALTER_PROPERTY, PropertyUpdateTypes.REMOVE_PROPERTY);
     }
 
     /* (non-Javadoc)
@@ -295,18 +288,19 @@ public class AuthorizablePrivilegesInfoImpl implements AuthorizablePrivilegesInf
                         requiredPrivileges.add(acm.privilegeFromName(Privilege.JCR_READ));
                         if (propertyUpdateTypes != null) {
                             for (PropertyUpdateTypes updateType : propertyUpdateTypes) {
+                                updateType = PropertyUpdateTypes.convertDeprecated(updateType);
                                 switch (updateType) {
-                                case addNestedProperty:
+                                case ADD_NESTED_PROPERTY:
                                     requiredPrivileges.add(acm.privilegeFromName(PrivilegeConstants.REP_ADD_PROPERTIES));
                                     requiredPrivileges.add(acm.privilegeFromName(Privilege.JCR_ADD_CHILD_NODES));
                                     break;
-                                case addProperty:
+                                case ADD_PROPERTY:
                                     requiredPrivileges.add(acm.privilegeFromName(PrivilegeConstants.REP_ADD_PROPERTIES));
                                     break;
-                                case alterProperty:
+                                case ALTER_PROPERTY:
                                     requiredPrivileges.add(acm.privilegeFromName(PrivilegeConstants.REP_ALTER_PROPERTIES));
                                     break;
-                                case removeProperty:
+                                case REMOVE_PROPERTY:
                                     requiredPrivileges.add(acm.privilegeFromName(PrivilegeConstants.REP_REMOVE_PROPERTIES));
                                     break;
                                 default:
@@ -344,14 +338,12 @@ public class AuthorizablePrivilegesInfoImpl implements AuthorizablePrivilegesInf
                     log.debug("Failed to find user: {}", userId);
                 } else {
                     String path = authorizable.getPath();
-                    if (path != null) {
-                        //check if the non-admin user has sufficient rights on the home folder
-                        AccessControlManager acm = jcrSession.getAccessControlManager();
-                        Set<Privilege> requiredPrivileges = new HashSet<>();
-                        requiredPrivileges.add(acm.privilegeFromName(Privilege.JCR_READ));
-                        requiredPrivileges.add(acm.privilegeFromName(PrivilegeConstants.REP_USER_MANAGEMENT));
-                        hasRights = acm.hasPrivileges(path, requiredPrivileges.toArray(new Privilege[requiredPrivileges.size()]));
-                    }
+                    //check if the non-admin user has sufficient rights on the home folder
+                    AccessControlManager acm = jcrSession.getAccessControlManager();
+                    Set<Privilege> requiredPrivileges = new HashSet<>();
+                    requiredPrivileges.add(acm.privilegeFromName(Privilege.JCR_READ));
+                    requiredPrivileges.add(acm.privilegeFromName(PrivilegeConstants.REP_USER_MANAGEMENT));
+                    hasRights = acm.hasPrivileges(path, requiredPrivileges.toArray(new Privilege[requiredPrivileges.size()]));
                 }
             }
         } catch (RepositoryException e) {
@@ -375,20 +367,18 @@ public class AuthorizablePrivilegesInfoImpl implements AuthorizablePrivilegesInf
                 log.debug("Failed to find user: {}", userId);
             } else {
                 if (((User)authorizable).isSystemUser() || "anonymous".equals(authorizable.getID())) {
-                    hasRights = false; //system users and anonymous have no passwords
+                    //system users and anonymous have no passwords
                 } else if (currentUser instanceof User && ((User)currentUser).isAdmin()) {
                     hasRights = true; //admin user has full control
                 } else {
                     // otherwise let's check the granted privileges
                     String path = authorizable.getPath();
-                    if (path != null) {
-                        //check if the non-admin user has sufficient rights on the home folder
-                        AccessControlManager acm = jcrSession.getAccessControlManager();
-                        Set<Privilege> requiredPrivileges = new HashSet<>();
-                        requiredPrivileges.add(acm.privilegeFromName(Privilege.JCR_READ));
-                        requiredPrivileges.add(acm.privilegeFromName(PrivilegeConstants.REP_USER_MANAGEMENT));
-                        hasRights = acm.hasPrivileges(path, requiredPrivileges.toArray(new Privilege[requiredPrivileges.size()]));
-                    }
+                    //check if the non-admin user has sufficient rights on the home folder
+                    AccessControlManager acm = jcrSession.getAccessControlManager();
+                    Set<Privilege> requiredPrivileges = new HashSet<>();
+                    requiredPrivileges.add(acm.privilegeFromName(Privilege.JCR_READ));
+                    requiredPrivileges.add(acm.privilegeFromName(PrivilegeConstants.REP_USER_MANAGEMENT));
+                    hasRights = acm.hasPrivileges(path, requiredPrivileges.toArray(new Privilege[requiredPrivileges.size()]));
 
                     if (!hasRights && jcrSession.getUserID().equals(userId)) {
                         // check if the ChangeUserPassword service is configured to always allow
@@ -406,10 +396,7 @@ public class AuthorizablePrivilegesInfoImpl implements AuthorizablePrivilegesInf
     // ---------- SCR Integration ----------------------------------------------
 
     @Activate
-    protected void activate(BundleContext bundleContext, Map<String, Object> properties)
-            throws InvalidKeyException, NoSuchAlgorithmException,
-            IllegalStateException, UnsupportedEncodingException {
-
+    protected void activate(BundleContext bundleContext, Map<String, Object> properties) {
         String userAdminGroupName = OsgiUtil.toString(properties.get(PAR_USER_ADMIN_GROUP_NAME), null);
         if ( userAdminGroupName != null && ! DEFAULT_USER_ADMIN_GROUP_NAME.equals(userAdminGroupName)) {
             log.warn("Configuration setting for {} is deprecated and will not have any effect", PAR_USER_ADMIN_GROUP_NAME);

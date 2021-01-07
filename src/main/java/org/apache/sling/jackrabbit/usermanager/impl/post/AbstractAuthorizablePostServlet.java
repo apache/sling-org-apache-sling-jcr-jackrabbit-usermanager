@@ -41,6 +41,7 @@ import org.apache.sling.servlets.post.Modification;
 import org.apache.sling.servlets.post.SlingPostConstants;
 import org.apache.sling.servlets.post.impl.helper.DateParser;
 import org.apache.sling.servlets.post.impl.helper.RequestProperty;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,7 +61,7 @@ public abstract class AbstractAuthorizablePostServlet extends
     protected SystemUserManagerPaths systemUserManagerPaths;
 
     protected void bindSystemUserManagerPaths(SystemUserManagerPaths sump) {
-    	this.systemUserManagerPaths = sump;
+        this.systemUserManagerPaths = sump;
     }
 
     // ---------- SCR Integration ----------------------------------------------
@@ -92,21 +93,19 @@ public abstract class AbstractAuthorizablePostServlet extends
         boolean requireItemPrefix = requireItemPathPrefix(properties);
 
         // walk the request parameters and collect the properties (the key is the property path).
-        Map<String, RequestProperty> reqProperties = new HashMap<String, RequestProperty>();
+        Map<String, RequestProperty> reqProperties = new HashMap<>();
         for (Map.Entry<String, ?> e : properties.entrySet()) {
             final String paramName = e.getKey();
 
             // do not store parameters with names starting with sling:post
-            if (paramName.startsWith(SlingPostConstants.RP_PREFIX)) {
-                continue;
-            }
+            boolean skipParam = paramName.startsWith(SlingPostConstants.RP_PREFIX);
             // SLING-298: skip form encoding parameter
             if (paramName.equals("_charset_")) {
-                continue;
+                skipParam = true;
             }
             // skip parameters that do not start with the save prefix
             if (requireItemPrefix && !hasItemPathPrefix(paramName)) {
-                continue;
+                skipParam = true;
             }
 
             // ensure the paramName is an absolute property path (i.e. starts with "/", where root refers to the authorizable's root, https://issues.apache.org/jira/browse/SLING-1577)
@@ -114,106 +113,87 @@ public abstract class AbstractAuthorizablePostServlet extends
             if (paramName.startsWith("./")) {
                 propPath = paramName.substring(1);
             } else {
-                propPath = "/" + paramName;
+                propPath = String.format("/%s", paramName);
             }
 
             if (propPath.indexOf("..") != -1) {
                 // it is not supported to set properties potentially outside of the authorizable node
-                LOG.warn("Property path containing '..' is not supported, skipping parameter {}", SlingPostConstants.SUFFIX_COPY_FROM, paramName);
-                continue; // skip it.
+                LOG.warn("Property path containing '..' is not supported, skipping parameter {}", paramName);
+                skipParam = true;
             }
 
-            // @TypeHint example
-            // <input type="text" name="./age" />
-            // <input type="hidden" name="./age@TypeHint" value="long" />
-            // causes the setProperty using the 'long' property type
-            if (propPath.endsWith(SlingPostConstants.TYPE_HINT_SUFFIX)) {
-                RequestProperty prop = getOrCreateRequestProperty(
-                    reqProperties, propPath,
-                    SlingPostConstants.TYPE_HINT_SUFFIX);
+            if (!skipParam) {
+                // @TypeHint example
+                // <input type="text" name="./age" />
+                // <input type="hidden" name="./age@TypeHint" value="long" />
+                // causes the setProperty using the 'long' property type
+                if (propPath.endsWith(SlingPostConstants.TYPE_HINT_SUFFIX)) {
+                    RequestProperty prop = getOrCreateRequestProperty(
+                        reqProperties, propPath,
+                        SlingPostConstants.TYPE_HINT_SUFFIX);
 
-                String typeHintValue = convertToString(e.getValue());
-                if (typeHintValue != null) {
-                    prop.setTypeHintValue(typeHintValue);
-                }
-
-                continue;
-            }
-
-            // @DefaultValue
-            if (propPath.endsWith(SlingPostConstants.DEFAULT_VALUE_SUFFIX)) {
-                RequestProperty prop = getOrCreateRequestProperty(
-                    reqProperties, propPath,
-                    SlingPostConstants.DEFAULT_VALUE_SUFFIX);
-
-                prop.setDefaultValues(convertToRequestParameterArray(e.getValue()));
-
-                continue;
-            }
-
-            // SLING-130: VALUE_FROM_SUFFIX means take the value of this
-            // property from a different field
-            // @ValueFrom example:
-            // <input name="./Text@ValueFrom" type="hidden" value="fulltext" />
-            // causes the JCR Text property to be set to the value of the
-            // fulltext form field.
-            if (propPath.endsWith(SlingPostConstants.VALUE_FROM_SUFFIX)) {
-                RequestProperty prop = getOrCreateRequestProperty(
-                    reqProperties, propPath,
-                    SlingPostConstants.VALUE_FROM_SUFFIX);
-
-                // @ValueFrom params must have exactly one value, else ignored
-                String [] valueFrom = convertToStringArray(e.getValue());
-                if (valueFrom.length == 1) {
-                    String refName = valueFrom[0];
-                    RequestParameter[] refValues = convertToRequestParameterArray(refName);
-                    if (refValues != null) {
-                        prop.setValues(refValues);
+                    String typeHintValue = convertToString(e.getValue());
+                    if (typeHintValue != null) {
+                        prop.setTypeHintValue(typeHintValue);
                     }
+                } else if (propPath.endsWith(SlingPostConstants.DEFAULT_VALUE_SUFFIX)) {
+                    // @DefaultValue
+                    RequestProperty prop = getOrCreateRequestProperty(
+                        reqProperties, propPath,
+                        SlingPostConstants.DEFAULT_VALUE_SUFFIX);
+
+                    prop.setDefaultValues(convertToRequestParameterArray(e.getValue()));
+                } else if (propPath.endsWith(SlingPostConstants.VALUE_FROM_SUFFIX)) {
+                    // SLING-130: VALUE_FROM_SUFFIX means take the value of this
+                    // property from a different field
+                    // @ValueFrom example:
+                    // <input name="./Text@ValueFrom" type="hidden" value="fulltext" />
+                    // causes the JCR Text property to be set to the value of the
+                    // fulltext form field.
+                    RequestProperty prop = getOrCreateRequestProperty(
+                        reqProperties, propPath,
+                        SlingPostConstants.VALUE_FROM_SUFFIX);
+
+                    // @ValueFrom params must have exactly one value, else ignored
+                    String [] valueFrom = convertToStringArray(e.getValue());
+                    if (valueFrom.length == 1) {
+                        String refName = valueFrom[0];
+                        prop.setValues(convertToRequestParameterArray(refName));
+                    }
+                } else if (propPath.endsWith(SlingPostConstants.SUFFIX_DELETE)) {
+                    // SLING-458: Allow Removal of properties prior to update
+                    // @Delete example:
+                    // <input name="./Text@Delete" type="hidden" />
+                    // causes the JCR Text property to be deleted before update
+                    RequestProperty prop = getOrCreateRequestProperty(
+                        reqProperties, propPath, SlingPostConstants.SUFFIX_DELETE);
+
+                    prop.setDelete(true);
+                } else if (propPath.endsWith(SlingPostConstants.SUFFIX_MOVE_FROM)) {
+                    // SLING-455: @MoveFrom means moving content to another location
+                    // @MoveFrom example:
+                    // <input name="./Text@MoveFrom" type="hidden" value="/tmp/path" />
+                    // causes the JCR Text property to be set by moving the /tmp/path
+                    // property to Text.
+
+                    // don't support @MoveFrom here
+                    LOG.warn("Suffix {} not supported, skipping parameter {}", SlingPostConstants.SUFFIX_MOVE_FROM, paramName);
+                } else if (propPath.endsWith(SlingPostConstants.SUFFIX_COPY_FROM)) {
+                    // SLING-455: @CopyFrom means moving content to another location
+                    // @CopyFrom example:
+                    // <input name="./Text@CopyFrom" type="hidden" value="/tmp/path" />
+                    // causes the JCR Text property to be set by copying the /tmp/path
+                    // property to Text.
+
+                    // don't support @CopyFrom here
+                    LOG.warn("Suffix {} not supported, skipping parameter {}", SlingPostConstants.SUFFIX_COPY_FROM, paramName);
+                } else {
+                    // plain property, create from values
+                    RequestProperty prop = getOrCreateRequestProperty(reqProperties,
+                        propPath, null);
+                    prop.setValues(convertToRequestParameterArray(e.getValue()));
                 }
-
-                continue;
             }
-
-            // SLING-458: Allow Removal of properties prior to update
-            // @Delete example:
-            // <input name="./Text@Delete" type="hidden" />
-            // causes the JCR Text property to be deleted before update
-            if (propPath.endsWith(SlingPostConstants.SUFFIX_DELETE)) {
-                RequestProperty prop = getOrCreateRequestProperty(
-                    reqProperties, propPath, SlingPostConstants.SUFFIX_DELETE);
-
-                prop.setDelete(true);
-
-                continue;
-            }
-
-            // SLING-455: @MoveFrom means moving content to another location
-            // @MoveFrom example:
-            // <input name="./Text@MoveFrom" type="hidden" value="/tmp/path" />
-            // causes the JCR Text property to be set by moving the /tmp/path
-            // property to Text.
-            if (propPath.endsWith(SlingPostConstants.SUFFIX_MOVE_FROM)) {
-                // don't support @MoveFrom here
-                LOG.warn("Suffix {} not supported, skipping parameter {}", SlingPostConstants.SUFFIX_MOVE_FROM, paramName);
-                continue;
-            }
-
-            // SLING-455: @CopyFrom means moving content to another location
-            // @CopyFrom example:
-            // <input name="./Text@CopyFrom" type="hidden" value="/tmp/path" />
-            // causes the JCR Text property to be set by copying the /tmp/path
-            // property to Text.
-            if (propPath.endsWith(SlingPostConstants.SUFFIX_COPY_FROM)) {
-                // don't support @CopyFrom here
-                LOG.warn("Suffix {} not supported, skipping parameter {}", SlingPostConstants.SUFFIX_COPY_FROM, paramName);
-                continue;
-            }
-
-            // plain property, create from values
-            RequestProperty prop = getOrCreateRequestProperty(reqProperties,
-                propPath, null);
-            prop.setValues(convertToRequestParameterArray(e.getValue()));
         }
 
         return reqProperties.values();
@@ -239,13 +219,7 @@ public abstract class AbstractAuthorizablePostServlet extends
                 - suffix.length());
         }
 
-        RequestProperty prop = props.get(paramPath);
-        if (prop == null) {
-            prop = new RequestProperty(paramPath);
-            props.put(paramPath, prop);
-        }
-
-        return prop;
+        return props.computeIfAbsent(paramPath, RequestProperty::new);
     }
 
     /**
@@ -270,7 +244,7 @@ public abstract class AbstractAuthorizablePostServlet extends
             if (property.isDelete()) {
                 // SLING-7901 - remove artificial "/" prepended to the prop path
                 String relativePath = property.getPath().substring(1);
-            	
+
                 if (authorizable.hasProperty(relativePath)) {
                     authorizable.removeProperty(relativePath);
                     changes.add(Modification.onDeleted(relativePath));
@@ -298,28 +272,23 @@ public abstract class AbstractAuthorizablePostServlet extends
                 String relativePath = prop.getPath().substring(1);
                 
                 // skip jcr special properties
-                if (relativePath.equals("jcr:primaryType")
-                    || relativePath.equals("jcr:mixinTypes")) {
-                    continue;
-                }
+                boolean isSpecialProp = relativePath.equals("jcr:primaryType")
+                    || relativePath.equals("jcr:mixinTypes");
                 if (authorizable.isGroup()) {
                     if (relativePath.equals("groupId")) {
                         // skip these
-                        continue;
+                        isSpecialProp = true;
                     }
                 } else {
                     if (relativePath.equals("userId")
                         || relativePath.equals("pwd")
                         || relativePath.equals("pwdConfirm")) {
                         // skip these
-                        continue;
+                        isSpecialProp = true;
                     }
                 }
-                if (prop.isFileUpload()) {
-                    // don't handle files for user properties for now.
-                    continue;
-                    // uploadHandler.setFile(parent, prop, changes);
-                } else {
+                if (!isSpecialProp &&  // skip these
+                        !prop.isFileUpload()) { // don't handle files for user properties for now.
                     setPropertyAsIs(session, authorizable, prop, changes);
                 }
             }
@@ -544,50 +513,44 @@ public abstract class AbstractAuthorizablePostServlet extends
         return null;
     }
 
-    protected String[] convertToStringArray(Object obj) {
-        if (obj == null) {
-            return null;
-        }
-
+    protected @NotNull String[] convertToStringArray(Object obj) {
+        String [] strArray = null;
         if (obj instanceof String) {
-            return new String[] {(String)obj};
+            strArray = new String[] {(String)obj};
         } else if (obj instanceof String[]) {
-            return (String[])obj;
+            strArray = (String[])obj;
         } else if (obj instanceof RequestParameter) {
-            return new String[] {((RequestParameter)obj).getString()};
+            strArray = new String[] {((RequestParameter)obj).getString()};
         } else if (obj instanceof RequestParameter[]) {
             RequestParameter[] values = (RequestParameter[])obj;
-            String [] strValues = new String[values.length];
+            strArray = new String[values.length];
             for (int i=0; i < values.length; i++) {
-                strValues[i] = values[i].getString();
+                strArray[i] = values[i].getString();
             }
-            return strValues;
         }
-        return null;
+
+        return strArray == null ? new String[0] : strArray;
     }
 
-    protected RequestParameter[] convertToRequestParameterArray(Object obj) {
-        if (obj == null) {
-            return null;
-        }
-
+    protected @NotNull RequestParameter[] convertToRequestParameterArray(Object obj) {
+        RequestParameter [] paramArray = null;
         if (obj instanceof String) {
-            return new RequestParameter[] {
+            paramArray = new RequestParameter[] {
                 new RequestParameterImpl((String)obj, null)
             };
         } else if (obj instanceof String[]) {
             String [] strValues = (String[])obj;
-            RequestParameter [] values = new RequestParameter[strValues.length];
+            paramArray = new RequestParameter[strValues.length];
             for (int i=0; i < strValues.length; i++) {
-                values[i] = new RequestParameterImpl(strValues[i], null);
+                paramArray[i] = new RequestParameterImpl(strValues[i], null);
             }
-            return values;
         } else if (obj instanceof RequestParameter) {
-            return new RequestParameter[] {(RequestParameter)obj};
+            paramArray = new RequestParameter[] {(RequestParameter)obj};
         } else if (obj instanceof RequestParameter[]) {
-            return (RequestParameter[])obj;
+            paramArray = (RequestParameter[])obj;
         }
-        return null;
+
+        return paramArray == null ? new RequestParameter[0] : paramArray;
     }
 
     static class RequestParameterImpl implements RequestParameter {
@@ -687,12 +650,11 @@ public abstract class AbstractAuthorizablePostServlet extends
         }
 
         @Override
-		public String getName() {
-			// TODO Auto-generated method stub
-			return null;
-		}
+        public String getName() {
+            return null;
+        }
 
-		@Override
+        @Override
         public String toString() {
             return this.getString();
         }

@@ -17,7 +17,7 @@
 package org.apache.sling.jackrabbit.usermanager.impl.post;
 
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -37,6 +37,7 @@ import org.apache.sling.api.resource.ResourceResolverFactory;
 import org.apache.sling.jackrabbit.usermanager.UpdateGroup;
 import org.apache.sling.jackrabbit.usermanager.resource.SystemUserManagerPaths;
 import org.apache.sling.jcr.base.util.AccessControlUtil;
+import org.apache.sling.jcr.resource.api.JcrResourceConstants;
 import org.apache.sling.servlets.post.Modification;
 import org.apache.sling.servlets.post.PostResponse;
 import org.apache.sling.servlets.post.PostResponseCreator;
@@ -90,15 +91,15 @@ import org.osgi.service.component.annotations.ReferencePolicy;
 
 @Component(service = {Servlet.class, UpdateGroup.class},
 property = {
-		   "sling.servlet.resourceTypes=sling/group",
-		   "sling.servlet.methods=POST",
-		   "sling.servlet.selectors=update",
-		   AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=EEE MMM dd yyyy HH:mm:ss 'GMT'Z", 
-		   AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=yyyy-MM-dd'T'HH:mm:ss.SSSZ", 
-		   AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=yyyy-MM-dd'T'HH:mm:ss", 
-		   AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=yyyy-MM-dd", 
-		   AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=dd.MM.yyyy HH:mm:ss", 
-		   AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=dd.MM.yyyy"
+           "sling.servlet.resourceTypes=sling/group",
+           "sling.servlet.methods=POST",
+           "sling.servlet.selectors=update",
+           AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=EEE MMM dd yyyy HH:mm:ss 'GMT'Z",
+           AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=yyyy-MM-dd'T'HH:mm:ss.SSSZ",
+           AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=yyyy-MM-dd'T'HH:mm:ss",
+           AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=yyyy-MM-dd",
+           AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=dd.MM.yyyy HH:mm:ss",
+           AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=dd.MM.yyyy"
 })
 public class UpdateGroupServlet extends AbstractGroupPostServlet 
         implements UpdateGroup {
@@ -119,35 +120,35 @@ public class UpdateGroupServlet extends AbstractGroupPostServlet
         super.deactivate();
     }
 
-	/* (non-Javadoc)
-	 * @see org.apache.sling.jackrabbit.usermanager.impl.post.AbstractAuthorizablePostServlet#bindSystemUserManagerPaths(org.apache.sling.jackrabbit.usermanager.impl.resource.SystemUserManagerPaths)
-	 */
+    /* (non-Javadoc)
+     * @see org.apache.sling.jackrabbit.usermanager.impl.post.AbstractAuthorizablePostServlet#bindSystemUserManagerPaths(org.apache.sling.jackrabbit.usermanager.impl.resource.SystemUserManagerPaths)
+     */
     @Reference
-	@Override
-	protected void bindSystemUserManagerPaths(SystemUserManagerPaths sump) {
-		super.bindSystemUserManagerPaths(sump);
-	}
+    @Override
+    protected void bindSystemUserManagerPaths(SystemUserManagerPaths sump) {
+        super.bindSystemUserManagerPaths(sump);
+    }
 
     /**
      * Overridden since the @Reference annotation is not inherited from the super method
      *  
-	 * @see org.apache.sling.jackrabbit.usermanager.impl.post.AbstractPostServlet#bindPostResponseCreator(org.apache.sling.servlets.post.PostResponseCreator, java.util.Map)
-	 */
-	@Override
+     * @see org.apache.sling.jackrabbit.usermanager.impl.post.AbstractPostServlet#bindPostResponseCreator(org.apache.sling.servlets.post.PostResponseCreator, java.util.Map)
+     */
+    @Override
     @Reference(service = PostResponseCreator.class,
-	    cardinality = ReferenceCardinality.MULTIPLE,
-	    policy = ReferencePolicy.DYNAMIC)
-	protected void bindPostResponseCreator(PostResponseCreator creator, Map<String, Object> properties) {
-		super.bindPostResponseCreator(creator, properties);
-	}
-	
-	/* (non-Javadoc)
-	 * @see org.apache.sling.jackrabbit.usermanager.impl.post.AbstractPostServlet#unbindPostResponseCreator(org.apache.sling.servlets.post.PostResponseCreator, java.util.Map)
-	 */
-	@Override
-	protected void unbindPostResponseCreator(PostResponseCreator creator, Map<String, Object> properties) {
-		super.unbindPostResponseCreator(creator, properties);
-	}
+        cardinality = ReferenceCardinality.MULTIPLE,
+        policy = ReferencePolicy.DYNAMIC)
+    protected void bindPostResponseCreator(PostResponseCreator creator, Map<String, Object> properties) {
+        super.bindPostResponseCreator(creator, properties);
+    }
+
+    /* (non-Javadoc)
+     * @see org.apache.sling.jackrabbit.usermanager.impl.post.AbstractPostServlet#unbindPostResponseCreator(org.apache.sling.servlets.post.PostResponseCreator, java.util.Map)
+     */
+    @Override
+    protected void unbindPostResponseCreator(PostResponseCreator creator, Map<String, Object> properties) { //NOSONAR
+        super.unbindPostResponseCreator(creator, properties);
+    }
     
     /*
      * (non-Javadoc)
@@ -158,7 +159,7 @@ public class UpdateGroupServlet extends AbstractGroupPostServlet
      */
     @Override
     protected void handleOperation(SlingHttpServletRequest request,
-    		PostResponse response, List<Modification> changes)
+            PostResponse response, List<Modification> changes)
             throws RepositoryException {
         Resource resource = request.getResource();
         Session session = request.getResourceResolver().adaptTo(Session.class);
@@ -192,7 +193,8 @@ public class UpdateGroupServlet extends AbstractGroupPostServlet
             + group.getID();
 
         Collection<RequestProperty> reqProperties = collectContent(properties);
-        try {
+        // create a resource resolver to resolve the relative paths used for group membership values
+        try (ResourceResolver resourceResolver = resourceResolverFactory.getResourceResolver(Collections.singletonMap(JcrResourceConstants.AUTHENTICATION_INFO_SESSION, jcrSession))) {
             // cleanup any old content (@Delete parameters)
             processDeletes(group, reqProperties, changes);
 
@@ -200,22 +202,9 @@ public class UpdateGroupServlet extends AbstractGroupPostServlet
             writeContent(jcrSession, group, reqProperties, changes);
 
             // update the group memberships
-            ResourceResolver resourceResolver = null;
-            try {
-                //create a resource resolver to resolve the relative paths used for group membership values
-            	final Map<String, Object> authInfo = new HashMap<String, Object>();
-            	authInfo.put(org.apache.sling.jcr.resource.api.JcrResourceConstants.AUTHENTICATION_INFO_SESSION, jcrSession);
-                resourceResolver = resourceResolverFactory.getResourceResolver(authInfo);
-                Resource baseResource = resourceResolver.getResource(groupPath);
-                updateGroupMembership(baseResource, properties, group, changes);
-            } catch (LoginException e) {
-				throw new RepositoryException(e);
-			} finally {
-                if (resourceResolver != null) {
-                    resourceResolver.close();
-                }
-            }
-        } catch (RepositoryException re) {
+            Resource baseResource = resourceResolver.getResource(groupPath);
+            updateGroupMembership(baseResource, properties, group, changes);
+        } catch (RepositoryException | LoginException re) {
             throw new RepositoryException("Failed to update group.", re);
         }
         return group;

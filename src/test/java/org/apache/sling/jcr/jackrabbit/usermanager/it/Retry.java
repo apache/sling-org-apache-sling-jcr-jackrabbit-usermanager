@@ -25,24 +25,24 @@ import org.slf4j.LoggerFactory;
 
 /** Simple Retry loop for tests */
 public abstract class Retry {
-	private Logger logger = LoggerFactory.getLogger(getClass());
+    private Logger logger = LoggerFactory.getLogger(getClass());
     private long timeoutMsec;
-	private long nextIterationDelay;
+    private long nextIterationDelay;
 
-	public Retry(long timeoutMsec, long nextIterationDelay) throws InterruptedException {
-		this(timeoutMsec, nextIterationDelay, true);
-	}
-	
-	public Retry(long timeoutMsec, long nextIterationDelay, boolean autorun) throws InterruptedException {
-    	this.timeoutMsec = timeoutMsec;
-    	this.nextIterationDelay = nextIterationDelay;
-    	if (autorun) {
-    		run();
-    	}
+    public Retry(long timeoutMsec, long nextIterationDelay) throws InterruptedException {
+        this(timeoutMsec, nextIterationDelay, true);
     }
 
-	protected void run() throws InterruptedException {
-		final long timeout = System.currentTimeMillis() + timeoutMsec;
+    public Retry(long timeoutMsec, long nextIterationDelay, boolean autorun) throws InterruptedException {
+        this.timeoutMsec = timeoutMsec;
+        this.nextIterationDelay = nextIterationDelay;
+        if (autorun) {
+            run();
+        }
+    }
+
+    protected void run() throws InterruptedException {
+        final long timeout = System.currentTimeMillis() + timeoutMsec;
         Throwable lastT = null;
         while (System.currentTimeMillis() < timeout) {
             try {
@@ -50,11 +50,11 @@ public abstract class Retry {
                 exec();
                 break;
             } catch(Throwable t) {
-            	if (logger.isDebugEnabled()) {
-                	logger.warn("exec failed: " + t.getMessage(), t);            	
-            	} else {
-                	logger.warn("exec failed: " + t.getMessage());            	
-            	}
+                if (logger.isDebugEnabled()) {
+                    logger.warn(String.format("exec failed: %s", t.getMessage()), t);
+                } else {
+                    logger.warn("exec failed: {}", t.getMessage());
+                }
                 lastT = t;
                 Thread.sleep(nextIterationDelay);               
             }
@@ -63,7 +63,7 @@ public abstract class Retry {
         if (lastT != null) {
             fail("Failed after " + timeoutMsec + " msec: " + lastT);
         }
-	}
+    }
 
-    protected abstract void exec() throws Exception;
+    protected abstract void exec();
 }
