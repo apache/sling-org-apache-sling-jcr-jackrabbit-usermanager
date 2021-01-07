@@ -301,7 +301,7 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
      * to update the properties of the specified user or group.
      */
     @Test
-    public void canUpdateProperties() throws RepositoryException {
+    public void canUpdatePropertiesWithGrantedRead() throws RepositoryException {
         assertNotNull("Expected privilegesInfo to not be null", privilegesInfo);
 
         workaroundMissingGroupsPath();
@@ -354,39 +354,51 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
                 assertFalse("Should not be allowed to update properties for: " + pid,
                         privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.REMOVE_PROPERTY));
             }
+        } finally {
+            if (user2 != null) {
+                deleteUser.deleteUser(adminSession, user2.getID(), new ArrayList<>());
+            }
+            if (group1 != null) {
+                deleteGroup.deleteGroup(adminSession, group1.getID(), new ArrayList<>());
+            }
+        }
+    }
 
-            // + grant user management rights
-            privileges.put(String.format("privilege@%s", PrivilegeConstants.REP_USER_MANAGEMENT), "granted");
-            modifyAce.modifyAce(adminSession, user2.getPath(), user1.getID(),
-                    privileges,
-                    "first");
-            modifyAce.modifyAce(adminSession, group1.getPath(), user1.getID(),
-                    privileges,
-                    "first");
+    /**
+     * Checks whether the current user has been granted privileges
+     * to update the properties of the specified user or group.
+     */
+    @Test
+    public void canUpdatePropertiesWithGrantedRemoveProperties() throws RepositoryException {
+        assertNotNull("Expected privilegesInfo to not be null", privilegesInfo);
+
+        workaroundMissingGroupsPath();
+
+        User user2 = null;
+        Group group1 = null;
+
+        try {
+            // create a couple of test users
+            user2 = createUser.createUser(adminSession, createUniqueName("user"), "testPwd", "testPwd",
+                    Collections.singletonMap("prop1", "value1"), new ArrayList<>());
+            assertNotNull("Expected user2 to not be null", user2);
+
+            group1 = createGroup.createGroup(adminSession, createUniqueName("group"),
+                    Collections.singletonMap("prop1", "value1"), new ArrayList<>());
+            assertNotNull("Expected group1 to not be null", group1);
+
+            String [] principalIds = new String[] { user2.getID(), group1.getID() };
+
+            // initially user can't do the operation
             for (String pid : principalIds) {
                 assertFalse("Should not be allowed to update properties for: " + pid,
                         privilegesInfo.canUpdateProperties(user1Session, pid));
-                assertFalse("Should not be allowed to update properties for: " + pid,
-                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.ADD_PROPERTY, PropertyUpdateTypes.ADD_NESTED_PROPERTY, PropertyUpdateTypes.REMOVE_PROPERTY));
-                assertFalse("Should not be allowed to update properties for: " + pid,
-                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.ADD_PROPERTY, PropertyUpdateTypes.ADD_NESTED_PROPERTY));
-                assertFalse("Should not be allowed to update properties for: " + pid,
-                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.ADD_PROPERTY, PropertyUpdateTypes.REMOVE_PROPERTY));
-                assertFalse("Should not be allowed to update properties for: " + pid,
-                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.ADD_PROPERTY));
-                assertFalse("Should not be allowed to update properties for: " + pid,
-                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.ADD_NESTED_PROPERTY, PropertyUpdateTypes.REMOVE_PROPERTY));
-                assertFalse("Should not be allowed to update properties for: " + pid,
-                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.ADD_NESTED_PROPERTY));
-                assertFalse("Should not be allowed to update properties for: " + pid,
-                        privilegesInfo.canUpdateProperties(user1Session, pid, PropertyUpdateTypes.REMOVE_PROPERTY));
             }
 
-
-            // grant rights to only remove properties
-            privileges.put(String.format("privilege@%s", PrivilegeConstants.REP_ADD_PROPERTIES), "none");
-            privileges.put(String.format("privilege@%s", PrivilegeConstants.REP_ALTER_PROPERTIES), "none");
-            privileges.put(String.format("privilege@%s", Privilege.JCR_ADD_CHILD_NODES), "none");
+            // start with only read rights
+            Map<String, String> privileges = new HashMap<>();
+            privileges.put(String.format("privilege@%s", Privilege.JCR_READ), "granted");
+            // + grant rights to only remove properties
             privileges.put(String.format("privilege@%s", PrivilegeConstants.REP_REMOVE_PROPERTIES), "granted");
             modifyAce.modifyAce(adminSession, user2.getPath(), user1.getID(),
                     privileges,
@@ -438,13 +450,52 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
                 // expected
                 user1Session.refresh(false);
             }
+        } finally {
+            if (user2 != null) {
+                deleteUser.deleteUser(adminSession, user2.getID(), new ArrayList<>());
+            }
+            if (group1 != null) {
+                deleteGroup.deleteGroup(adminSession, group1.getID(), new ArrayList<>());
+            }
+        }
+    }
 
+    /**
+     * Checks whether the current user has been granted privileges
+     * to update the properties of the specified user or group.
+     */
+    @Test
+    public void canUpdatePropertiesWithGrantedAlterNonNestedProperties() throws RepositoryException {
+        assertNotNull("Expected privilegesInfo to not be null", privilegesInfo);
 
+        workaroundMissingGroupsPath();
 
-            // grant rights to only alter (non-nested) properties
+        User user2 = null;
+        Group group1 = null;
+
+        try {
+            // create a couple of test users
+            user2 = createUser.createUser(adminSession, createUniqueName("user"), "testPwd", "testPwd",
+                    Collections.singletonMap("prop1", "value1"), new ArrayList<>());
+            assertNotNull("Expected user2 to not be null", user2);
+
+            group1 = createGroup.createGroup(adminSession, createUniqueName("group"),
+                    Collections.singletonMap("prop1", "value1"), new ArrayList<>());
+            assertNotNull("Expected group1 to not be null", group1);
+
+            String [] principalIds = new String[] { user2.getID(), group1.getID() };
+
+            // initially user can't do the operation
+            for (String pid : principalIds) {
+                assertFalse("Should not be allowed to update properties for: " + pid,
+                        privilegesInfo.canUpdateProperties(user1Session, pid));
+            }
+
+            // start with only read rights
+            Map<String, String> privileges = new HashMap<>();
+            privileges.put(String.format("privilege@%s", Privilege.JCR_READ), "granted");
+            // + grant rights to only alter (non-nested) properties
             privileges.put(String.format("privilege@%s", PrivilegeConstants.REP_ADD_PROPERTIES), "granted");
-            privileges.put(String.format("privilege@%s", Privilege.JCR_ADD_CHILD_NODES), "none");
-            privileges.put(String.format("privilege@%s", PrivilegeConstants.REP_REMOVE_PROPERTIES), "none");
             modifyAce.modifyAce(adminSession, user2.getPath(), user1.getID(),
                     privileges,
                     "first");
@@ -471,7 +522,7 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
             }
 
             // verify that the user can actually add property
-            propsMap = new HashMap<>();
+            Map<String, Object> propsMap = new HashMap<>();
             propsMap.put("prop1", "value1");
             try {
                 updateUser.updateUser(user1Session, user2.getID(), propsMap, new ArrayList<>());
@@ -494,14 +545,54 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
                 // expected
                 user1Session.refresh(false);
             }
+        } finally {
+            if (user2 != null) {
+                deleteUser.deleteUser(adminSession, user2.getID(), new ArrayList<>());
+            }
+            if (group1 != null) {
+                deleteGroup.deleteGroup(adminSession, group1.getID(), new ArrayList<>());
+            }
+        }
+    }
 
+    /**
+     * Checks whether the current user has been granted privileges
+     * to update the properties of the specified user or group.
+     */
+    @Test
+    public void canUpdatePropertiesWithGrantedAlterProperties() throws RepositoryException {
+        assertNotNull("Expected privilegesInfo to not be null", privilegesInfo);
 
+        workaroundMissingGroupsPath();
 
-            // grant rights to alter (non-nested or nested) properties
+        User user2 = null;
+        Group group1 = null;
+
+        try {
+            // create a couple of test users
+            user2 = createUser.createUser(adminSession, createUniqueName("user"), "testPwd", "testPwd",
+                    Collections.singletonMap("prop1", "value1"), new ArrayList<>());
+            assertNotNull("Expected user2 to not be null", user2);
+
+            group1 = createGroup.createGroup(adminSession, createUniqueName("group"),
+                    Collections.singletonMap("prop1", "value1"), new ArrayList<>());
+            assertNotNull("Expected group1 to not be null", group1);
+
+            String [] principalIds = new String[] { user2.getID(), group1.getID() };
+
+            // initially user can't do the operation
+            for (String pid : principalIds) {
+                assertFalse("Should not be allowed to update properties for: " + pid,
+                        privilegesInfo.canUpdateProperties(user1Session, pid));
+            }
+
+            // start with only read rights
+            Map<String, String> privileges = new HashMap<>();
+            privileges.put(String.format("privilege@%s", Privilege.JCR_READ), "granted");
+            // + grant rights to alter (non-nested or nested) properties
             privileges.put(String.format("privilege@%s", PrivilegeConstants.REP_ADD_PROPERTIES), "granted");
             privileges.put(String.format("privilege@%s", PrivilegeConstants.REP_ALTER_PROPERTIES), "granted");
             privileges.put(String.format("privilege@%s", Privilege.JCR_ADD_CHILD_NODES), "granted");
-            privileges.put(String.format("privilege@%s", PrivilegeConstants.REP_REMOVE_PROPERTIES), "none");
             modifyAce.modifyAce(adminSession, user2.getPath(), user1.getID(),
                     privileges,
                     "first");
@@ -528,7 +619,7 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
             }
 
             // verify that the user can actually add property and nested property
-            propsMap = new HashMap<>();
+            Map<String, Object> propsMap = new HashMap<>();
             propsMap.put("prop1", "value1");
             propsMap.put("nested/prop2", "value2");
             try {
@@ -540,10 +631,51 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
                 logger.error(String.format("Did not expect RepositoryException when adding properties: %s", e.getMessage()), e);
                 fail("Did not expect RepositoryException when adding properties: " + e.getMessage());
             }
+        } finally {
+            if (user2 != null) {
+                deleteUser.deleteUser(adminSession, user2.getID(), new ArrayList<>());
+            }
+            if (group1 != null) {
+                deleteGroup.deleteGroup(adminSession, group1.getID(), new ArrayList<>());
+            }
+        }
+    }
 
+    /**
+     * Checks whether the current user has been granted privileges
+     * to update the properties of the specified user or group.
+     */
+    @Test
+    public void canUpdatePropertiesWithGrantedAlterAndRemoveProperties() throws RepositoryException {
+        assertNotNull("Expected privilegesInfo to not be null", privilegesInfo);
 
+        workaroundMissingGroupsPath();
 
-            // grant rights to alter (non-nested or nested) properties and remove properties
+        User user2 = null;
+        Group group1 = null;
+
+        try {
+            // create a couple of test users
+            user2 = createUser.createUser(adminSession, createUniqueName("user"), "testPwd", "testPwd",
+                    Collections.singletonMap("prop1", "value1"), new ArrayList<>());
+            assertNotNull("Expected user2 to not be null", user2);
+
+            group1 = createGroup.createGroup(adminSession, createUniqueName("group"),
+                    Collections.singletonMap("prop1", "value1"), new ArrayList<>());
+            assertNotNull("Expected group1 to not be null", group1);
+
+            String [] principalIds = new String[] { user2.getID(), group1.getID() };
+
+            // initially user can't do the operation
+            for (String pid : principalIds) {
+                assertFalse("Should not be allowed to update properties for: " + pid,
+                        privilegesInfo.canUpdateProperties(user1Session, pid));
+            }
+
+            // start with only read rights
+            Map<String, String> privileges = new HashMap<>();
+            privileges.put(String.format("privilege@%s", Privilege.JCR_READ), "granted");
+            // + grant rights to alter (non-nested or nested) properties and remove properties
             privileges.put(String.format("privilege@%s", PrivilegeConstants.REP_ADD_PROPERTIES), "granted");
             privileges.put(String.format("privilege@%s", PrivilegeConstants.REP_ALTER_PROPERTIES), "granted");
             privileges.put(String.format("privilege@%s", Privilege.JCR_ADD_CHILD_NODES), "granted");
@@ -574,7 +706,7 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
             }
 
             // verify that the user can actually add property and nested property
-            propsMap = new HashMap<>();
+            Map<String, Object> propsMap = new HashMap<>();
             propsMap.put("prop3", "value3");
             propsMap.put("nested/prop4", "value4");
             propsMap.put("prop1@Delete", "value1");
@@ -591,6 +723,9 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
         } finally {
             if (user2 != null) {
                 deleteUser.deleteUser(adminSession, user2.getID(), new ArrayList<>());
+            }
+            if (group1 != null) {
+                deleteGroup.deleteGroup(adminSession, group1.getID(), new ArrayList<>());
             }
         }
     }
