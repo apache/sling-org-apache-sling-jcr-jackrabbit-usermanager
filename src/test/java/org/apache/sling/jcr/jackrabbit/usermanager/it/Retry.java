@@ -18,22 +18,20 @@
  */
 package org.apache.sling.jcr.jackrabbit.usermanager.it;
 
-import static org.junit.Assert.fail;
+import static org.awaitility.Awaitility.await;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.concurrent.TimeUnit;
 
 /** Simple Retry loop for tests */
 public abstract class Retry {
-    private Logger logger = LoggerFactory.getLogger(getClass());
     private long timeoutMsec;
     private long nextIterationDelay;
 
-    public Retry(long timeoutMsec, long nextIterationDelay) throws InterruptedException {
+    public Retry(long timeoutMsec, long nextIterationDelay) {
         this(timeoutMsec, nextIterationDelay, true);
     }
 
-    public Retry(long timeoutMsec, long nextIterationDelay, boolean autorun) throws InterruptedException {
+    public Retry(long timeoutMsec, long nextIterationDelay, boolean autorun) {
         this.timeoutMsec = timeoutMsec;
         this.nextIterationDelay = nextIterationDelay;
         if (autorun) {
@@ -41,29 +39,13 @@ public abstract class Retry {
         }
     }
 
-    protected void run() throws InterruptedException {
-        final long timeout = System.currentTimeMillis() + timeoutMsec;
-        Throwable lastT = null;
-        while (System.currentTimeMillis() < timeout) {
-            try {
-                lastT = null;
-                exec();
-                break;
-            } catch(Throwable t) {
-                if (logger.isDebugEnabled()) {
-                    logger.warn(String.format("exec failed: %s", t.getMessage()), t);
-                } else {
-                    logger.warn("exec failed: {}", t.getMessage());
-                }
-                lastT = t;
-                Thread.sleep(nextIterationDelay);               
-            }
-        }
-
-        if (lastT != null) {
-            fail("Failed after " + timeoutMsec + " msec: " + lastT);
-        }
+    protected void run() {
+    	// retry until the exec call returns true and doesn't throw any exception
+    	await().atMost(timeoutMsec, TimeUnit.MILLISECONDS)
+        		.pollInterval(nextIterationDelay, TimeUnit.MILLISECONDS)
+        		.ignoreExceptions()
+        		.until(this::exec); 
     }
 
-    protected abstract void exec();
+    protected abstract boolean exec();
 }

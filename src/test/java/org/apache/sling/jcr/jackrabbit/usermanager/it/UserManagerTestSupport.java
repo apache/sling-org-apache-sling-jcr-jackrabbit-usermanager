@@ -18,6 +18,7 @@
  */
 package org.apache.sling.jcr.jackrabbit.usermanager.it;
 
+import static org.apache.sling.testing.paxexam.SlingOptions.awaitility;
 import static org.apache.sling.testing.paxexam.SlingOptions.sling;
 import static org.apache.sling.testing.paxexam.SlingOptions.slingQuickstartOakTar;
 import static org.junit.Assert.assertEquals;
@@ -57,7 +58,7 @@ public abstract class UserManagerTestSupport extends TestSupport {
         private Class<?> serviceClass;
 
         public WaitForServiceUpdated(long timeoutMsec, long nextIterationDelay, BundleContext bundleContext, 
-                Class<?> serviceClass, String expectedKey, Object expectedValue) throws InterruptedException {
+                Class<?> serviceClass, String expectedKey, Object expectedValue) {
             super(timeoutMsec, nextIterationDelay, false);
             this.bundleContext = bundleContext;
             this.serviceClass = serviceClass;
@@ -67,10 +68,11 @@ public abstract class UserManagerTestSupport extends TestSupport {
         }
 
         @Override
-        protected void exec() {
+        protected boolean exec() {
             ServiceReference<?> serviceReference = bundleContext.getServiceReference(serviceClass);
             assertNotNull(serviceReference);
             assertEquals(expectedValue, serviceReference.getProperty(expectedKey));
+            return true;
         }
     }
 
@@ -102,7 +104,8 @@ public abstract class UserManagerTestSupport extends TestSupport {
             // Sling JCR UserManager
             testBundle("bundle.filename"),
             mavenBundle().groupId("org.apache.sling").artifactId("org.apache.sling.jcr.jackrabbit.accessmanager").versionAsInProject(),
-            junitBundles()
+            junitBundles(),
+            awaitility()
         ).remove(
             usermanager
         );
