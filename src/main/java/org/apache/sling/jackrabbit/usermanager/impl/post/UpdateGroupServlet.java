@@ -94,6 +94,7 @@ property = {
            "sling.servlet.resourceTypes=sling/group",
            "sling.servlet.methods=POST",
            "sling.servlet.selectors=update",
+           "sling.servlet.prefix:Integer=-1",
            AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=EEE MMM dd yyyy HH:mm:ss 'GMT'Z",
            AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=yyyy-MM-dd'T'HH:mm:ss.SSSZ",
            AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=yyyy-MM-dd'T'HH:mm:ss",

@@ -88,7 +88,8 @@ import org.osgi.service.component.annotations.ReferencePolicy;
            "sling.servlet.resourceTypes=sling/group",
            "sling.servlet.resourceTypes=sling/userManager",
            "sling.servlet.methods=POST",
-           "sling.servlet.selectors=delete"
+           "sling.servlet.selectors=delete",
+           "sling.servlet.prefix:Integer=-1"
 })
 public class DeleteAuthorizableServlet extends AbstractPostServlet
         implements DeleteUser, DeleteGroup, DeleteAuthorizables {
