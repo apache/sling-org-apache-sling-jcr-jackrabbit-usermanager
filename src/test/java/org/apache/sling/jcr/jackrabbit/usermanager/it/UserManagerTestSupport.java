@@ -21,6 +21,7 @@ package org.apache.sling.jcr.jackrabbit.usermanager.it;
 import static org.apache.sling.testing.paxexam.SlingOptions.awaitility;
 import static org.apache.sling.testing.paxexam.SlingOptions.sling;
 import static org.apache.sling.testing.paxexam.SlingOptions.slingQuickstartOakTar;
+import static org.apache.sling.testing.paxexam.SlingOptions.versionResolver;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.ops4j.pax.exam.CoreOptions.composite;
@@ -83,6 +84,12 @@ public abstract class UserManagerTestSupport extends TestSupport {
                 .groupId("org.apache.sling")
                 .artifactId("org.apache.sling.jcr.jackrabbit.usermanager")
                 .version(SlingOptions.versionResolver.getVersion("org.apache.sling", "org.apache.sling.jcr.jackrabbit.usermanager"));
+        versionResolver.setVersionFromProject("org.apache.sling", "org.apache.sling.api");
+        versionResolver.setVersion("org.apache.sling", "org.apache.sling.resourceresolver", "1.7.0"); // to be compatible with current o.a.sling.api
+        versionResolver.setVersion("org.apache.sling", "org.apache.sling.scripting.core", "2.3.4"); // to be compatible with current o.a.sling.api
+        versionResolver.setVersion("org.apache.sling", "org.apache.sling.scripting.api", "2.2.0"); // to be compatible with current o.a.sling.api
+        versionResolver.setVersion("org.apache.sling", "org.apache.sling.servlets.resolver", "2.7.12"); // to be compatible with current o.a.sling.api
+
         return composite(
             super.baseConfiguration(),
             optionalRemoteDebug(),
@@ -104,6 +111,8 @@ public abstract class UserManagerTestSupport extends TestSupport {
             // Sling JCR UserManager
             testBundle("bundle.filename"),
             mavenBundle().groupId("org.apache.sling").artifactId("org.apache.sling.jcr.jackrabbit.accessmanager").versionAsInProject(),
+            mavenBundle().groupId("org.osgi").artifactId("org.osgi.util.converter").version("1.0.0"),  //required by o.a.sling.api
+            mavenBundle().groupId("org.apache.sling").artifactId("org.apache.sling.commons.compiler").version("2.4.0"), //required by current o.a.sling.scripting.core
             junitBundles(),
             awaitility()
         ).remove(
