@@ -139,7 +139,7 @@ public abstract class UserManagerTestSupport extends TestSupport {
     }
 
     protected Dictionary<String, Object> replaceConfigProp(Dictionary<String, Object> originalProps, String newPropKey, Object newPropValue) {
-        Hashtable<String, Object> newProps = new Hashtable<>();
+        Hashtable<String, Object> newProps = new Hashtable<>(); // NOSONAR
         if (originalProps != null) {
             Enumeration<String> keys = originalProps.keys();
             while (keys.hasMoreElements()) {

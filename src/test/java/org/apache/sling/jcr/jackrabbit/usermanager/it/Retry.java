@@ -27,11 +27,11 @@ public abstract class Retry {
     private long timeoutMsec;
     private long nextIterationDelay;
 
-    public Retry(long timeoutMsec, long nextIterationDelay) {
+    protected Retry(long timeoutMsec, long nextIterationDelay) {
         this(timeoutMsec, nextIterationDelay, true);
     }
 
-    public Retry(long timeoutMsec, long nextIterationDelay, boolean autorun) {
+    protected Retry(long timeoutMsec, long nextIterationDelay, boolean autorun) {
         this.timeoutMsec = timeoutMsec;
         this.nextIterationDelay = nextIterationDelay;
         if (autorun) {

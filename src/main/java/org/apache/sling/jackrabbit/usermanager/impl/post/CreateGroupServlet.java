@@ -104,7 +104,7 @@ public class CreateGroupServlet extends AbstractGroupPostServlet implements Crea
     private static final long serialVersionUID = -1084915263933901466L;
 
     @Reference
-    private ResourceResolverFactory resourceResolverFactory;
+    private transient ResourceResolverFactory resourceResolverFactory;
     
     @Override
     @Activate

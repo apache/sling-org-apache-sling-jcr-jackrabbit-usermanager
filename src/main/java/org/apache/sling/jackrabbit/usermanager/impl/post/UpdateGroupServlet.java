@@ -107,7 +107,7 @@ public class UpdateGroupServlet extends AbstractGroupPostServlet
     private static final long serialVersionUID = -8292054361992488797L;
 
     @Reference
-    private ResourceResolverFactory resourceResolverFactory;
+    private transient ResourceResolverFactory resourceResolverFactory;
     
     @Override
     @Activate

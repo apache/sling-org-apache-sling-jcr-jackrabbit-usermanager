@@ -174,7 +174,7 @@ public class ChangeUserPasswordIT extends UserManagerTestSupport {
      * SLING-9808 test changing password when user doesn't have rep:userManagement privilege
      */
     @Test
-    public void changePasswordAsSelfGranted() throws IOException, InterruptedException, RepositoryException {
+    public void changePasswordAsSelfGranted() throws IOException, RepositoryException {
         org.osgi.service.cm.Configuration configuration = configAdmin.getConfiguration("org.apache.sling.jackrabbit.usermanager.impl.post.ChangeUserPasswordServlet", null);
         Dictionary<String, Object> originalServiceProps = configuration.getProperties();
         ServiceReference<ChangeUserPassword> serviceReference = null;
@@ -223,7 +223,7 @@ public class ChangeUserPasswordIT extends UserManagerTestSupport {
      * SLING-9808 test changing password when user doesn't have rep:userManagement privilege
      */
     @Test
-    public void changePasswordAsSelfDenied() throws IOException, InterruptedException, RepositoryException {
+    public void changePasswordAsSelfDenied() throws IOException, RepositoryException {
         org.osgi.service.cm.Configuration configuration = configAdmin.getConfiguration("org.apache.sling.jackrabbit.usermanager.impl.post.ChangeUserPasswordServlet", null);
         Dictionary<String, Object> originalServiceProps = configuration.getProperties();
         ServiceReference<ChangeUserPassword> serviceReference = null;
@@ -276,7 +276,7 @@ public class ChangeUserPasswordIT extends UserManagerTestSupport {
      * test changing your own password without sending the old password is not allowed
      */
     @Test
-    public void changePasswordAsSelfWithoutOldPasswordFails() throws IOException, InterruptedException, RepositoryException {
+    public void changePasswordAsSelfWithoutOldPasswordFails() throws IOException, RepositoryException {
         org.osgi.service.cm.Configuration configuration = configAdmin.getConfiguration("org.apache.sling.jackrabbit.usermanager.impl.post.ChangeUserPasswordServlet", null);
         Dictionary<String, Object> originalServiceProps = configuration.getProperties();
         ServiceReference<ChangeUserPassword> serviceReference = null;

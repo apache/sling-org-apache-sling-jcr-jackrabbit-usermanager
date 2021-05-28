@@ -72,6 +72,7 @@ import org.slf4j.LoggerFactory;
 @RunWith(PaxExam.class)
 @ExamReactorStrategy(PerClass.class)
 public class AuthorizableResourceProviderIT extends UserManagerTestSupport {
+    private static final String PEOPLE_ROOT = "/people";
     private static AtomicLong counter = new AtomicLong(0);
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -169,25 +170,25 @@ public class AuthorizableResourceProviderIT extends UserManagerTestSupport {
      * Test changing the usermanager provider.root value
      */
     @Test
-    public void changeProviderRoot() throws LoginException, RepositoryException, IOException, InterruptedException {
+    public void changeProviderRoot() throws LoginException, RepositoryException, IOException {
         // the userManager resource should be mounted under /system/userManager
-        checkResourceTypes("/system/userManager", "/people");
+        checkResourceTypes("/system/userManager", PEOPLE_ROOT);
 
         org.osgi.service.cm.Configuration configuration = configAdmin.getConfiguration("org.apache.sling.jackrabbit.usermanager.impl.resource.AuthorizableResourceProvider", null);
         Dictionary<String, Object> originalServiceProps = configuration.getProperties();
         ServiceReference<SystemUserManagerPaths> serviceReference = null;
         try {
             // update the service configuration to ensure the option is enabled
-            Dictionary<String, Object> newServiceProps = replaceConfigProp(originalServiceProps, "provider.root", "/people");
+            Dictionary<String, Object> newServiceProps = replaceConfigProp(originalServiceProps, "provider.root", PEOPLE_ROOT);
             configuration.update(newServiceProps);
             new WaitForServiceUpdated(5000, 100, bundleContext, SystemUserManagerPaths.class, 
-                    "provider.root", "/people");
+                    "provider.root", PEOPLE_ROOT);
             
             serviceReference = bundleContext.getServiceReference(SystemUserManagerPaths.class);
-            assertEquals("/people", serviceReference.getProperty("provider.root"));
+            assertEquals(PEOPLE_ROOT, serviceReference.getProperty("provider.root"));
 
             // now the userManager resource should be mounted under /people
-            checkResourceTypes("/people", "/system/userManager");
+            checkResourceTypes(PEOPLE_ROOT, "/system/userManager");
         } finally {
             if (serviceReference != null) {
                 // done with this.

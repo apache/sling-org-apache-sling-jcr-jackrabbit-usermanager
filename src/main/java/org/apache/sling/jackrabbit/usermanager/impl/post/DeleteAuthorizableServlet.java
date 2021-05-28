@@ -96,7 +96,7 @@ public class DeleteAuthorizableServlet extends AbstractPostServlet
     private static final long serialVersionUID = 5874621724096106496L;
 
     @Reference 
-    private SystemUserManagerPaths systemUserManagerPaths;
+    private transient SystemUserManagerPaths systemUserManagerPaths;
 
     /**
      * Overridden since the @Reference annotation is not inherited from the super method

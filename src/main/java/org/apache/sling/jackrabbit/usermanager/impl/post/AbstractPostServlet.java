@@ -65,7 +65,7 @@ public abstract class AbstractPostServlet extends
     private final List<PostResponseCreatorHolder> postResponseCreators = new ArrayList<>();
 
     /** Cached array of post response creators used during request processing. */
-    private PostResponseCreator[] cachedPostResponseCreators = new PostResponseCreator[0];
+    private transient PostResponseCreator[] cachedPostResponseCreators = new PostResponseCreator[0];
 
     /*
      * (non-Javadoc)

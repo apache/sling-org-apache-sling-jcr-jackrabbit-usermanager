@@ -56,9 +56,9 @@ public abstract class AbstractAuthorizablePostServlet extends
 
     private static final Logger LOG = LoggerFactory.getLogger(AbstractAuthorizablePostServlet.class);
 
-    private DateParser dateParser;
+    private transient DateParser dateParser;
 
-    protected SystemUserManagerPaths systemUserManagerPaths;
+    protected transient SystemUserManagerPaths systemUserManagerPaths;
 
     protected void bindSystemUserManagerPaths(SystemUserManagerPaths sump) {
         this.systemUserManagerPaths = sump;

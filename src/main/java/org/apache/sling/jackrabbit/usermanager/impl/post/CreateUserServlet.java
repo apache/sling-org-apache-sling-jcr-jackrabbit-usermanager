@@ -132,13 +132,13 @@ public class CreateUserServlet extends AbstractAuthorizablePostServlet implement
      * The JCR Repository we access to resolve resources
      */
     @Reference
-    private SlingRepository repository;
+    private transient SlingRepository repository;
 
     /**
      * SLING-10014 - To require a service user before becoming active
      */
     @Reference
-    private ServiceUserMapped serviceUserMapped;
+    private transient ServiceUserMapped serviceUserMapped;
     
     private String usersPath;
     
