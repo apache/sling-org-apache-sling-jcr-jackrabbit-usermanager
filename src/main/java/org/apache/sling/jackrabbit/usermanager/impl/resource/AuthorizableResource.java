@@ -116,6 +116,7 @@ public class AuthorizableResource extends AbstractResource {
      * (non-Javadoc)
      * @see org.apache.sling.api.adapter.Adaptable#adaptTo(java.lang.Class)
      */
+    @Override
     @SuppressWarnings("unchecked")
     public <T> T adaptTo(Class<T> type) {
         if (type == Map.class || type == ValueMap.class) {

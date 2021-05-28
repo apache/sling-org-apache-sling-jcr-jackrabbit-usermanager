@@ -40,11 +40,11 @@ public abstract class Retry {
     }
 
     protected void run() {
-    	// retry until the exec call returns true and doesn't throw any exception
-    	await().atMost(timeoutMsec, TimeUnit.MILLISECONDS)
-        		.pollInterval(nextIterationDelay, TimeUnit.MILLISECONDS)
-        		.ignoreExceptions()
-        		.until(this::exec); 
+        // retry until the exec call returns true and doesn't throw any exception
+        await().atMost(timeoutMsec, TimeUnit.MILLISECONDS)
+                .pollInterval(nextIterationDelay, TimeUnit.MILLISECONDS)
+                .ignoreExceptions()
+                .until(this::exec); 
     }
 
     protected abstract boolean exec();
