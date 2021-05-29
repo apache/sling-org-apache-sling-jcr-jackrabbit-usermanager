@@ -44,7 +44,7 @@ public abstract class Retry {
         await().atMost(timeoutMsec, TimeUnit.MILLISECONDS)
                 .pollInterval(nextIterationDelay, TimeUnit.MILLISECONDS)
                 .ignoreExceptions()
-                .until(this::exec); 
+                .until(this::exec);
     }
 
     protected abstract boolean exec();

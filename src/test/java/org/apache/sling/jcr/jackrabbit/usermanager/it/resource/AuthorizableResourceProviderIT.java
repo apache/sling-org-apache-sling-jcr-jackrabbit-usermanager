@@ -21,7 +21,6 @@ package org.apache.sling.jcr.jackrabbit.usermanager.it.resource;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.ops4j.pax.exam.CoreOptions.options;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -55,8 +54,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
-import org.ops4j.pax.exam.Configuration;
-import org.ops4j.pax.exam.Option;
 import org.ops4j.pax.exam.junit.PaxExam;
 import org.ops4j.pax.exam.spi.reactors.ExamReactorStrategy;
 import org.ops4j.pax.exam.spi.reactors.PerClass;
@@ -78,7 +75,7 @@ public class AuthorizableResourceProviderIT extends UserManagerTestSupport {
 
     @Inject
     protected BundleContext bundleContext;
-    
+
     @Inject
     protected SlingRepository repository;
 
@@ -87,7 +84,7 @@ public class AuthorizableResourceProviderIT extends UserManagerTestSupport {
 
     @Inject
     protected ConfigurationAdmin configAdmin;
-    
+
     @Inject
     private CreateUser createUser;
 
@@ -102,17 +99,10 @@ public class AuthorizableResourceProviderIT extends UserManagerTestSupport {
 
     @Rule
     public TestName testName = new TestName();
-    
+
     protected Session adminSession;
     protected User user1;
     protected Group group1;
-
-    @Configuration
-    public Option[] configuration() {
-        return options(
-            baseConfiguration()
-        );
-    }
 
     @Before
     public void setup() throws RepositoryException {
@@ -165,7 +155,7 @@ public class AuthorizableResourceProviderIT extends UserManagerTestSupport {
     protected String createUniqueName(String prefix) {
         return String.format("%s_%s%d", prefix, testName.getMethodName(), counter.incrementAndGet());
     }
-    
+
     /**
      * Test changing the usermanager provider.root value
      */
@@ -181,9 +171,9 @@ public class AuthorizableResourceProviderIT extends UserManagerTestSupport {
             // update the service configuration to ensure the option is enabled
             Dictionary<String, Object> newServiceProps = replaceConfigProp(originalServiceProps, "provider.root", PEOPLE_ROOT);
             configuration.update(newServiceProps);
-            new WaitForServiceUpdated(5000, 100, bundleContext, SystemUserManagerPaths.class, 
+            new WaitForServiceUpdated(5000, 100, bundleContext, SystemUserManagerPaths.class,
                     "provider.root", PEOPLE_ROOT);
-            
+
             serviceReference = bundleContext.getServiceReference(SystemUserManagerPaths.class);
             assertEquals(PEOPLE_ROOT, serviceReference.getProperty("provider.root"));
 
@@ -194,10 +184,10 @@ public class AuthorizableResourceProviderIT extends UserManagerTestSupport {
                 // done with this.
                 bundleContext.ungetService(serviceReference);
             }
-            
+
             //put the original config back
             configuration.update(originalServiceProps);
-            new WaitForServiceUpdated(5000, 100, bundleContext, SystemUserManagerPaths.class, "provider.root", 
+            new WaitForServiceUpdated(5000, 100, bundleContext, SystemUserManagerPaths.class, "provider.root",
                     originalServiceProps == null ? AuthorizableResourceProvider.DEFAULT_SYSTEM_USER_MANAGER_PATH : originalServiceProps.get("provider.root"));
         }
     }

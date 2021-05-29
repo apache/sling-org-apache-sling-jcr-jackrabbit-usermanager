@@ -23,7 +23,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.ops4j.pax.exam.CoreOptions.options;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -59,8 +58,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
-import org.ops4j.pax.exam.Configuration;
-import org.ops4j.pax.exam.Option;
 import org.ops4j.pax.exam.junit.PaxExam;
 import org.ops4j.pax.exam.spi.reactors.ExamReactorStrategy;
 import org.ops4j.pax.exam.spi.reactors.PerClass;
@@ -114,13 +111,6 @@ public class ChangeUserPasswordIT extends UserManagerTestSupport {
     protected Session adminSession;
     protected User user1;
     protected Session user1Session;
-
-    @Configuration
-    public Option[] configuration() {
-        return options(
-            baseConfiguration()
-        );
-    }
 
     @Before
     public void setup() throws RepositoryException {
@@ -211,7 +201,7 @@ public class ChangeUserPasswordIT extends UserManagerTestSupport {
                 // done with this.
                 bundleContext.ungetService(serviceReference);
             }
-            
+
             //put the original config back
             configuration.update(originalServiceProps);
             new WaitForServiceUpdated(5000, 100, bundleContext, ChangeUserPassword.class, "alwaysAllowSelfChangePassword",
