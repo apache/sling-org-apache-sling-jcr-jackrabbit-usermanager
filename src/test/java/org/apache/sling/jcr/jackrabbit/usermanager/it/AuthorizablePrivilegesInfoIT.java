@@ -23,7 +23,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.ops4j.pax.exam.CoreOptions.options;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -62,8 +61,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
-import org.ops4j.pax.exam.Configuration;
-import org.ops4j.pax.exam.Option;
 import org.ops4j.pax.exam.junit.PaxExam;
 import org.ops4j.pax.exam.spi.reactors.ExamReactorStrategy;
 import org.ops4j.pax.exam.spi.reactors.PerClass;
@@ -126,26 +123,19 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
     protected User user1;
     protected Session user1Session;
 
-    @Configuration
-    public Option[] configuration() {
-        return options(
-            baseConfiguration()
-        );
-    }
-
     @Before
     public void setup() throws RepositoryException {
         adminSession = repository.login(new SimpleCredentials("admin", "admin".toCharArray()));
         assertNotNull("Expected adminSession to not be null", adminSession);
 
-        user1 = createUser.createUser(adminSession, createUniqueName("user"), "testPwd", "testPwd", 
+        user1 = createUser.createUser(adminSession, createUniqueName("user"), "testPwd", "testPwd",
                 Collections.emptyMap(), new ArrayList<>());
         assertNotNull("Expected user1 to not be null", user1);
-        
+
         if (adminSession.hasPendingChanges()) {
             adminSession.save();
         }
-        
+
         user1Session = repository.login(new SimpleCredentials(user1.getID(), "testPwd".toCharArray()));
         assertNotNull("Expected user1Session to not be null", user1Session);
     }
@@ -210,7 +200,7 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
                 Map<String, String> propMap = new HashMap<>();
                 propMap.put("prop1", "value1");
                 propMap.put("nested/prop2", "value2");
-                user2 = createUser.createUser(user1Session, createUniqueName("user"), "testPwd", "testPwd", 
+                user2 = createUser.createUser(user1Session, createUniqueName("user"), "testPwd", "testPwd",
                         propMap, new ArrayList<>());
                 assertNotNull("Expected user2 to not be null", user2);
             } catch (RepositoryException e) {
