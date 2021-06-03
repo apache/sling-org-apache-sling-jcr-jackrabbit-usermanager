@@ -182,4 +182,29 @@ public class CreateGroupIT extends UserManagerClientTestSupport {
         assertNotNull(jsonObj);
     }
 
+    private void testCreateGroupRedirect(String redirectTo, int expectedStatus) throws IOException {
+        String postUrl = String.format("%s/system/userManager/group.create.html", baseServerUri);
+
+        testGroupId = "testGroup" + getNextInt();
+        List<NameValuePair> postParams = new ArrayList<>();
+        postParams.add(new BasicNameValuePair(":name", testGroupId));
+        postParams.add(new BasicNameValuePair(":redirect", redirectTo));
+        assertAuthenticatedAdminPostStatus(postUrl, expectedStatus, postParams, null);
+    }
+
+    @Test
+    public void testCreateGroupValidRedirect() throws IOException, JsonException {
+        testCreateGroupRedirect("/*.html", HttpServletResponse.SC_MOVED_TEMPORARILY);
+    }
+
+    @Test
+    public void testCreateGroupInvalidRedirectWithAuthority() throws IOException, JsonException {
+        testCreateGroupRedirect("https://sling.apache.org", SC_UNPROCESSABLE_ENTITY);
+    }
+
+    @Test
+    public void testCreateGroupInvalidRedirectWithInvalidURI() throws IOException, JsonException {
+        testCreateGroupRedirect("https://", SC_UNPROCESSABLE_ENTITY);
+    }
+
 }

@@ -277,4 +277,30 @@ public class CreateUserIT extends UserManagerClientTestSupport {
         assertEquals("Thanks!", content); //verify that the content matches the custom response
     }
 
+    private void testCreateUserRedirect(String redirectTo, int expectedStatus) throws IOException {
+        testUserId = "testUser" + getNextInt();
+        String postUrl = String.format("%s/system/userManager/user.create.html", baseServerUri);
+        final List<NameValuePair> postParams = new ArrayList<>();
+        postParams.add(new BasicNameValuePair(":name", testUserId));
+        postParams.add(new BasicNameValuePair("pwd", "testPwd"));
+        postParams.add(new BasicNameValuePair("pwdConfirm", "testPwd"));
+        postParams.add(new BasicNameValuePair(":redirect", redirectTo));
+        assertAuthenticatedAdminPostStatus(postUrl, expectedStatus, postParams, null);
+    }
+
+    @Test
+    public void testCreateUserValidRedirect() throws IOException, JsonException {
+        testCreateUserRedirect("/*.html", HttpServletResponse.SC_MOVED_TEMPORARILY);
+    }
+
+    @Test
+    public void testCreateUserInvalidRedirectWithAuthority() throws IOException, JsonException {
+        testCreateUserRedirect("https://sling.apache.org", SC_UNPROCESSABLE_ENTITY);
+    }
+
+    @Test
+    public void testCreateUserInvalidRedirectWithInvalidURI() throws IOException, JsonException {
+        testCreateUserRedirect("https://", SC_UNPROCESSABLE_ENTITY);
+    }
+
 }
