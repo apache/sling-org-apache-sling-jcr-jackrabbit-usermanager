@@ -43,6 +43,57 @@ import org.ops4j.pax.exam.spi.reactors.PerClass;
 @ExamReactorStrategy(PerClass.class)
 public class UserPrivilegesInfoIT extends UserManagerClientTestSupport {
 
+    enum CanAdd {
+        USER("canAddUser"),
+        GROUP("canAddGroup");
+
+        private String propName;
+
+        CanAdd(String propName) {
+            this.propName = propName;
+        }
+
+        public String propName() {
+            return propName;
+        }
+
+    }
+
+    enum CanChangeUser {
+        REMOVE("canRemove"),
+        UPDATE_PROPERTIES("canUpdateProperties"),
+        CHANGE_PASSWORD("canChangePassword"),
+        DISABLE("canDisable");
+
+        private String propName;
+
+        CanChangeUser(String propName) {
+            this.propName = propName;
+        }
+
+        public String propName() {
+            return propName;
+        }
+
+    }
+
+    enum CanChangeGroup {
+        REMOVE("canRemove"),
+        UPDATE_PROPERTIES("canUpdateProperties"),
+        UPDATE_GROUP_MEMBERS("canUpdateGroupMembers");
+
+        private String propName;
+
+        CanChangeGroup(String propName) {
+            this.propName = propName;
+        }
+
+        public String propName() {
+            return propName;
+        }
+
+    }
+
     @Override
     protected Option buildBundleResourcesBundle() {
         final List<String> resourcePaths = Arrays.asList("/apps/sling/servlet/default/privileges-info.json.esp");
@@ -66,13 +117,11 @@ public class UserPrivilegesInfoIT extends UserManagerClientTestSupport {
     }
 
     /**
-     * Checks whether the current user has been granted privileges
-     * to add a new user.
+     * The common impl for checking add permissions for users and groups
+     * @param can specify which type of add to test
      */
-    @Test
-    public void testCanAddUser() throws JsonException, IOException {
+    private void testCanAdd(CanAdd can) throws IOException {
         testUserId = createTestUser();
-
         String getUrl = String.format("%s/system/userManager/user/%s.privileges-info.json", baseServerUri, testUserId);
 
         //fetch the JSON for the test page to verify the settings.
@@ -82,7 +131,7 @@ public class UserPrivilegesInfoIT extends UserManagerClientTestSupport {
         assertNotNull(json);
         JsonObject jsonObj = parseJson(json);
 
-        assertEquals(false, jsonObj.getBoolean("canAddUser"));
+        assertEquals(false, jsonObj.getBoolean(can.propName()));
 
         //try admin user
         testUserCreds = new UsernamePasswordCredentials("admin", "admin");
@@ -91,7 +140,7 @@ public class UserPrivilegesInfoIT extends UserManagerClientTestSupport {
         assertNotNull(json);
         jsonObj = parseJson(json);
 
-        assertEquals(true, jsonObj.getBoolean("canAddUser"));
+        assertEquals(true, jsonObj.getBoolean(can.propName()));
 
         //try non-admin with sufficient privileges
         testUserId3 = createTestUser();
@@ -103,59 +152,17 @@ public class UserPrivilegesInfoIT extends UserManagerClientTestSupport {
         assertNotNull(json);
         jsonObj = parseJson(json);
 
-        assertEquals(true, jsonObj.getBoolean("canAddUser"));
+        assertEquals(true, jsonObj.getBoolean(can.propName()));
     }
 
     /**
-     * Checks whether the current user has been granted privileges
-     * to add a new group.
+     * The common impl for checking change permissions for a user
+     * @param can specify which type of change to test
      */
-    @Test
-    public void testCanAddGroup() throws IOException, JsonException {
+    private void testCanChange(CanChangeUser can) throws IOException {
         testUserId = createTestUser();
 
-        String getUrl = String.format("%s/system/userManager/user/%s.privileges-info.json", baseServerUri, testUserId);
-
-        //fetch the JSON for the test page to verify the settings.
-        Credentials testUserCreds = new UsernamePasswordCredentials(testUserId, "testPwd");
-
-        String json = getAuthenticatedContent(testUserCreds, getUrl, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
-        assertNotNull(json);
-        JsonObject jsonObj = parseJson(json);
-
-        assertEquals(false, jsonObj.getBoolean("canAddGroup"));
-
-        //try admin user
-        testUserCreds = new UsernamePasswordCredentials("admin", "admin");
-
-        json = getAuthenticatedContent(testUserCreds, getUrl, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
-        assertNotNull(json);
-        jsonObj = parseJson(json);
-
-        assertEquals(true, jsonObj.getBoolean("canAddGroup"));
-
-        //try non-admin with sufficient privileges
-        testUserId3 = createTestUser();
-        grantUserManagerRights(testUserId3);
-
-        testUserCreds = new UsernamePasswordCredentials(testUserId3, "testPwd");
-
-        json = getAuthenticatedContent(testUserCreds, getUrl, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
-        assertNotNull(json);
-        jsonObj = parseJson(json);
-
-        assertEquals(true, jsonObj.getBoolean("canAddGroup"));
-    }
-
-    /**
-     * Checks whether the current user has been granted privileges
-     * to update the properties of the specified user.
-     */
-    @Test
-    public void testCanUpdateUserProperties() throws IOException, JsonException {
-        testUserId = createTestUser();
-
-        //1. verify user can update thier own properties
+        //1. verify user can update their own properties
         String getUrl = String.format("%s/system/userManager/user/%s.privileges-info.json", baseServerUri, testUserId);
 
         //fetch the JSON for the test page to verify the settings.
@@ -166,7 +173,7 @@ public class UserPrivilegesInfoIT extends UserManagerClientTestSupport {
         JsonObject jsonObj = parseJson(json);
 
         //user can update their own properties
-        assertEquals(true, jsonObj.getBoolean("canUpdateProperties"));
+        assertEquals(true, jsonObj.getBoolean(can.propName()));
 
 
         //2. now try another user
@@ -180,7 +187,7 @@ public class UserPrivilegesInfoIT extends UserManagerClientTestSupport {
         JsonObject jsonObj2 = parseJson(json2);
 
         //user can not update other users properties
-        assertEquals(false, jsonObj2.getBoolean("canUpdateProperties"));
+        assertEquals(false, jsonObj2.getBoolean(can.propName()));
 
 
         //try admin user
@@ -190,7 +197,7 @@ public class UserPrivilegesInfoIT extends UserManagerClientTestSupport {
         assertNotNull(json);
         jsonObj = parseJson(json);
 
-        assertEquals(true, jsonObj.getBoolean("canUpdateProperties"));
+        assertEquals(true, jsonObj.getBoolean(can.propName()));
 
         //try non-admin with sufficient privileges
         testUserId3 = createTestUser();
@@ -202,15 +209,14 @@ public class UserPrivilegesInfoIT extends UserManagerClientTestSupport {
         assertNotNull(json);
         jsonObj = parseJson(json);
 
-        assertEquals(true, jsonObj.getBoolean("canUpdateProperties"));
+        assertEquals(true, jsonObj.getBoolean(can.propName()));
     }
 
     /**
-     * Checks whether the current user has been granted privileges
-     * to update the properties of the specified group.
+     * The common impl for checking change permissions for a group
+     * @param can specify which type of change to test
      */
-    @Test
-    public void testCanUpdateGroupProperties() throws IOException, JsonException {
+    private void testCanChange(CanChangeGroup can) throws IOException {
         testGroupId = createTestGroup();
         testUserId = createTestUser();
 
@@ -225,7 +231,7 @@ public class UserPrivilegesInfoIT extends UserManagerClientTestSupport {
         JsonObject jsonObj = parseJson(json);
 
         //normal user can not update group properties
-        assertEquals(false, jsonObj.getBoolean("canUpdateProperties"));
+        assertEquals(false, jsonObj.getBoolean(can.propName()));
 
 
         //try admin user
@@ -235,7 +241,7 @@ public class UserPrivilegesInfoIT extends UserManagerClientTestSupport {
         assertNotNull(json);
         jsonObj = parseJson(json);
 
-        assertEquals(true, jsonObj.getBoolean("canUpdateProperties"));
+        assertEquals(true, jsonObj.getBoolean(can.propName()));
 
         //try non-admin with sufficient privileges
         testUserId3 = createTestUser();
@@ -247,7 +253,43 @@ public class UserPrivilegesInfoIT extends UserManagerClientTestSupport {
         assertNotNull(json);
         jsonObj = parseJson(json);
 
-        assertEquals(true, jsonObj.getBoolean("canUpdateProperties"));
+        assertEquals(true, jsonObj.getBoolean(can.propName()));
+    }
+
+    /**
+     * Checks whether the current user has been granted privileges
+     * to add a new user.
+     */
+    @Test
+    public void testCanAddUser() throws JsonException, IOException {
+        testCanAdd(CanAdd.USER);
+    }
+
+    /**
+     * Checks whether the current user has been granted privileges
+     * to add a new group.
+     */
+    @Test
+    public void testCanAddGroup() throws IOException, JsonException {
+        testCanAdd(CanAdd.GROUP);
+    }
+
+    /**
+     * Checks whether the current user has been granted privileges
+     * to update the properties of the specified user.
+     */
+    @Test
+    public void testCanUpdateUserProperties() throws IOException, JsonException {
+        testCanChange(CanChangeUser.UPDATE_PROPERTIES);
+    }
+
+    /**
+     * Checks whether the current user has been granted privileges
+     * to update the properties of the specified group.
+     */
+    @Test
+    public void testCanUpdateGroupProperties() throws IOException, JsonException {
+        testCanChange(CanChangeGroup.UPDATE_PROPERTIES);
     }
 
     /**
@@ -256,56 +298,7 @@ public class UserPrivilegesInfoIT extends UserManagerClientTestSupport {
      */
     @Test
     public void testCanRemoveUser() throws IOException, JsonException {
-        testUserId = createTestUser();
-
-        //1. verify user can remove themselves as they have jcr:all permissions by default in the starter
-        String getUrl = String.format("%s/system/userManager/user/%s.privileges-info.json", baseServerUri, testUserId);
-
-        //fetch the JSON for the test page to verify the settings.
-        Credentials testUserCreds = new UsernamePasswordCredentials(testUserId, "testPwd");
-
-        String json = getAuthenticatedContent(testUserCreds, getUrl, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
-        assertNotNull(json);
-        JsonObject jsonObj = parseJson(json);
-
-        //user can remove themself
-        assertEquals(true, jsonObj.getBoolean("canRemove"));
-
-
-        //2. now try another user
-        testUserId2 = createTestUser();
-
-        //fetch the JSON for the test page to verify the settings.
-        Credentials testUser2Creds = new UsernamePasswordCredentials(testUserId2, "testPwd");
-
-        String json2 = getAuthenticatedContent(testUser2Creds, getUrl, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
-        assertNotNull(json2);
-        JsonObject jsonObj2 = parseJson(json2);
-
-        //user can not delete other users
-        assertEquals(false, jsonObj2.getBoolean("canRemove"));
-
-
-        //try admin user
-        testUserCreds = new UsernamePasswordCredentials("admin", "admin");
-
-        json = getAuthenticatedContent(testUserCreds, getUrl, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
-        assertNotNull(json);
-        jsonObj = parseJson(json);
-
-        assertEquals(true, jsonObj.getBoolean("canRemove"));
-
-        //try non-admin with sufficient privileges
-        testUserId3 = createTestUser();
-        grantUserManagerRights(testUserId3);
-
-        testUserCreds = new UsernamePasswordCredentials(testUserId3, "testPwd");
-
-        json = getAuthenticatedContent(testUserCreds, getUrl, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
-        assertNotNull(json);
-        jsonObj = parseJson(json);
-
-        assertEquals(true, jsonObj.getBoolean("canRemove"));
+        testCanChange(CanChangeUser.REMOVE);
     }
 
     /**
@@ -314,42 +307,7 @@ public class UserPrivilegesInfoIT extends UserManagerClientTestSupport {
      */
     @Test
     public void testCanRemoveGroup() throws IOException, JsonException {
-        testGroupId = createTestGroup();
-        testUserId = createTestUser();
-
-        //1. Verify non admin user can not remove group
-        String getUrl = String.format("%s/system/userManager/group/%s.privileges-info.json", baseServerUri, testGroupId);
-
-        //fetch the JSON for the test page to verify the settings.
-        Credentials testUserCreds = new UsernamePasswordCredentials(testUserId, "testPwd");
-
-        String json = getAuthenticatedContent(testUserCreds, getUrl, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
-        assertNotNull(json);
-        JsonObject jsonObj = parseJson(json);
-
-        //normal user can not remove group
-        assertEquals(false, jsonObj.getBoolean("canRemove"));
-
-        //try admin user
-        testUserCreds = new UsernamePasswordCredentials("admin", "admin");
-
-        json = getAuthenticatedContent(testUserCreds, getUrl, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
-        assertNotNull(json);
-        jsonObj = parseJson(json);
-
-        assertEquals(true, jsonObj.getBoolean("canRemove"));
-
-        //try non-admin with sufficient privileges
-        testUserId3 = createTestUser();
-        grantUserManagerRights(testUserId3);
-
-        testUserCreds = new UsernamePasswordCredentials(testUserId3, "testPwd");
-
-        json = getAuthenticatedContent(testUserCreds, getUrl, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
-        assertNotNull(json);
-        jsonObj = parseJson(json);
-
-        assertEquals(true, jsonObj.getBoolean("canRemove"));
+        testCanChange(CanChangeGroup.REMOVE);
     }
 
     /**
@@ -358,42 +316,7 @@ public class UserPrivilegesInfoIT extends UserManagerClientTestSupport {
      */
     @Test
     public void testCanUpdateGroupMembers() throws IOException, JsonException {
-        testGroupId = createTestGroup();
-        testUserId = createTestUser();
-
-        //1. Verify non admin user can not update group membership
-        String getUrl = String.format("%s/system/userManager/group/%s.privileges-info.json", baseServerUri, testGroupId);
-
-        //fetch the JSON for the test page to verify the settings.
-        Credentials testUserCreds = new UsernamePasswordCredentials(testUserId, "testPwd");
-
-        String json = getAuthenticatedContent(testUserCreds, getUrl, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
-        assertNotNull(json);
-        JsonObject jsonObj = parseJson(json);
-
-        //normal user can not remove group
-        assertEquals(false, jsonObj.getBoolean("canUpdateGroupMembers"));
-
-        //try admin user
-        testUserCreds = new UsernamePasswordCredentials("admin", "admin");
-
-        json = getAuthenticatedContent(testUserCreds, getUrl, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
-        assertNotNull(json);
-        jsonObj = parseJson(json);
-
-        assertEquals(true, jsonObj.getBoolean("canUpdateGroupMembers"));
-
-        //try non-admin with sufficient privileges
-        testUserId3 = createTestUser();
-        grantUserManagerRights(testUserId3);
-
-        testUserCreds = new UsernamePasswordCredentials(testUserId3, "testPwd");
-
-        json = getAuthenticatedContent(testUserCreds, getUrl, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
-        assertNotNull(json);
-        jsonObj = parseJson(json);
-
-        assertEquals(true, jsonObj.getBoolean("canUpdateGroupMembers"));
+        testCanChange(CanChangeGroup.UPDATE_GROUP_MEMBERS);
     }
 
     /**
@@ -402,57 +325,7 @@ public class UserPrivilegesInfoIT extends UserManagerClientTestSupport {
      */
     @Test
     public void testCanChangePassword() throws IOException, JsonException {
-        testUserId = createTestUser();
-
-        //1. verify user can update thier own password
-        String getUrl = String.format("%s/system/userManager/user/%s.privileges-info.json", baseServerUri, testUserId);
-
-        //fetch the JSON for the test page to verify the settings.
-        Credentials testUserCreds = new UsernamePasswordCredentials(testUserId, "testPwd");
-
-        String json = getAuthenticatedContent(testUserCreds, getUrl, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
-        assertNotNull(json);
-        JsonObject jsonObj = parseJson(json);
-
-        //user can update their own password
-        assertEquals(true, jsonObj.getBoolean("canChangePassword"));
-
-
-        //2. now try another user
-        testUserId2 = createTestUser();
-
-        //fetch the JSON for the test page to verify the settings.
-        Credentials testUser2Creds = new UsernamePasswordCredentials(testUserId2, "testPwd");
-
-        String json2 = getAuthenticatedContent(testUser2Creds, getUrl, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
-        assertNotNull(json2);
-        JsonObject jsonObj2 = parseJson(json2);
-
-        //user can not update other users password
-        assertEquals(false, jsonObj2.getBoolean("canChangePassword"));
-
-
-        //try admin user
-        testUserCreds = new UsernamePasswordCredentials("admin", "admin");
-
-        json = getAuthenticatedContent(testUserCreds, getUrl, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
-        assertNotNull(json);
-        jsonObj = parseJson(json);
-
-        assertEquals(true, jsonObj.getBoolean("canChangePassword"));
-
-        //try non-admin with sufficient privileges
-        testUserId3 = createTestUser();
-        grantUserManagerRights(testUserId3);
-
-        testUserCreds = new UsernamePasswordCredentials(testUserId3, "testPwd");
-
-        json = getAuthenticatedContent(testUserCreds, getUrl, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
-        assertNotNull(json);
-        jsonObj = parseJson(json);
-
-        //user can update other users password
-        assertEquals(true, jsonObj.getBoolean("canChangePassword"));
+        testCanChange(CanChangeUser.CHANGE_PASSWORD);
     }
 
     /**
@@ -461,58 +334,7 @@ public class UserPrivilegesInfoIT extends UserManagerClientTestSupport {
      */
     @Test
     public void testCanDisable() throws IOException, JsonException {
-        testUserId = createTestUser();
-
-        //1. verify user can disable themselves
-        String getUrl = String.format("%s/system/userManager/user/%s.privileges-info.json", baseServerUri, testUserId);
-
-        //fetch the JSON for the test page to verify the settings.
-        Credentials testUserCreds = new UsernamePasswordCredentials(testUserId, "testPwd");
-
-        String json = getAuthenticatedContent(testUserCreds, getUrl, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
-        assertNotNull(json);
-        JsonObject jsonObj = parseJson(json);
-
-        //user can can disable themselves
-        assertEquals(true, jsonObj.getBoolean("canDisable"));
-
-
-        //2. now try another user
-        testUserId2 = createTestUser();
-
-        //fetch the JSON for the test page to verify the settings.
-        Credentials testUser2Creds = new UsernamePasswordCredentials(testUserId2, "testPwd");
-
-        String json2 = getAuthenticatedContent(testUser2Creds, getUrl, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
-        assertNotNull(json2);
-        JsonObject jsonObj2 = parseJson(json2);
-
-        //user can not disable other user
-        assertEquals(false, jsonObj2.getBoolean("canDisable"));
-
-
-        //try admin user
-        testUserCreds = new UsernamePasswordCredentials("admin", "admin");
-
-        json = getAuthenticatedContent(testUserCreds, getUrl, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
-        assertNotNull(json);
-        jsonObj = parseJson(json);
-
-        //admin can disable other user
-        assertEquals(true, jsonObj.getBoolean("canDisable"));
-
-        //try non-admin with sufficient privileges
-        testUserId3 = createTestUser();
-        grantUserManagerRights(testUserId3);
-
-        testUserCreds = new UsernamePasswordCredentials(testUserId3, "testPwd");
-
-        json = getAuthenticatedContent(testUserCreds, getUrl, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
-        assertNotNull(json);
-        jsonObj = parseJson(json);
-
-        //user can disable other user
-        assertEquals(true, jsonObj.getBoolean("canDisable"));
+        testCanChange(CanChangeUser.DISABLE);
     }
 
 }
