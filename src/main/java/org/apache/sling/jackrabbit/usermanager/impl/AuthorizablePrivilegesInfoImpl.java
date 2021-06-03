@@ -249,7 +249,7 @@ public class AuthorizablePrivilegesInfoImpl implements AuthorizablePrivilegesInf
         boolean hasRights = false;
         try {
             hasRights = checkAuthorizablePath(jcrSession, groupId,
-                authorizable -> authorizable instanceof Group,
+                Group.class::isInstance,
                 path -> {
                     //check if the non-admin user has sufficient rights on the home folder
                     AccessControlManager acm = jcrSession.getAccessControlManager();
@@ -327,7 +327,7 @@ public class AuthorizablePrivilegesInfoImpl implements AuthorizablePrivilegesInf
         boolean hasRights = false;
         try {
             hasRights = checkAuthorizablePath(jcrSession, userId,
-                authorizable -> authorizable instanceof User,
+                User.class::isInstance,
                 path -> {
                     //check if the non-admin user has sufficient rights on the home folder
                     AccessControlManager acm = jcrSession.getAccessControlManager();
