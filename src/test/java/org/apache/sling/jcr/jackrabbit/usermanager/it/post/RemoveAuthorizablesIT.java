@@ -260,4 +260,31 @@ public class RemoveAuthorizablesIT extends UserManagerClientTestSupport {
         assertNotNull(jsonObj);
     }
 
+    private void testRemoveAuthorizablesRedirect(String redirectTo, int expectedStatus) throws IOException {
+        String userId = createTestUser();
+        String groupId = createTestGroup();
+
+        String postUrl = String.format("%s/system/userManager.delete.html", baseServerUri);
+        List<NameValuePair> postParams = new ArrayList<>();
+        postParams.add(new BasicNameValuePair(":applyTo", "group/" + groupId));
+        postParams.add(new BasicNameValuePair(":applyTo", "user/" + userId));
+        postParams.add(new BasicNameValuePair(":redirect", redirectTo));
+        assertAuthenticatedAdminPostStatus(postUrl, expectedStatus, postParams, null);
+    }
+
+    @Test
+    public void testRemoveAuthorizableValidRedirect() throws IOException, JsonException {
+        testRemoveAuthorizablesRedirect("/*.html", HttpServletResponse.SC_MOVED_TEMPORARILY);
+    }
+
+    @Test
+    public void testRemoveAuthorizableInvalidRedirectWithAuthority() throws IOException, JsonException {
+        testRemoveAuthorizablesRedirect("https://sling.apache.org", SC_UNPROCESSABLE_ENTITY);
+    }
+
+    @Test
+    public void testRemoveAuthorizableInvalidRedirectWithInvalidURI() throws IOException, JsonException {
+        testRemoveAuthorizablesRedirect("https://", SC_UNPROCESSABLE_ENTITY);
+    }
+
 }

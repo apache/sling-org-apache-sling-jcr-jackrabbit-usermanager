@@ -157,9 +157,20 @@ public abstract class AbstractPostServlet extends
 
         // check for redirect URL if processing succeeded
         if (response.isSuccessful()) {
-            String redirect = getRedirectUrl(request, response);
+            String redirect = null;
+            try {
+                redirect = getRedirectUrl(request, response);
+            } catch (IOException e) {
+                if (log.isDebugEnabled()) {
+                    log.debug(String.format("Exception while handling redirect for POST %s with %s",
+                            request.getResource().getPath(), getClass().getName()), e);
+                }
+                // http status code for 422 Unprocessable Entity
+                response.setStatus(422, "invalid redirect");
+                response.setError(e);
+            }
             if (redirect != null) {
-                httpResponse.sendRedirect(redirect);
+                httpResponse.sendRedirect(redirect); // NOSONAR
                 return;
             }
         }
@@ -264,7 +275,7 @@ public abstract class AbstractPostServlet extends
      * @deprecated use {@link #getRedirectUrl(HttpServletRequest, PostResponse)} instead
      */
     @Deprecated
-    protected String getRedirectUrl(HttpServletRequest request, AbstractPostResponse ctx) {
+    protected String getRedirectUrl(HttpServletRequest request, AbstractPostResponse ctx) throws IOException {
         return getRedirectUrl(request, (PostResponse)ctx);
     }
     
@@ -273,8 +284,9 @@ public abstract class AbstractPostServlet extends
      * @param request the request
      * @param ctx the post processor
      * @return the redirect location or <code>null</code>
+     * @throws IOException if there is something invalid with the :redirect value
      */
-    protected String getRedirectUrl(HttpServletRequest request, PostResponse ctx) {
+    protected String getRedirectUrl(HttpServletRequest request, PostResponse ctx) throws IOException {
         // redirect param has priority (but see below, magic star)
         String result = request.getParameter(SlingPostConstants.RP_REDIRECT_TO);
         if (result != null) {
@@ -282,16 +294,11 @@ public abstract class AbstractPostServlet extends
                 URI redirectUri = new URI(result);
                 if (redirectUri.getAuthority() != null) {
                     // if it has a host information
-                    log.warn("redirect target includes host information ({}). This is not allowed for security reasons!", redirectUri.getAuthority());
-                    result = null;
+                    throw new IOException("The redirect target included host information. This is not allowed for security reasons!");
                 }
             } catch (URISyntaxException e) {
-                log.warn("given redirect target is not a valid uri: {}", e.getLocalizedMessage());
-                result = null;
+                throw new IOException("The redirect target was not a valid uri");
             }
-        }
-        if (result != null) {
-            log.debug("redirect requested as [{}] for path [{}]", result, ctx.getPath());
 
             if (ctx.getPath() != null) {
                 // redirect to created/modified Resource
@@ -319,10 +326,6 @@ public abstract class AbstractPostServlet extends
                     // if the redirect has a trailing slash, append modified node
                     // name
                     result = result.concat(ResourceUtil.getName(ctx.getPath()));
-                }
-
-                if (log.isDebugEnabled()) {
-                    log.debug("Will redirect to {}", result);
                 }
             }
         }

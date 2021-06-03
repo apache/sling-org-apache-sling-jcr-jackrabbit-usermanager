@@ -376,4 +376,61 @@ public class UpdateUserIT extends UserManagerClientTestSupport {
         httpContext.getCookieStore().clear();
     }
 
+    private void testChangeUserPasswordRedirect(String redirectTo, int expectedStatus) throws IOException {
+        testUserId = createTestUser();
+
+        String postUrl = String.format("%s/system/userManager/user/%s.changePassword.html", baseServerUri, testUserId);
+
+        List<NameValuePair> postParams = new ArrayList<>();
+        postParams.add(new BasicNameValuePair("oldPwd", "testPwd"));
+        postParams.add(new BasicNameValuePair("newPwd", "testNewPwd"));
+        postParams.add(new BasicNameValuePair("newPwdConfirm", "testNewPwd"));
+        postParams.add(new BasicNameValuePair(":redirect", redirectTo));
+
+        Credentials creds = new UsernamePasswordCredentials(testUserId, "testPwd");
+        assertAuthenticatedPostStatus(creds, postUrl, expectedStatus, postParams, null);
+    }
+
+    @Test
+    public void testChangeUserPasswordValidRedirect() throws IOException, JsonException {
+        testChangeUserPasswordRedirect("/*.html", HttpServletResponse.SC_MOVED_TEMPORARILY);
+    }
+
+    @Test
+    public void testChangeUserPasswordInvalidRedirectWithAuthority() throws IOException, JsonException {
+        testChangeUserPasswordRedirect("https://sling.apache.org", SC_UNPROCESSABLE_ENTITY);
+    }
+
+    @Test
+    public void testChangeUserPasswordInvalidRedirectWithInvalidURI() throws IOException, JsonException {
+        testChangeUserPasswordRedirect("https://", SC_UNPROCESSABLE_ENTITY);
+    }
+
+    private void testUpdateUserRedirect(String redirectTo, int expectedStatus) throws IOException {
+        testUserId = createTestUser();
+
+        String postUrl = String.format("%s/system/userManager/user/%s.update.html", baseServerUri, testUserId);
+
+        List<NameValuePair> postParams = new ArrayList<>();
+        postParams.add(new BasicNameValuePair("displayName", "My Updated Test User"));
+        postParams.add(new BasicNameValuePair(":redirect", redirectTo));
+        Credentials creds = new UsernamePasswordCredentials(testUserId, "testPwd");
+        assertAuthenticatedPostStatus(creds, postUrl, expectedStatus, postParams, null);
+    }
+
+    @Test
+    public void testUpdateUserValidRedirect() throws IOException, JsonException {
+        testUpdateUserRedirect("/*.html", HttpServletResponse.SC_MOVED_TEMPORARILY);
+    }
+
+    @Test
+    public void testUpdateUserInvalidRedirectWithAuthority() throws IOException, JsonException {
+        testUpdateUserRedirect("https://sling.apache.org", SC_UNPROCESSABLE_ENTITY);
+    }
+
+    @Test
+    public void testUpdateUserInvalidRedirectWithInvalidURI() throws IOException, JsonException {
+        testUpdateUserRedirect("https://", SC_UNPROCESSABLE_ENTITY);
+    }
+
 }

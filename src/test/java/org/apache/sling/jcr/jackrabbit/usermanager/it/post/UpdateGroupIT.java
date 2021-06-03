@@ -258,5 +258,33 @@ public class UpdateGroupIT extends UserManagerClientTestSupport {
         assertNotNull(jsonObj);
     }
 
+    private void testUpdateGroupRedirect(String redirectTo, int expectedStatus) throws IOException {
+        testGroupId = createTestGroup();
+
+        String postUrl = String.format("%s/system/userManager/group/%s.update.html", baseServerUri, testGroupId);
+
+        List<NameValuePair> postParams = new ArrayList<>();
+        postParams.add(new BasicNameValuePair("displayName", "My Updated Test Group"));
+        postParams.add(new BasicNameValuePair(":redirect", redirectTo));
+
+        Credentials creds = new UsernamePasswordCredentials("admin", "admin");
+        assertAuthenticatedPostStatus(creds, postUrl, expectedStatus, postParams, null);
+    }
+
+    @Test
+    public void testUpdateGroupValidRedirect() throws IOException, JsonException {
+        testUpdateGroupRedirect("/*.html", HttpServletResponse.SC_MOVED_TEMPORARILY);
+    }
+
+    @Test
+    public void testUpdateGroupInvalidRedirectWithAuthority() throws IOException, JsonException {
+        testUpdateGroupRedirect("https://sling.apache.org", SC_UNPROCESSABLE_ENTITY);
+    }
+
+    @Test
+    public void testUpdateGroupInvalidRedirectWithInvalidURI() throws IOException, JsonException {
+        testUpdateGroupRedirect("https://", SC_UNPROCESSABLE_ENTITY);
+    }
+
 }
 
