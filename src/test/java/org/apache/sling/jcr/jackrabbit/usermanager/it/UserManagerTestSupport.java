@@ -128,10 +128,11 @@ public abstract class UserManagerTestSupport extends TestSupport {
         // newer version of sling.api and dependencies for SLING-10034
         //   may remove at a later date if the superclass includes these versions or later
         versionResolver.setVersionFromProject("org.apache.sling", "org.apache.sling.api");
-        versionResolver.setVersion("org.apache.sling", "org.apache.sling.resourceresolver", "1.7.0"); // to be compatible with current o.a.sling.api
-        versionResolver.setVersion("org.apache.sling", "org.apache.sling.scripting.core", "2.3.4"); // to be compatible with current o.a.sling.api
+        versionResolver.setVersion("org.apache.sling", "org.apache.sling.engine", "2.7.10"); // to be compatible with current o.a.sling.api
+        versionResolver.setVersion("org.apache.sling", "org.apache.sling.resourceresolver", "1.7.10"); // to be compatible with current o.a.sling.api
+        versionResolver.setVersion("org.apache.sling", "org.apache.sling.scripting.core", "2.4.0"); // to be compatible with current o.a.sling.api
         versionResolver.setVersion("org.apache.sling", "org.apache.sling.scripting.api", "2.2.0"); // to be compatible with current o.a.sling.api
-        versionResolver.setVersion("org.apache.sling", "org.apache.sling.servlets.resolver", "2.7.12"); // to be compatible with current o.a.sling.api
+        versionResolver.setVersion("org.apache.sling", "org.apache.sling.servlets.resolver", "2.8.3-SNAPSHOT"); // to be compatible with current o.a.sling.api
         versionResolver.setVersion("org.apache.sling", "org.apache.sling.commons.compiler", "2.4.0"); // to be compatible with current o.a.sling.scripting.core
 
         return composite(
@@ -163,7 +164,9 @@ public abstract class UserManagerTestSupport extends TestSupport {
             // needed by latest version of org.apache.sling.api
             mavenBundle().groupId("org.apache.felix").artifactId("org.apache.felix.converter").version("1.0.14"),
             // needed by latest version of org.apache.sling.scripting.core
-            slingCommonsCompiler()
+            slingCommonsCompiler(),
+            mavenBundle("org.apache.sling", "org.apache.sling.scripting.spi", "1.0.2"),
+            mavenBundle("org.apache.sling", "org.apache.sling.commons.johnzon", "1.2.6")
         ).add(
             additionalOptions()
         ).remove(
