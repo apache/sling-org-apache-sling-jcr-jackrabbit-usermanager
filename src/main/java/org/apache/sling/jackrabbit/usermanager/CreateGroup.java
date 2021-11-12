@@ -42,7 +42,7 @@ public interface CreateGroup {
      * Create a new group for the repository
      * 
      * @param jcrSession the JCR session of the user creating the group
-     * @param name The name of the new user.  If null or empty, the name is calculated from the supplied properties (per SLING-10902).
+     * @param name The name of the new group.  If null or empty, the name is calculated from the supplied properties (per SLING-10902).
      * @param properties Extra properties to update on the group.  The entry values should be either a String or String[] (optional)
      * @param changes The list of changes for this operation (optional)
      * @return the group that was created
