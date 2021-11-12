@@ -20,6 +20,7 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Array;
+import java.security.SecureRandom;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
@@ -28,7 +29,6 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 
 import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
@@ -84,7 +84,7 @@ public abstract class AbstractAuthorizablePostServlet extends
 
     private static final Logger LOG = LoggerFactory.getLogger(AbstractAuthorizablePostServlet.class);
 
-    private final Random randomCollisionIndex = new Random();
+    private final SecureRandom randomCollisionIndex = new SecureRandom();
     private transient DateParser dateParser;
 
     protected transient SystemUserManagerPaths systemUserManagerPaths;
@@ -111,9 +111,8 @@ public abstract class AbstractAuthorizablePostServlet extends
         final PrincipalNameGeneratorHolder pngh = new PrincipalNameGeneratorHolder(generator, getRanking(properties));
         synchronized (principalNameGenerators) {
             this.principalNameGenerators.add(pngh);
-            Collections.sort(this.principalNameGenerators, (o1, o2) -> {
-                return Integer.compare(o1.ranking, o2.ranking);
-            });
+            Collections.sort(this.principalNameGenerators, (o1, o2) -> 
+                Integer.compare(o1.ranking, o2.ranking));
         }
     }
     protected void unbindPrincipalNameGenerator(final PrincipalNameGenerator generator) {
@@ -130,7 +129,9 @@ public abstract class AbstractAuthorizablePostServlet extends
         this.principalNameFilter = filter;
     }
     protected void unbindPrincipalNameFilter(final PrincipalNameFilter filter) {
-        this.principalNameFilter = null;
+        if (filter != null && filter.equals(this.principalNameFilter)) {
+            this.principalNameFilter = null;
+        }
     }
 
     /**
