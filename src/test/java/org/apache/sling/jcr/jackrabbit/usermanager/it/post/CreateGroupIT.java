@@ -17,7 +17,9 @@
 package org.apache.sling.jcr.jackrabbit.usermanager.it.post;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -31,6 +33,7 @@ import org.apache.http.NameValuePair;
 import org.apache.http.auth.Credentials;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.message.BasicNameValuePair;
+import org.apache.sling.api.resource.ResourceUtil;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.junit.PaxExam;
@@ -205,6 +208,189 @@ public class CreateGroupIT extends UserManagerClientTestSupport {
     @Test
     public void testCreateGroupInvalidRedirectWithInvalidURI() throws IOException, JsonException {
         testCreateGroupRedirect("https://", SC_UNPROCESSABLE_ENTITY);
+    }
+
+    /**
+     * SLING-10902 Test for group name that is not unique
+     */
+    @Test
+    public void testCreateGroupWithAlreadyUsedName() throws IOException, JsonException {
+        String postUrl = String.format("%s/system/userManager/group.create.json", baseServerUri);
+
+        String marker = "testGroup" + getNextInt();
+        List<NameValuePair> postParams = new ArrayList<>();
+        postParams.add(new BasicNameValuePair(":name", marker));
+        Credentials creds = new UsernamePasswordCredentials("admin", "admin");
+        String json = getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
+
+        //make sure the json response can be parsed as a JSON object
+        JsonObject jsonObj = parseJson(json);
+        assertNotNull(jsonObj);
+        testGroupId  = ResourceUtil.getName(jsonObj.getString("path"));
+        assertNotNull(testGroupId);
+        assertEquals(marker, testGroupId);
+
+        // second time with the same info fails since it is not unique
+        getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+    }
+
+    /**
+     * SLING-10902 Test for group name that is not unique
+     */
+    @Test
+    public void testCreateGroupWithAlreadyUsedNameValueFrom() throws IOException, JsonException {
+        String postUrl = String.format("%s/system/userManager/group.create.json", baseServerUri);
+
+        String marker = "testGroup" + getNextInt();
+        List<NameValuePair> postParams = new ArrayList<>();
+        postParams.add(new BasicNameValuePair(":name@ValueFrom", "marker"));
+        postParams.add(new BasicNameValuePair("marker", marker));
+        Credentials creds = new UsernamePasswordCredentials("admin", "admin");
+        String json = getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
+
+        //make sure the json response can be parsed as a JSON object
+        JsonObject jsonObj = parseJson(json);
+        assertNotNull(jsonObj);
+        testGroupId  = ResourceUtil.getName(jsonObj.getString("path"));
+        assertNotNull(testGroupId);
+        assertEquals(marker, testGroupId);
+
+        // second time with the same info fails since it is not unique
+        getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+    }
+    
+    /**
+     * SLING-10902 Test for group name generated from a hint
+     */
+    @Test
+    public void testCreateGroupWithNameHintAndAlreadyUsedName() throws IOException, JsonException {
+        String postUrl = String.format("%s/system/userManager/group.create.json", baseServerUri);
+
+        String hint = "testGroup" + getNextInt();
+        List<NameValuePair> postParams = new ArrayList<>();
+        postParams.add(new BasicNameValuePair(":nameHint", hint));
+        Credentials creds = new UsernamePasswordCredentials("admin", "admin");
+        String json = getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
+
+        //make sure the json response can be parsed as a JSON object
+        JsonObject jsonObj = parseJson(json);
+        assertNotNull(jsonObj);
+        testGroupId  = ResourceUtil.getName(jsonObj.getString("path"));
+        assertNotNull(testGroupId);
+        assertEquals(hint.substring(0, 20), testGroupId);
+
+        // second time with the same info generates a different unique name
+        json = getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
+
+        //make sure the json response can be parsed as a JSON object
+        jsonObj = parseJson(json);
+        assertNotNull(jsonObj);
+        testGroupId2  = ResourceUtil.getName(jsonObj.getString("path"));
+        assertNotNull(testGroupId2);
+        assertTrue(testGroupId2.startsWith(hint.substring(0, 20)));
+        assertNotEquals(testGroupId, testGroupId2);
+    }
+
+
+    /**
+     * SLING-10902 Test for group name generated from the value of another param
+     */
+    @Test
+    public void testCreateGroupWithNameValueFrom() throws IOException, JsonException {
+        String postUrl = String.format("%s/system/userManager/group.create.json", baseServerUri);
+
+        String marker = "testGroup" + getNextInt();
+        List<NameValuePair> postParams = new ArrayList<>();
+        postParams.add(new BasicNameValuePair(":name@ValueFrom", "marker"));
+        postParams.add(new BasicNameValuePair("marker", marker));
+        Credentials creds = new UsernamePasswordCredentials("admin", "admin");
+        String json = getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
+
+        //make sure the json response can be parsed as a JSON object
+        JsonObject jsonObj = parseJson(json);
+        assertNotNull(jsonObj);
+        testGroupId  = ResourceUtil.getName(jsonObj.getString("path"));
+        assertNotNull(testGroupId);
+        assertEquals(marker, testGroupId);
+    }
+
+    /**
+     * SLING-10902 Test for group name generated from a hint
+     */
+    @Test
+    public void testCreateGroupWithNameHint() throws IOException, JsonException {
+        String postUrl = String.format("%s/system/userManager/group.create.json", baseServerUri);
+
+        String hint = "testGroup" + getNextInt();
+        List<NameValuePair> postParams = new ArrayList<>();
+        postParams.add(new BasicNameValuePair(":nameHint", hint));
+        postParams.add(new BasicNameValuePair("marker", testUserId));
+        Credentials creds = new UsernamePasswordCredentials("admin", "admin");
+        String json = getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
+
+        //make sure the json response can be parsed as a JSON object
+        JsonObject jsonObj = parseJson(json);
+        assertNotNull(jsonObj);
+        testGroupId  = ResourceUtil.getName(jsonObj.getString("path"));
+        assertNotNull(testGroupId);
+        assertEquals(hint.substring(0, 20), testGroupId);
+    }
+
+    /**
+     * SLING-10902 Test for group name generated from a hint value of another param
+     */
+    @Test
+    public void testCreateGroupWithNameHintValueFrom() throws IOException, JsonException {
+        String postUrl = String.format("%s/system/userManager/group.create.json", baseServerUri);
+
+        String marker = "testGroup" + getNextInt();
+        List<NameValuePair> postParams = new ArrayList<>();
+        postParams.add(new BasicNameValuePair(":nameHint@ValueFrom", "marker"));
+        postParams.add(new BasicNameValuePair("marker", marker));
+        Credentials creds = new UsernamePasswordCredentials("admin", "admin");
+        String json = getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
+
+        //make sure the json response can be parsed as a JSON object
+        JsonObject jsonObj = parseJson(json);
+        assertNotNull(jsonObj);
+        testGroupId  = ResourceUtil.getName(jsonObj.getString("path"));
+        assertNotNull(testGroupId);
+        assertEquals(marker.substring(0, 20), testGroupId);
+    }
+
+    /**
+     * SLING-10902 Test for group name generated without a hint
+     */
+    @Test
+    public void testCreateGroupWithNoName() throws IOException, JsonException {
+        String postUrl = String.format("%s/system/userManager/group.create.json", baseServerUri);
+
+        String marker = "testGroup" + getNextInt();
+        List<NameValuePair> postParams = new ArrayList<>();
+        postParams.add(new BasicNameValuePair("marker", marker));
+        Credentials creds = new UsernamePasswordCredentials("admin", "admin");
+        getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+    }
+
+    /**
+     * SLING-10902 Test for group name generated from a default property name
+     */
+    @Test
+    public void testCreateGroupWithNoNameAndAlternateHintProp() throws IOException, JsonException {
+        String postUrl = String.format("%s/system/userManager/group.create.json", baseServerUri);
+
+        String marker = "testGroup" + getNextInt();
+        List<NameValuePair> postParams = new ArrayList<>();
+        postParams.add(new BasicNameValuePair("displayName", marker));
+        Credentials creds = new UsernamePasswordCredentials("admin", "admin");
+        String json = getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
+
+        //make sure the json response can be parsed as a JSON object
+        JsonObject jsonObj = parseJson(json);
+        assertNotNull(jsonObj);
+        testGroupId  = ResourceUtil.getName(jsonObj.getString("path"));
+        assertNotNull(testGroupId);
+        assertEquals(marker.substring(0, 20), testGroupId);
     }
 
 }

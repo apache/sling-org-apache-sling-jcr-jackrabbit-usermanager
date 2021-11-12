@@ -28,12 +28,15 @@ import javax.servlet.Servlet;
 import org.apache.jackrabbit.api.security.user.Authorizable;
 import org.apache.jackrabbit.api.security.user.Group;
 import org.apache.jackrabbit.api.security.user.UserManager;
+import org.apache.jackrabbit.oak.spi.security.user.AuthorizableType;
 import org.apache.sling.api.SlingHttpServletRequest;
 import org.apache.sling.api.resource.LoginException;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.api.resource.ResourceResolverFactory;
 import org.apache.sling.jackrabbit.usermanager.CreateGroup;
+import org.apache.sling.jackrabbit.usermanager.PrincipalNameFilter;
+import org.apache.sling.jackrabbit.usermanager.PrincipalNameGenerator;
 import org.apache.sling.jackrabbit.usermanager.resource.SystemUserManagerPaths;
 import org.apache.sling.jcr.base.util.AccessControlUtil;
 import org.apache.sling.servlets.post.Modification;
@@ -47,6 +50,7 @@ import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.annotations.ReferencePolicy;
+import org.osgi.service.component.annotations.ReferencePolicyOption;
 
 /**
  * <p>
@@ -65,8 +69,16 @@ import org.osgi.service.component.annotations.ReferencePolicy;
  * </ul>
  * <h3>Post Parameters</h3>
  * <dl>
- * <dt>:name</dt>
- * <dd>The name of the new group (required)</dd>
+ * <dt>one of these</dt>
+ * <dd>
+ *   <ul>
+ *     <li><b>:name</b> - The value is the exact name to use</li>
+ *     <li><b>:name@ValueFrom</b> - The value is the name of another submitted parameter whose value is the exact name to use</li>
+ *     <li><b>:nameHint</b> - The value is filtered, trimmed and made unique</li>
+ *     <li><b>:nameHint@ValueFrom</b> - The value is the name of another submitted parameter whose value is filtered, trimmed and made unique</li>
+ *     <li><b>otherwise</b> - Try the value of any server-side configured "principalNameHints" parameter to treat as a hint that is filtered, trimmed and made unique</li>
+ *   </ul>
+ * </dd>
  * <dt>*</dt>
  * <dd>Any additional parameters become properties of the group node (optional)</dd>
  * </dl>
@@ -116,6 +128,31 @@ public class CreateGroupServlet extends AbstractGroupPostServlet implements Crea
     @Deactivate
     protected void deactivate() {
         super.deactivate();
+    }
+
+    @Reference(cardinality = ReferenceCardinality.MULTIPLE,
+            policy = ReferencePolicy.DYNAMIC)
+    @Override
+    protected void bindPrincipalNameGenerator(PrincipalNameGenerator generator, Map<String, Object> properties) {
+        super.bindPrincipalNameGenerator(generator, properties);
+    }
+
+    @Override
+    protected void unbindPrincipalNameGenerator(PrincipalNameGenerator generator) { // NOSONAR
+        super.unbindPrincipalNameGenerator(generator);
+    }
+
+    @Reference(cardinality = ReferenceCardinality.OPTIONAL,
+            policy = ReferencePolicy.DYNAMIC,
+            policyOption = ReferencePolicyOption.GREEDY)
+    @Override
+    protected void bindPrincipalNameFilter(PrincipalNameFilter filter) {
+        super.bindPrincipalNameFilter(filter);
+    }
+
+    @Override
+    protected void unbindPrincipalNameFilter(PrincipalNameFilter filter) { // NOSONAR
+        super.unbindPrincipalNameFilter(filter);
     }
 
     /* (non-Javadoc)
@@ -187,21 +224,28 @@ public class CreateGroupServlet extends AbstractGroupPostServlet implements Crea
             throw new IllegalArgumentException("JCR Session not found");
         }
 
-        if (name == null || name.length() == 0) {
+        final String principalName;
+        if (name == null || name.isEmpty()) {
+            principalName = getOrGeneratePrincipalName(jcrSession, properties, AuthorizableType.GROUP);
+        } else {
+            principalName = name;
+        }
+
+        if (principalName == null || principalName.length() == 0) {
             throw new IllegalArgumentException("Group name was not supplied");
         }
 
         UserManager userManager = AccessControlUtil.getUserManager(jcrSession);
-        Authorizable authorizable = userManager.getAuthorizable(name);
+        Authorizable authorizable = userManager.getAuthorizable(principalName);
 
         Group group = null;
         if (authorizable != null) {
             // principal already exists!
             throw new RepositoryException(
                 "A group already exists with the requested name: "
-                    + name);
+                    + principalName);
         } else {
-            group = userManager.createGroup(() -> name);
+            group = userManager.createGroup(() -> principalName);
 
             String groupPath = systemUserManagerPaths.getGroupPrefix()
                 + group.getID();

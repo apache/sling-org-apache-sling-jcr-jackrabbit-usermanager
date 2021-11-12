@@ -17,7 +17,7 @@
  * under the License.
  */
 
-@org.osgi.annotation.versioning.Version("2.4.0")
+@org.osgi.annotation.versioning.Version("2.5.0")
 package org.apache.sling.jackrabbit.usermanager;
 
 

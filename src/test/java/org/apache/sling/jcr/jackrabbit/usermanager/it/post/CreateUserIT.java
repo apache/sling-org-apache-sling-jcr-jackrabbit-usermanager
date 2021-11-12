@@ -18,7 +18,9 @@ package org.apache.sling.jcr.jackrabbit.usermanager.it.post;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -32,6 +34,7 @@ import org.apache.http.NameValuePair;
 import org.apache.http.auth.Credentials;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.message.BasicNameValuePair;
+import org.apache.sling.api.resource.ResourceUtil;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.junit.PaxExam;
@@ -301,6 +304,204 @@ public class CreateUserIT extends UserManagerClientTestSupport {
     @Test
     public void testCreateUserInvalidRedirectWithInvalidURI() throws IOException, JsonException {
         testCreateUserRedirect("https://", SC_UNPROCESSABLE_ENTITY);
+    }
+
+    /**
+     * SLING-10902 Test for user name that is not unique
+     */
+    @Test
+    public void testCreateUserWithAlreadyUsedName() throws IOException, JsonException {
+        String postUrl = String.format("%s/system/userManager/user.create.json", baseServerUri);
+
+        String marker = "testUser" + getNextInt();
+        List<NameValuePair> postParams = new ArrayList<>();
+        postParams.add(new BasicNameValuePair(":name", marker));
+        postParams.add(new BasicNameValuePair("pwd", "testPwd"));
+        postParams.add(new BasicNameValuePair("pwdConfirm", "testPwd"));
+        Credentials creds = new UsernamePasswordCredentials("admin", "admin");
+        String json = getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
+
+        //make sure the json response can be parsed as a JSON object
+        JsonObject jsonObj = parseJson(json);
+        assertNotNull(jsonObj);
+        testUserId  = ResourceUtil.getName(jsonObj.getString("path"));
+        assertNotNull(testUserId);
+        assertEquals(marker, testUserId);
+
+        // second time with the same info fails since it is not unique
+        getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+    }
+
+    /**
+     * SLING-10902 Test for user name that is not unique
+     */
+    @Test
+    public void testCreateUserWithAlreadyUsedNameValueFrom() throws IOException, JsonException {
+        String postUrl = String.format("%s/system/userManager/user.create.json", baseServerUri);
+
+        String marker = "testUser" + getNextInt();
+        List<NameValuePair> postParams = new ArrayList<>();
+        postParams.add(new BasicNameValuePair(":name@ValueFrom", "marker"));
+        postParams.add(new BasicNameValuePair("marker", marker));
+        postParams.add(new BasicNameValuePair("pwd", "testPwd"));
+        postParams.add(new BasicNameValuePair("pwdConfirm", "testPwd"));
+        Credentials creds = new UsernamePasswordCredentials("admin", "admin");
+        String json = getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
+
+        //make sure the json response can be parsed as a JSON object
+        JsonObject jsonObj = parseJson(json);
+        assertNotNull(jsonObj);
+        testUserId  = ResourceUtil.getName(jsonObj.getString("path"));
+        assertNotNull(testUserId);
+        assertEquals(marker, testUserId);
+
+        // second time with the same info fails since it is not unique
+        getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+    }
+
+    /**
+     * SLING-10902 Test for user name generated from a hint
+     */
+    @Test
+    public void testCreateUserWithNameHintAndAlreadyUsedName() throws IOException, JsonException {
+        String postUrl = String.format("%s/system/userManager/user.create.json", baseServerUri);
+
+        String hint = "testUser" + getNextInt();
+        List<NameValuePair> postParams = new ArrayList<>();
+        postParams.add(new BasicNameValuePair(":nameHint", hint));
+        postParams.add(new BasicNameValuePair("pwd", "testPwd"));
+        postParams.add(new BasicNameValuePair("pwdConfirm", "testPwd"));
+        Credentials creds = new UsernamePasswordCredentials("admin", "admin");
+        String json = getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
+
+        //make sure the json response can be parsed as a JSON object
+        JsonObject jsonObj = parseJson(json);
+        assertNotNull(jsonObj);
+        testUserId  = ResourceUtil.getName(jsonObj.getString("path"));
+        assertNotNull(testUserId);
+        assertEquals(hint.substring(0, 20), testUserId);
+
+        // second time with the same info generates a different unique name
+        json = getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
+
+        //make sure the json response can be parsed as a JSON object
+        jsonObj = parseJson(json);
+        assertNotNull(jsonObj);
+        testUserId2  = ResourceUtil.getName(jsonObj.getString("path"));
+        assertNotNull(testUserId2);
+        assertTrue(testUserId2.startsWith(hint.substring(0, 20)));
+        assertNotEquals(testUserId, testUserId2);
+    }
+
+
+    /**
+     * SLING-10902 Test for user name generated from the value of another param
+     */
+    @Test
+    public void testCreateUserWithNameValueFrom() throws IOException, JsonException {
+        String postUrl = String.format("%s/system/userManager/user.create.json", baseServerUri);
+
+        String marker = "testUser" + getNextInt();
+        List<NameValuePair> postParams = new ArrayList<>();
+        postParams.add(new BasicNameValuePair(":name@ValueFrom", "marker"));
+        postParams.add(new BasicNameValuePair("marker", marker));
+        postParams.add(new BasicNameValuePair("pwd", "testPwd"));
+        postParams.add(new BasicNameValuePair("pwdConfirm", "testPwd"));
+        Credentials creds = new UsernamePasswordCredentials("admin", "admin");
+        String json = getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
+
+        //make sure the json response can be parsed as a JSON object
+        JsonObject jsonObj = parseJson(json);
+        assertNotNull(jsonObj);
+        testUserId  = ResourceUtil.getName(jsonObj.getString("path"));
+        assertNotNull(testUserId);
+        assertEquals(marker, testUserId);
+    }
+
+    /**
+     * SLING-10902 Test for user name generated from a hint
+     */
+    @Test
+    public void testCreateUserWithNameHint() throws IOException, JsonException {
+        String postUrl = String.format("%s/system/userManager/user.create.json", baseServerUri);
+
+        String hint = "testUser" + getNextInt();
+        List<NameValuePair> postParams = new ArrayList<>();
+        postParams.add(new BasicNameValuePair(":nameHint", hint));
+        postParams.add(new BasicNameValuePair("pwd", "testPwd"));
+        postParams.add(new BasicNameValuePair("pwdConfirm", "testPwd"));
+        Credentials creds = new UsernamePasswordCredentials("admin", "admin");
+        String json = getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
+
+        //make sure the json response can be parsed as a JSON object
+        JsonObject jsonObj = parseJson(json);
+        assertNotNull(jsonObj);
+        testUserId  = ResourceUtil.getName(jsonObj.getString("path"));
+        assertNotNull(testUserId);
+        assertEquals(hint.substring(0, 20), testUserId);
+    }
+
+    /**
+     * SLING-10902 Test for user name generated from a hint value of another param
+     */
+    @Test
+    public void testCreateUserWithNameHintValueFrom() throws IOException, JsonException {
+        String postUrl = String.format("%s/system/userManager/user.create.json", baseServerUri);
+
+        String marker = "testUser" + getNextInt();
+        List<NameValuePair> postParams = new ArrayList<>();
+        postParams.add(new BasicNameValuePair(":nameHint@ValueFrom", "marker"));
+        postParams.add(new BasicNameValuePair("marker", marker));
+        postParams.add(new BasicNameValuePair("pwd", "testPwd"));
+        postParams.add(new BasicNameValuePair("pwdConfirm", "testPwd"));
+        Credentials creds = new UsernamePasswordCredentials("admin", "admin");
+        String json = getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
+
+        //make sure the json response can be parsed as a JSON object
+        JsonObject jsonObj = parseJson(json);
+        assertNotNull(jsonObj);
+        testUserId  = ResourceUtil.getName(jsonObj.getString("path"));
+        assertNotNull(testUserId);
+        assertEquals(marker.substring(0, 20), testUserId);
+    }
+
+    /**
+     * SLING-10902 Test for user name generated without a hint but one of the alternate name hint
+     * properties is supplied
+     */
+    @Test
+    public void testCreateUserWithNoName() throws IOException, JsonException {
+        String postUrl = String.format("%s/system/userManager/user.create.json", baseServerUri);
+
+        List<NameValuePair> postParams = new ArrayList<>();
+        postParams.add(new BasicNameValuePair("pwd", "testPwd"));
+        postParams.add(new BasicNameValuePair("pwdConfirm", "testPwd"));
+        Credentials creds = new UsernamePasswordCredentials("admin", "admin");
+        getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+    }
+
+    /**
+     * SLING-10902 Test for user name generated without a hint but one of the alternate name hint
+     * properties is supplied
+     */
+    @Test
+    public void testCreateUserWithNoNameAndAlternateHintProp() throws IOException, JsonException {
+        String postUrl = String.format("%s/system/userManager/user.create.json", baseServerUri);
+
+        String marker = "testUser" + getNextInt();
+        List<NameValuePair> postParams = new ArrayList<>();
+        postParams.add(new BasicNameValuePair("displayName", marker));
+        postParams.add(new BasicNameValuePair("pwd", "testPwd"));
+        postParams.add(new BasicNameValuePair("pwdConfirm", "testPwd"));
+        Credentials creds = new UsernamePasswordCredentials("admin", "admin");
+        String json = getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
+
+        //make sure the json response can be parsed as a JSON object
+        JsonObject jsonObj = parseJson(json);
+        assertNotNull(jsonObj);
+        testUserId  = ResourceUtil.getName(jsonObj.getString("path"));
+        assertNotNull(testUserId);
+        assertEquals(marker.substring(0, 20), testUserId);
     }
 
 }

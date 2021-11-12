@@ -30,10 +30,13 @@ import org.apache.jackrabbit.api.security.user.Authorizable;
 import org.apache.jackrabbit.api.security.user.User;
 import org.apache.jackrabbit.api.security.user.UserManager;
 import org.apache.jackrabbit.oak.spi.security.privilege.PrivilegeConstants;
+import org.apache.jackrabbit.oak.spi.security.user.AuthorizableType;
 import org.apache.jackrabbit.oak.spi.security.user.UserConfiguration;
 import org.apache.jackrabbit.oak.spi.security.user.UserConstants;
 import org.apache.sling.api.SlingHttpServletRequest;
 import org.apache.sling.jackrabbit.usermanager.CreateUser;
+import org.apache.sling.jackrabbit.usermanager.PrincipalNameFilter;
+import org.apache.sling.jackrabbit.usermanager.PrincipalNameGenerator;
 import org.apache.sling.jackrabbit.usermanager.resource.SystemUserManagerPaths;
 import org.apache.sling.jcr.api.SlingRepository;
 import org.apache.sling.jcr.base.util.AccessControlUtil;
@@ -50,6 +53,7 @@ import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.annotations.ReferencePolicy;
+import org.osgi.service.component.annotations.ReferencePolicyOption;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.Designate;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
@@ -72,8 +76,16 @@ import org.slf4j.LoggerFactory;
  * </ul>
  * <h3>Post Parameters</h3>
  * <dl>
- * <dt>:name</dt>
- * <dd>The name of the new user (required)</dd>
+ * <dt>one of these</dt>
+ * <dd>
+ *   <ul>
+ *     <li><b>:name</b> - The value is the exact name to use</li>
+ *     <li><b>:name@ValueFrom</b> - The value is the name of another submitted parameter whose value is the exact name to use</li>
+ *     <li><b>:nameHint</b> - The value is filtered, trimmed and made unique</li>
+ *     <li><b>:nameHint@ValueFrom</b> - The value is the name of another submitted parameter whose value is filtered, trimmed and made unique</li>
+ *     <li><b>otherwise</b> - Try the value of any server-side configured "principalNameHints" parameter to treat as a hint that is filtered, trimmed and made unique</li>
+ *   </ul>
+ * </dd>
  * <dt>:pwd</dt>
  * <dd>The password of the new user (required)</dd>
  * <dt>:pwdConfirm</dt>
@@ -182,7 +194,33 @@ public class CreateUserServlet extends AbstractAuthorizablePostServlet implement
     @Override
     @Deactivate
     protected void deactivate() {
+        this.selfRegistrationEnabled = false;
         super.deactivate();
+    }
+
+    @Reference(cardinality = ReferenceCardinality.MULTIPLE,
+            policy = ReferencePolicy.DYNAMIC)
+    @Override
+    protected void bindPrincipalNameGenerator(PrincipalNameGenerator generator, Map<String, Object> properties) {
+        super.bindPrincipalNameGenerator(generator, properties);
+    }
+
+    @Override
+    protected void unbindPrincipalNameGenerator(PrincipalNameGenerator generator) { // NOSONAR
+        super.unbindPrincipalNameGenerator(generator);
+    }
+
+    @Reference(cardinality = ReferenceCardinality.OPTIONAL,
+            policy = ReferencePolicy.DYNAMIC,
+            policyOption = ReferencePolicyOption.GREEDY)
+    @Override
+    protected void bindPrincipalNameFilter(PrincipalNameFilter filter) {
+        super.bindPrincipalNameFilter(filter);
+    }
+
+    @Override
+    protected void unbindPrincipalNameFilter(PrincipalNameFilter filter) { // NOSONAR
+        super.unbindPrincipalNameFilter(filter);
     }
 
     /* (non-Javadoc)
@@ -273,6 +311,13 @@ public class CreateUserServlet extends AbstractAuthorizablePostServlet implement
             throw new RepositoryException("JCR Session not found");
         }
 
+        final String principalName;
+        if (name == null || name.isEmpty()) {
+            principalName = getOrGeneratePrincipalName(jcrSession, properties, AuthorizableType.USER);
+        } else {
+            principalName = name;
+        }
+
         // check for an administrator
         boolean administrator = false;
         try {
@@ -305,7 +350,7 @@ public class CreateUserServlet extends AbstractAuthorizablePostServlet implement
 
 
         // check that the submitted parameter values have valid values.
-        if (name == null || name.length() == 0) {
+        if (principalName == null || principalName.length() == 0) {
             throw new RepositoryException("User name was not submitted");
         }
         if (password == null) {
@@ -328,15 +373,15 @@ public class CreateUserServlet extends AbstractAuthorizablePostServlet implement
             }
 
             UserManager userManager = AccessControlUtil.getUserManager(selfRegSession);
-            Authorizable authorizable = userManager.getAuthorizable(name);
+            Authorizable authorizable = userManager.getAuthorizable(principalName);
 
             if (authorizable != null) {
                 // user already exists!
                 throw new RepositoryException(
                     "A principal already exists with the requested name: "
-                        + name);
+                        + principalName);
             } else {
-                user = userManager.createUser(name, password);
+                user = userManager.createUser(principalName, password);
                 String userPath = systemUserManagerPaths.getUserPrefix()
                     + user.getID();
 

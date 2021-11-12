@@ -19,12 +19,16 @@ package org.apache.sling.jackrabbit.usermanager.impl.post;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Array;
 import java.util.Calendar;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
@@ -33,10 +37,16 @@ import javax.jcr.Value;
 import javax.jcr.ValueFactory;
 
 import org.apache.jackrabbit.api.security.user.Authorizable;
+import org.apache.jackrabbit.api.security.user.UserManager;
+import org.apache.jackrabbit.oak.spi.security.user.AuthorizableType;
 import org.apache.sling.api.SlingIOException;
 import org.apache.sling.api.request.RequestParameter;
 import org.apache.sling.commons.osgi.OsgiUtil;
+import org.apache.sling.jackrabbit.usermanager.PrincipalNameFilter;
+import org.apache.sling.jackrabbit.usermanager.PrincipalNameGenerator;
+import org.apache.sling.jackrabbit.usermanager.PrincipalNameGenerator.NameInfo;
 import org.apache.sling.jackrabbit.usermanager.resource.SystemUserManagerPaths;
+import org.apache.sling.jcr.base.util.AccessControlUtil;
 import org.apache.sling.servlets.post.Modification;
 import org.apache.sling.servlets.post.SlingPostConstants;
 import org.apache.sling.servlets.post.impl.helper.DateParser;
@@ -52,16 +62,140 @@ public abstract class AbstractAuthorizablePostServlet extends
         AbstractPostServlet {
     private static final long serialVersionUID = -5918670409789895333L;
 
+    private static final class PrincipalNameGeneratorHolder {
+        private final PrincipalNameGenerator generator;
+        private final int ranking;
+
+        private PrincipalNameGeneratorHolder(PrincipalNameGenerator generator, int ranking) {
+            this.generator = generator;
+            this.ranking = ranking;
+        }
+
+        public PrincipalNameGenerator getGenerator() {
+            return generator;
+        }
+
+    }
+
+    protected static final String RP_NODE_NAME_VALUE_FROM = String.format("%s%s", SlingPostConstants.RP_NODE_NAME, SlingPostConstants.VALUE_FROM_SUFFIX);
+    protected static final String RP_NODE_NAME_HINT_VALUE_FROM = String.format("%s%s", SlingPostConstants.RP_NODE_NAME_HINT, SlingPostConstants.VALUE_FROM_SUFFIX);
+
     public static final String PROP_DATE_FORMAT = "servlet.post.dateFormats";
 
     private static final Logger LOG = LoggerFactory.getLogger(AbstractAuthorizablePostServlet.class);
 
+    private final Random randomCollisionIndex = new Random();
     private transient DateParser dateParser;
 
     protected transient SystemUserManagerPaths systemUserManagerPaths;
 
     protected void bindSystemUserManagerPaths(SystemUserManagerPaths sump) {
         this.systemUserManagerPaths = sump;
+    }
+
+    /**
+     * The principal name generators
+     */
+    protected transient LinkedList<PrincipalNameGeneratorHolder> principalNameGenerators = new LinkedList<>();
+
+    /**
+     * The optional principal name filter
+     */
+    protected transient PrincipalNameFilter principalNameFilter;
+
+    /**
+     * Bind a new principal name generator
+     */
+//    @Reference(service = PrincipalNameGenerator.class)
+    protected void bindPrincipalNameGenerator(final PrincipalNameGenerator generator, final Map<String, Object> properties) {
+        final PrincipalNameGeneratorHolder pngh = new PrincipalNameGeneratorHolder(generator, getRanking(properties));
+        synchronized (principalNameGenerators) {
+            this.principalNameGenerators.add(pngh);
+            Collections.sort(this.principalNameGenerators, (o1, o2) -> {
+                return Integer.compare(o1.ranking, o2.ranking);
+            });
+        }
+    }
+    protected void unbindPrincipalNameGenerator(final PrincipalNameGenerator generator) {
+        synchronized (principalNameGenerators) {
+            principalNameGenerators.removeIf(h -> h.generator == generator);
+        }
+    }
+
+    /**
+     * Bind a new principal name filter
+     */
+//    @Reference(service = PrincipalNameFilter.class)
+    protected void bindPrincipalNameFilter(final PrincipalNameFilter filter) {
+        this.principalNameFilter = filter;
+    }
+    protected void unbindPrincipalNameFilter(final PrincipalNameFilter filter) {
+        this.principalNameFilter = null;
+    }
+
+    /**
+     * Get or generate the name of the principal being created
+     * 
+     * @param request the current request
+     * @return the principal name
+     */
+    protected String getOrGeneratePrincipalName(Session jcrSession, Map<String, ?> properties, AuthorizableType type) throws RepositoryException {
+        String principalName = null;
+        PrincipalNameGenerator defaultPrincipalNameGenerator = null;
+        PrincipalNameGenerator principalNameGenerator = null;
+        synchronized (principalNameGenerators) {
+            if (!principalNameGenerators.isEmpty()) {
+                defaultPrincipalNameGenerator = principalNameGenerators.getFirst().getGenerator();
+                principalNameGenerator = principalNameGenerators.getLast().getGenerator();
+            }
+        }
+        if (principalNameGenerator != null) {
+            NameInfo nameInfo = principalNameGenerator.getPrincipalName(properties, type, 
+                    principalNameFilter, defaultPrincipalNameGenerator);
+            if (nameInfo == null && defaultPrincipalNameGenerator != null) {
+                // fallback to the default impl
+                nameInfo = defaultPrincipalNameGenerator.getPrincipalName(properties, type, 
+                        principalNameFilter, defaultPrincipalNameGenerator);
+            }
+            if (nameInfo != null) {
+                principalName = nameInfo.getPrincipalName();
+                if (principalName != null && nameInfo.isMakeUnique()) {
+                    // make sure the name is not already used
+                    UserManager um = AccessControlUtil.getUserManager(jcrSession);
+
+                    // if resulting authorizable exists, add a random suffix until it's not the case
+                    // anymore
+                    final int MAX_TRIES = 1000;
+                    if (um.getAuthorizable(principalName) != null ) {
+                        for (int i=0; i < MAX_TRIES; i++) {
+                            final int uniqueIndex = randomCollisionIndex.nextInt(9999);
+                            String newPrincipalName = principalName + "_" + uniqueIndex;
+                            if (um.getAuthorizable(newPrincipalName) == null) {
+                                // found unused value, so use it
+                                principalName = newPrincipalName;
+                                break;
+                            }
+                        }
+
+                        // Give up after MAX_TRIES
+                        if (um.getAuthorizable(principalName) != null ) {
+                            throw new RepositoryException(
+                                "Collision in generated principal names, generated name " + principalName + " already exists");
+                        }
+                    }
+                }
+            }
+        } else {
+            // fallback to the old behavior
+            Object obj = properties.get(SlingPostConstants.RP_NODE_NAME);
+            if (obj instanceof String[] && Array.getLength(obj) == 1) {
+                principalName = ((String[])obj)[0];
+            } else if (obj instanceof String) {
+                principalName= ((String)obj);
+            }
+        }
+
+        return principalName;
     }
 
     // ---------- SCR Integration ----------------------------------------------
