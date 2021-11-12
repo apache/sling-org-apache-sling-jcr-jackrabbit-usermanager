@@ -485,11 +485,93 @@ public class CreateUserIT extends UserManagerClientTestSupport {
      * properties is supplied
      */
     @Test
+    public void testCreateUserWithEmptyName() throws IOException, JsonException {
+        String postUrl = String.format("%s/system/userManager/user.create.json", baseServerUri);
+
+        List<NameValuePair> postParams = new ArrayList<>();
+        postParams.add(new BasicNameValuePair(":name", ""));
+        postParams.add(new BasicNameValuePair("pwd", "testPwd"));
+        postParams.add(new BasicNameValuePair("pwdConfirm", "testPwd"));
+        Credentials creds = new UsernamePasswordCredentials("admin", "admin");
+        getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+    }
+
+    /**
+     * SLING-10902 Test for user name generated without a hint but one of the alternate name hint
+     * properties is supplied
+     */
+    @Test
+    public void testCreateUserWithEmptyNameHint() throws IOException, JsonException {
+        String postUrl = String.format("%s/system/userManager/user.create.json", baseServerUri);
+
+        List<NameValuePair> postParams = new ArrayList<>();
+        postParams.add(new BasicNameValuePair(":nameHint", ""));
+        postParams.add(new BasicNameValuePair("pwd", "testPwd"));
+        postParams.add(new BasicNameValuePair("pwdConfirm", "testPwd"));
+        Credentials creds = new UsernamePasswordCredentials("admin", "admin");
+        getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+    }
+
+    /**
+     * SLING-10902 Test for user name generated without a hint but one of the alternate name hint
+     * properties is supplied
+     */
+    @Test
     public void testCreateUserWithNoNameAndAlternateHintProp() throws IOException, JsonException {
         String postUrl = String.format("%s/system/userManager/user.create.json", baseServerUri);
 
         String marker = "testUser" + getNextInt();
         List<NameValuePair> postParams = new ArrayList<>();
+        postParams.add(new BasicNameValuePair("displayName", marker));
+        postParams.add(new BasicNameValuePair("pwd", "testPwd"));
+        postParams.add(new BasicNameValuePair("pwdConfirm", "testPwd"));
+        Credentials creds = new UsernamePasswordCredentials("admin", "admin");
+        String json = getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
+
+        //make sure the json response can be parsed as a JSON object
+        JsonObject jsonObj = parseJson(json);
+        assertNotNull(jsonObj);
+        testUserId  = ResourceUtil.getName(jsonObj.getString("path"));
+        assertNotNull(testUserId);
+        assertEquals(marker.substring(0, 20), testUserId);
+    }
+
+    /**
+     * SLING-10902 Test for user name generated without a hint but one of the alternate name hint
+     * properties is supplied
+     */
+    @Test
+    public void testCreateUserWithEmptyNameAndAlternateHintProp() throws IOException, JsonException {
+        String postUrl = String.format("%s/system/userManager/user.create.json", baseServerUri);
+
+        String marker = "testUser" + getNextInt();
+        List<NameValuePair> postParams = new ArrayList<>();
+        postParams.add(new BasicNameValuePair(":name", ""));
+        postParams.add(new BasicNameValuePair("displayName", marker));
+        postParams.add(new BasicNameValuePair("pwd", "testPwd"));
+        postParams.add(new BasicNameValuePair("pwdConfirm", "testPwd"));
+        Credentials creds = new UsernamePasswordCredentials("admin", "admin");
+        String json = getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
+
+        //make sure the json response can be parsed as a JSON object
+        JsonObject jsonObj = parseJson(json);
+        assertNotNull(jsonObj);
+        testUserId  = ResourceUtil.getName(jsonObj.getString("path"));
+        assertNotNull(testUserId);
+        assertEquals(marker.substring(0, 20), testUserId);
+    }
+
+    /**
+     * SLING-10902 Test for user name generated without a hint but one of the alternate name hint
+     * properties is supplied
+     */
+    @Test
+    public void testCreateUserWithEmptyNameHintAndAlternateHintProp() throws IOException, JsonException {
+        String postUrl = String.format("%s/system/userManager/user.create.json", baseServerUri);
+
+        String marker = "testUser" + getNextInt();
+        List<NameValuePair> postParams = new ArrayList<>();
+        postParams.add(new BasicNameValuePair(":nameHint", ""));
         postParams.add(new BasicNameValuePair("displayName", marker));
         postParams.add(new BasicNameValuePair("pwd", "testPwd"));
         postParams.add(new BasicNameValuePair("pwdConfirm", "testPwd"));

@@ -373,6 +373,37 @@ public class CreateGroupIT extends UserManagerClientTestSupport {
     }
 
     /**
+     * SLING-10902 Test for group name generated without a hint
+     */
+    @Test
+    public void testCreateGroupWithEmptyName() throws IOException, JsonException {
+        String postUrl = String.format("%s/system/userManager/group.create.json", baseServerUri);
+
+        String marker = "testGroup" + getNextInt();
+        List<NameValuePair> postParams = new ArrayList<>();
+        postParams.add(new BasicNameValuePair(":name", ""));
+        postParams.add(new BasicNameValuePair("marker", marker));
+        Credentials creds = new UsernamePasswordCredentials("admin", "admin");
+        getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+    }
+
+    /**
+     * SLING-10902 Test for group name generated without a hint
+     */
+    @Test
+    public void testCreateGroupWithEmptyNameHint() throws IOException, JsonException {
+        String postUrl = String.format("%s/system/userManager/group.create.json", baseServerUri);
+
+        String marker = "testGroup" + getNextInt();
+        List<NameValuePair> postParams = new ArrayList<>();
+        postParams.add(new BasicNameValuePair(":nameHint", ""));
+        postParams.add(new BasicNameValuePair("marker", marker));
+        Credentials creds = new UsernamePasswordCredentials("admin", "admin");
+        getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+    }
+
+
+    /**
      * SLING-10902 Test for group name generated from a default property name
      */
     @Test
@@ -381,6 +412,50 @@ public class CreateGroupIT extends UserManagerClientTestSupport {
 
         String marker = "testGroup" + getNextInt();
         List<NameValuePair> postParams = new ArrayList<>();
+        postParams.add(new BasicNameValuePair("displayName", marker));
+        Credentials creds = new UsernamePasswordCredentials("admin", "admin");
+        String json = getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
+
+        //make sure the json response can be parsed as a JSON object
+        JsonObject jsonObj = parseJson(json);
+        assertNotNull(jsonObj);
+        testGroupId  = ResourceUtil.getName(jsonObj.getString("path"));
+        assertNotNull(testGroupId);
+        assertEquals(marker.substring(0, 20), testGroupId);
+    }
+
+    /**
+     * SLING-10902 Test for group name generated from a default property name
+     */
+    @Test
+    public void testCreateGroupWithEmptyNameAndAlternateHintProp() throws IOException, JsonException {
+        String postUrl = String.format("%s/system/userManager/group.create.json", baseServerUri);
+
+        String marker = "testGroup" + getNextInt();
+        List<NameValuePair> postParams = new ArrayList<>();
+        postParams.add(new BasicNameValuePair(":name", ""));
+        postParams.add(new BasicNameValuePair("displayName", marker));
+        Credentials creds = new UsernamePasswordCredentials("admin", "admin");
+        String json = getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
+
+        //make sure the json response can be parsed as a JSON object
+        JsonObject jsonObj = parseJson(json);
+        assertNotNull(jsonObj);
+        testGroupId  = ResourceUtil.getName(jsonObj.getString("path"));
+        assertNotNull(testGroupId);
+        assertEquals(marker.substring(0, 20), testGroupId);
+    }
+
+    /**
+     * SLING-10902 Test for group name generated from a default property name
+     */
+    @Test
+    public void testCreateGroupWithEmptyNameHintAndAlternateHintProp() throws IOException, JsonException {
+        String postUrl = String.format("%s/system/userManager/group.create.json", baseServerUri);
+
+        String marker = "testGroup" + getNextInt();
+        List<NameValuePair> postParams = new ArrayList<>();
+        postParams.add(new BasicNameValuePair(":nameHint", ""));
         postParams.add(new BasicNameValuePair("displayName", marker));
         Credentials creds = new UsernamePasswordCredentials("admin", "admin");
         String json = getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);

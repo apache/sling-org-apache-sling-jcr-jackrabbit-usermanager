@@ -152,6 +152,40 @@ public class CreatePrincipalWithCustomNameGeneratorIT extends UserManagerClientT
     }
 
     /**
+     * Test for user name generated without a hint
+     */
+    @Test
+    public void testCreateUserWithEmptyName() throws IOException, JsonException {
+        String postUrl = String.format("%s/system/userManager/user.create.json", baseServerUri);
+
+        String marker = "testUser" + getNextInt();
+        List<NameValuePair> postParams = new ArrayList<>();
+        postParams.add(new BasicNameValuePair(":name", ""));
+        postParams.add(new BasicNameValuePair("marker", marker));
+        postParams.add(new BasicNameValuePair("pwd", "testPwd"));
+        postParams.add(new BasicNameValuePair("pwdConfirm", "testPwd"));
+        Credentials creds = new UsernamePasswordCredentials("admin", "admin");
+        getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+    }
+
+    /**
+     * Test for user name generated without a hint
+     */
+    @Test
+    public void testCreateUserWithEmptyNameHint() throws IOException, JsonException {
+        String postUrl = String.format("%s/system/userManager/user.create.json", baseServerUri);
+
+        String marker = "testUser" + getNextInt();
+        List<NameValuePair> postParams = new ArrayList<>();
+        postParams.add(new BasicNameValuePair(":nameHint", ""));
+        postParams.add(new BasicNameValuePair("marker", marker));
+        postParams.add(new BasicNameValuePair("pwd", "testPwd"));
+        postParams.add(new BasicNameValuePair("pwdConfirm", "testPwd"));
+        Credentials creds = new UsernamePasswordCredentials("admin", "admin");
+        getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+    }
+
+    /**
      * Test for user name generated from a default property name
      */
     @Test
@@ -230,6 +264,36 @@ public class CreatePrincipalWithCustomNameGeneratorIT extends UserManagerClientT
 
         String marker = "testGroup" + getNextInt();
         List<NameValuePair> postParams = new ArrayList<>();
+        postParams.add(new BasicNameValuePair("marker", marker));
+        Credentials creds = new UsernamePasswordCredentials("admin", "admin");
+        getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+    }
+
+    /**
+     * Test for group name generated without a hint
+     */
+    @Test
+    public void testCreateGroupWithEmptyName() throws IOException, JsonException {
+        String postUrl = String.format("%s/system/userManager/group.create.json", baseServerUri);
+
+        String marker = "testGroup" + getNextInt();
+        List<NameValuePair> postParams = new ArrayList<>();
+        postParams.add(new BasicNameValuePair(":name", ""));
+        postParams.add(new BasicNameValuePair("marker", marker));
+        Credentials creds = new UsernamePasswordCredentials("admin", "admin");
+        getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+    }
+
+    /**
+     * Test for group name generated without a hint
+     */
+    @Test
+    public void testCreateGroupWithEmptyNameHint() throws IOException, JsonException {
+        String postUrl = String.format("%s/system/userManager/group.create.json", baseServerUri);
+
+        String marker = "testGroup" + getNextInt();
+        List<NameValuePair> postParams = new ArrayList<>();
+        postParams.add(new BasicNameValuePair(":nameHint", ""));
         postParams.add(new BasicNameValuePair("marker", marker));
         Credentials creds = new UsernamePasswordCredentials("admin", "admin");
         getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
