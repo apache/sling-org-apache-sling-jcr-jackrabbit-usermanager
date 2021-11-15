@@ -459,7 +459,7 @@ public abstract class AbstractPostServlet extends
         this.cachedPostResponseCreators = localCache;
     }
     
-    private int getRanking(final Map<String, Object> properties) {
+    protected int getRanking(final Map<String, Object> properties) {
         final Object val = properties.get(Constants.SERVICE_RANKING);
         return val instanceof Integer ? (Integer)val : 0;
     }

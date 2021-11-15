@@ -27,6 +27,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.ops4j.pax.exam.CoreOptions.when;
 import static org.ops4j.pax.exam.cm.ConfigurationAdminOptions.factoryConfiguration;
+import static org.ops4j.pax.exam.cm.ConfigurationAdminOptions.newConfiguration;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -118,6 +119,7 @@ public abstract class UserManagerClientTestSupport extends UserManagerTestSuppor
     protected String testUserId2 = null;
     protected String testUserId3 = null;
     protected String testGroupId = null;
+    protected String testGroupId2 = null;
     protected String testFolderUrl = null;
 
     @Override
@@ -157,6 +159,10 @@ public abstract class UserManagerClientTestSupport extends UserManagerTestSuppor
             factoryConfiguration("org.apache.sling.jcr.contentloader.hc.BundleContentLoadedCheck")
                 .put("hc.tags", new String[] {"bundles"})
                 .asOption(),
+            // SLING-10902 configure principal name hint
+            newConfiguration("org.apache.sling.jackrabbit.usermanager.PrincipalNameGenerator")
+                        .put("principalNameHints", new String[] {"displayName"})
+                        .asOption()
         };
     }
 
@@ -207,6 +213,11 @@ public abstract class UserManagerClientTestSupport extends UserManagerTestSuppor
         if (testGroupId != null) {
             //remove the test user if it exists.
             String postUrl = String.format("%s/system/userManager/group/%s.delete.html", baseServerUri, testGroupId);
+            assertAuthenticatedPostStatus(creds, postUrl, HttpServletResponse.SC_OK, Collections.emptyList(), null);
+        }
+        if (testGroupId2 != null) {
+            //remove the test user if it exists.
+            String postUrl = String.format("%s/system/userManager/group/%s.delete.html", baseServerUri, testGroupId2);
             assertAuthenticatedPostStatus(creds, postUrl, HttpServletResponse.SC_OK, Collections.emptyList(), null);
         }
         if (testUserId != null) {
