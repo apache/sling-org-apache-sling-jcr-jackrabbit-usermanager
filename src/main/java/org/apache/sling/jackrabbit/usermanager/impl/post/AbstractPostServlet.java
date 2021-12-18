@@ -24,6 +24,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import javax.jcr.AccessDeniedException;
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
 import javax.servlet.ServletException;
@@ -143,7 +144,16 @@ public abstract class AbstractPostServlet extends
                         request.getResource().getPath(), getClass().getName()),
                     throwable);
             }
-            response.setError(throwable);
+            Throwable cause = throwable.getCause();
+            if (cause == null) {
+                cause = throwable;
+            }
+            if (cause instanceof AccessDeniedException) {
+                response.setStatus(HttpServletResponse.SC_FORBIDDEN,
+                        cause.getMessage());
+            } else {
+                response.setError(throwable);
+            }
         } finally {
             try {
                 if (session.hasPendingChanges()) {

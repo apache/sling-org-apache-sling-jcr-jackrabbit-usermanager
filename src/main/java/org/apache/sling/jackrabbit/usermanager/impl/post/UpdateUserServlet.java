@@ -179,13 +179,17 @@ public class UpdateUserServlet extends AbstractAuthorizablePostServlet
                 "User to update could not be determined");
         }
 
-        Collection<RequestProperty> reqProperties = collectContent(properties);
+        Map<String, RequestProperty> reqPropertiesMap = collectContentMap(properties);
+        Collection<RequestProperty> reqPropertyValues = reqPropertiesMap.values();
         try {
             // cleanup any old content (@Delete parameters)
-            processDeletes(user, reqProperties, changes);
+            processDeletes(user, reqPropertyValues, changes);
+
+            // ensure root of new content with the expected primary/mixin types
+            processCreate(jcrSession, user, reqPropertiesMap, changes);
 
             // write content from form
-            writeContent(jcrSession, user, reqProperties, changes);
+            writeContent(jcrSession, user, reqPropertyValues, changes);
 
             //SLING-2072 set the user as enabled or disabled if the request
             // has supplied the relevant properties

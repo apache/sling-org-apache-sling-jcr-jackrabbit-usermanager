@@ -27,6 +27,7 @@ import static org.apache.sling.testing.paxexam.SlingOptions.versionResolver;
 import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.ops4j.pax.exam.CoreOptions.composite;
 import static org.ops4j.pax.exam.CoreOptions.junitBundles;
@@ -50,6 +51,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import javax.inject.Inject;
+import javax.json.JsonArray;
 
 import org.apache.felix.hc.api.Result;
 import org.apache.felix.hc.api.ResultLog;
@@ -345,6 +347,21 @@ public abstract class UserManagerTestSupport extends TestSupport {
         return streamBundle(
             bundle.build(withBnd())
         ).start();
+    }
+
+    protected void assertContains(JsonArray json, String value) {
+        assertContains("Did not find the expected value in the array", json, value);
+    }
+    protected void assertContains(String message, JsonArray json, String value) {
+        assertNotNull(json);
+        boolean found = false;
+        for (int i = 0; i < json.size(); i++) {  // iterate through the JsonArray
+            if (json.getString(i).equals(value)) {
+                found = true;
+                break;
+            }
+        }
+        assertTrue(message, found);
     }
 
 }

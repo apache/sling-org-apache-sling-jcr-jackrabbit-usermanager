@@ -385,12 +385,16 @@ public class CreateUserServlet extends AbstractAuthorizablePostServlet implement
                 String userPath = systemUserManagerPaths.getUserPrefix()
                     + user.getID();
 
-                Collection<RequestProperty> reqProperties = collectContent(properties);
+                Map<String, RequestProperty> reqPropertiesMap = collectContentMap(properties);
+                Collection<RequestProperty> reqPropertyValues = reqPropertiesMap.values();
 
                 changes.add(Modification.onCreated(userPath));
 
+                // ensure root of new content with the expected primary/mixin types
+                processCreate(selfRegSession, user, reqPropertiesMap, changes);
+
                 // write content from form
-                writeContent(selfRegSession, user, reqProperties, changes);
+                writeContent(selfRegSession, user, reqPropertyValues, changes);
 
                 if (selfRegSession.hasPendingChanges()) {
                     selfRegSession.save();

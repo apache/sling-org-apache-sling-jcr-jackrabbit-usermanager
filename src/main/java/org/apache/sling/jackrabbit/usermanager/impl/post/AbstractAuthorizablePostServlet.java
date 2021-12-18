@@ -20,6 +20,8 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Array;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.SecureRandom;
 import java.util.Calendar;
 import java.util.Collection;
@@ -30,12 +32,15 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import javax.jcr.AccessDeniedException;
+import javax.jcr.Node;
 import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
 import javax.jcr.Value;
 import javax.jcr.ValueFactory;
 
+import org.apache.jackrabbit.JcrConstants;
 import org.apache.jackrabbit.api.security.user.Authorizable;
 import org.apache.jackrabbit.api.security.user.UserManager;
 import org.apache.jackrabbit.oak.spi.security.user.AuthorizableType;
@@ -221,8 +226,20 @@ public abstract class AbstractAuthorizablePostServlet extends
      * repository.
      * @param properties the properties out of which to generate the {@link RequestProperty}s
      * @return the list of {@link RequestProperty}s
+     * @deprecated use {@link #collectContentMap(Map)} instead since 2.2.18
      */
+    @Deprecated
     protected Collection<RequestProperty> collectContent(
+            Map<String, ?> properties) {
+        return collectContentMap(properties).values();
+    }
+    /**
+     * Collects the properties that form the content to be written back to the
+     * repository.
+     * @param properties the properties out of which to generate the {@link RequestProperty}s
+     * @return the list of {@link RequestProperty}s
+     */
+    protected Map<String, RequestProperty> collectContentMap(
             Map<String, ?> properties) {
 
         boolean requireItemPrefix = requireItemPathPrefix(properties);
@@ -331,7 +348,7 @@ public abstract class AbstractAuthorizablePostServlet extends
             }
         }
 
-        return reqProperties.values();
+        return reqProperties;
     }
 
     /**
@@ -389,6 +406,110 @@ public abstract class AbstractAuthorizablePostServlet extends
     }
 
     /**
+     * Create resource(s) according to current request
+     *
+     * @param session the sessioin to write the authorizable properties
+     * @param authorizable The
+     *            <code>org.apache.jackrabbit.api.security.user.Authorizable</code>
+     *            that should have properties deleted.
+     * @param reqProperties The collection of request properties to check for
+     *            properties to be removed.
+     * @param changes The <code>List</code> to be updated with
+     *            information on deleted properties.
+     * @throws RepositoryException Is thrown if an error occurrs checking or
+     *             removing properties.
+     */
+    protected void processCreate(Session session, Authorizable authorizable,
+            Map<String, RequestProperty> reqProperties,
+            List<Modification> changes) throws RepositoryException {
+
+        @NotNull
+        String path = authorizable.getPath();
+        for (RequestProperty prop : reqProperties.values()) {
+            String propName = prop.getName();
+            if (JcrConstants.JCR_PRIMARYTYPE.equals(propName) || JcrConstants.JCR_MIXINTYPES.equals(propName)) {
+                String parentPath = prop.getParentPath();
+                if (parentPath == null && JcrConstants.JCR_PRIMARYTYPE.equals(propName)) {
+                    // don't allow changing the primaryType of the user/group root node
+                    continue;
+                }
+
+                String tp = null;
+                if (parentPath == null || "/".equals(parentPath)) {
+                    tp = path;
+                } else if (parentPath.startsWith("/")){
+                    tp = Paths.get(path, parentPath.substring(1)).toString();
+                }
+                if (tp != null && (tp.equals(path) || Paths.get(tp).startsWith(path))) {
+                    Node node = null;
+                    if (session.nodeExists(tp)) {
+                        node = session.getNode(tp);
+                    } else {
+                        Node tempNode = session.getNode(path);
+                        // create any missing intermediate nodes
+                        Iterator<Path> elements = Paths.get(parentPath).iterator();
+                        while (elements.hasNext()) {
+                            String segment = elements.next().toString();
+                            String tempPath = Paths.get(tempNode.getPath(), segment).toString();
+                            if (session.nodeExists(tempPath)) {
+                                tempNode = session.getNode(tempPath);
+                            } else {
+                                String primaryType = getPrimaryType(reqProperties, tempPath);
+                                if (primaryType != null) {
+                                    tempNode = tempNode.addNode(segment, primaryType);
+                                } else {
+                                    tempNode = tempNode.addNode(segment);
+                                }
+                                changes.add(Modification.onCreated(tempNode.getPath()));
+                            }
+                        }
+                        node = tempNode;
+                    }
+
+                    if (node != null) {
+                        // only allow changing the primaryType of the ancestors, not the root
+                        if (JcrConstants.JCR_PRIMARYTYPE.equals(propName)) {
+                            if (tp.equals(path)) {
+                                // don't allow changing the primaryType of the user home root
+                                throw new AccessDeniedException("Access denied.");
+                            } else {
+                                final String nodeType = prop == null ? null : prop.getStringValues()[0];
+                                if (nodeType != null && !node.isNodeType(nodeType)) {
+                                    node.setPrimaryType(nodeType);
+                                    changes.add(Modification.onModified(Paths.get(node.getPath(), propName).toString()));
+                                }
+                            }
+                        } else if (JcrConstants.JCR_MIXINTYPES.equals(propName)) {
+                            String[] mixins = (prop == null) || !prop.hasValues() ? null : prop.getStringValues();
+                            if (mixins != null) {
+                                for (final String mixin : mixins) {
+                                    if (!node.isNodeType(mixin)) {
+                                        node.addMixin(mixin);
+                                        changes.add(Modification.onModified(Paths.get(node.getPath(), propName).toString()));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Checks the collected content for a jcr:primaryType property at the
+     * specified path.
+     *
+     * @param path path to check
+     * @return the primary type or <code>null</code>
+     */
+    private String getPrimaryType(Map<String, RequestProperty> reqProperties,
+            String path) {
+        RequestProperty prop = reqProperties.get(String.format("%s/%s", path, JcrConstants.JCR_PRIMARYTYPE));
+        return prop == null ? null : prop.getStringValues()[0];
+    }
+
+    /**
      * Writes back the content
      * @param session the sessioin to write the authorizable properties
      * @param authorizable the authorizable to modify
@@ -407,8 +528,9 @@ public abstract class AbstractAuthorizablePostServlet extends
                 String relativePath = prop.getPath().substring(1);
                 
                 // skip jcr special properties
-                boolean isSpecialProp = relativePath.equals("jcr:primaryType")
-                    || relativePath.equals("jcr:mixinTypes");
+                String name = prop.getName();
+                boolean isSpecialProp = name.equals(JcrConstants.JCR_PRIMARYTYPE)
+                    || name.equals(JcrConstants.JCR_MIXINTYPES);
                 if (authorizable.isGroup()) {
                     if (relativePath.equals("groupId")) {
                         // skip these

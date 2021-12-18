@@ -193,14 +193,18 @@ public class UpdateGroupServlet extends AbstractGroupPostServlet
         String groupPath = systemUserManagerPaths.getGroupPrefix()
             + group.getID();
 
-        Collection<RequestProperty> reqProperties = collectContent(properties);
+        Map<String, RequestProperty> reqPropertiesMap = collectContentMap(properties);
+        Collection<RequestProperty> reqPropertyValues = reqPropertiesMap.values();
         // create a resource resolver to resolve the relative paths used for group membership values
         try (ResourceResolver resourceResolver = resourceResolverFactory.getResourceResolver(Collections.singletonMap(JcrResourceConstants.AUTHENTICATION_INFO_SESSION, jcrSession))) {
             // cleanup any old content (@Delete parameters)
-            processDeletes(group, reqProperties, changes);
+            processDeletes(group, reqPropertyValues, changes);
+
+            // ensure root of new content with the expected primary/mixin types
+            processCreate(jcrSession, group, reqPropertiesMap, changes);
 
             // write content from form
-            writeContent(jcrSession, group, reqProperties, changes);
+            writeContent(jcrSession, group, reqPropertyValues, changes);
 
             // update the group memberships
             Resource baseResource = resourceResolver.getResource(groupPath);
