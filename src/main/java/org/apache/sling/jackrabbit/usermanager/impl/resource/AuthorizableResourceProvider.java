@@ -18,9 +18,9 @@ package org.apache.sling.jackrabbit.usermanager.impl.resource;
 
 import java.security.Principal;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.NoSuchElementException;
 
 import javax.jcr.RepositoryException;
@@ -66,6 +66,11 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
         @AttributeDefinition(name = "Provider Root",
                 description = "Specifies the root path for the UserManager resources.")
         String provider_root() default DEFAULT_SYSTEM_USER_MANAGER_PATH; //NOSONAR
+
+        @AttributeDefinition(name = "Provide Resources For Nested Properties",
+                description = "Specifies whether container resources are provided for any nested authorizable properties. "
+                        + "The resourceType for these ancestor resources would be 'sling/[user|group]/properties'")
+        boolean resources_for_nested_properties() default false; //NOSONAR
     }
 
     /**
@@ -115,13 +120,16 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
     public static final String SYSTEM_USER_MANAGER_GROUP_PREFIX = SYSTEM_USER_MANAGER_GROUP_PATH //NOSONAR
         + "/";
 
+    private boolean resourcesForNestedProperties = true;
+
     @Activate
-    protected void activate(final Map<String, Object> props) {
-        systemUserManagerPath = OsgiUtil.toString(props.get(ResourceProvider.PROPERTY_ROOT), DEFAULT_SYSTEM_USER_MANAGER_PATH);
+    protected void activate(final Config config) {
+        systemUserManagerPath = OsgiUtil.toString(config.provider_root(), DEFAULT_SYSTEM_USER_MANAGER_PATH);
         systemUserManagerUserPath = String.format("%s/user", systemUserManagerPath);
         systemUserManagerUserPrefix = String.format("%s/", systemUserManagerUserPath);
         systemUserManagerGroupPath = String.format("%s/group", systemUserManagerPath);
         systemUserManagerGroupPrefix = String.format("%s/", systemUserManagerGroupPath);
+        resourcesForNestedProperties = config.resources_for_nested_properties();
     }
     
     /* (non-Javadoc)
@@ -181,17 +189,23 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
         }
 
         // the principalId should be the first segment after the prefix
-        String pid = null;
+        String suffix = null;
         if (path.startsWith(systemUserManagerUserPrefix)) {
-            pid = path.substring(systemUserManagerUserPrefix.length());
+            suffix = path.substring(systemUserManagerUserPrefix.length());
         } else if (path.startsWith(systemUserManagerGroupPrefix)) {
-            pid = path.substring(systemUserManagerGroupPrefix.length());
+            suffix = path.substring(systemUserManagerGroupPrefix.length());
         }
 
-        if (pid != null) {
-            if (pid.indexOf('/') != -1) {
-                return null; // something bogus on the end of the path so bail
-                             // out now.
+        if (suffix != null) {
+            String pid;
+            String relPath;
+            int firstSlash = suffix.indexOf('/');
+            if (firstSlash == -1) {
+                pid = suffix;
+                relPath = null;
+            } else {
+                pid = suffix.substring(0, firstSlash);
+                relPath = suffix.substring(firstSlash + 1);
             }
             try {
                 Session session = ctx.getResourceResolver().adaptTo(Session.class);
@@ -202,9 +216,32 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
                         if (authorizable != null) {
                             // found the Authorizable, so return the resource
                             // that wraps it.
-                            return new AuthorizableResource(authorizable,
-                                    ctx.getResourceResolver(), path,
-                                    AuthorizableResourceProvider.this);
+                            if (relPath == null) {
+                                return new AuthorizableResource(authorizable,
+                                        ctx.getResourceResolver(), path,
+                                        AuthorizableResourceProvider.this);
+                            } else if (resourcesForNestedProperties) {
+                                // check if the relPath resolves valid property names
+                                Iterator<String> propertyNames;
+                                try {
+                                    // TODO: there isn't any way to check if relPath is valid
+                                    //    as this call throws an exception instead of returning null
+                                    //    or an empty iterator.
+                                    propertyNames = authorizable.getPropertyNames(relPath);
+                                } catch (RepositoryException re) {
+                                    if (log.isDebugEnabled()) {
+                                        log.debug("Failed to get property names", re);
+                                    }
+                                    propertyNames = Collections.emptyIterator();
+                                }
+                                if (propertyNames.hasNext()) {
+                                    // provide a resource that wraps for the specific nested properties
+                                    return new NestedAuthorizableResource(authorizable,
+                                            ctx.getResourceResolver(), path,
+                                            AuthorizableResourceProvider.this,
+                                            relPath);
+                                }
+                            }
                         }
                     }
                 }
@@ -249,6 +286,51 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
                 if (principals != null) {
                     return new ChildrenIterator(parent, principals);
                 }
+            } else if (resourcesForNestedProperties) {
+                // handle nested property containers
+
+                String suffix = null;
+                if (path.startsWith(systemUserManagerUserPrefix)) {
+                    suffix = path.substring(systemUserManagerUserPrefix.length());
+                } else if (path.startsWith(systemUserManagerGroupPrefix)) {
+                    suffix = path.substring(systemUserManagerGroupPrefix.length());
+                }
+
+                if (suffix != null) {
+                    // the principalId should be the first segment after the prefix
+                    String pid;
+                    // the relPath is whatever is leftover
+                    String relPath;
+                    int firstSlash = suffix.indexOf('/');
+                    if (firstSlash == -1) {
+                        pid = suffix;
+                        relPath = null;
+                    } else {
+                        pid = suffix.substring(0, firstSlash);
+                        relPath = suffix.substring(firstSlash + 1);
+                    }
+                    try {
+                        Session session = ctx.getResourceResolver().adaptTo(Session.class);
+                        if (session != null) {
+                            UserManager userManager = AccessControlUtil.getUserManager(session);
+                            if (userManager != null) {
+                                Authorizable authorizable = userManager.getAuthorizable(pid);
+                                if (authorizable != null) {
+                                    Resource r = ctx.getResourceResolver().resolve(authorizable.getPath());
+                                    if (relPath != null) {
+                                        r = r.getChild(relPath);
+                                    }
+                                    if (r != null) {
+                                        return new NestedChildrenIterator(parent, pid, r.getChildren().iterator());
+                                    }
+                                }
+                            }
+                        }
+                    } catch (RepositoryException re) {
+                        throw new SlingException(
+                            "Error looking up Authorizable for principal: " + pid, re);
+                    }
+                }
             }
         } catch (RepositoryException re) {
             throw new SlingException("Error listing children of resource: "
@@ -256,6 +338,75 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
         }
 
         return null;
+    }
+
+    private final class NestedChildrenIterator implements Iterator<Resource> {
+        private Resource parent;
+        private String principalName;
+        private Iterator<Resource> children;
+
+        private NestedChildrenIterator(Resource parent, String principalName, Iterator<Resource> children) {
+            this.parent = parent;
+            this.principalName = principalName;
+            this.children = children;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return children.hasNext();
+        }
+
+        @Override
+        public Resource next() {
+            Resource child = children.next();
+            try {
+                ResourceResolver resourceResolver = parent.getResourceResolver();
+                Session session = resourceResolver.adaptTo(Session.class);
+                if (session != null) {
+                    UserManager userManager = AccessControlUtil.getUserManager(session);
+                    if (userManager != null) {
+                        Authorizable authorizable = userManager.getAuthorizable(principalName);
+                        if (authorizable != null) {
+                            String path;
+                            if (authorizable.isGroup()) {
+                                path = systemUserManagerGroupPrefix
+                                    + principalName;
+                            } else {
+                                path = systemUserManagerUserPrefix
+                                    + principalName;
+                            }
+                            //calculate the path relative to the home folder root
+                            String relPath = child.getPath().substring(authorizable.getPath().length() + 1);
+
+                            // check if the relPath resolves any valid property names
+                            Iterator<String> propertyNames;
+                            try {
+                                // TODO: there isn't any way to check if relPath is valid
+                                //    as this call throws an exception instead of returning null
+                                //    or an empty iterator.
+                                propertyNames = authorizable.getPropertyNames(relPath);
+                            } catch (RepositoryException re) {
+                                if (log.isDebugEnabled()) {
+                                    log.debug("Failed to get property names", re);
+                                }
+                                propertyNames = Collections.emptyIterator();
+                            }
+                            if (propertyNames.hasNext()) {
+                                return new NestedAuthorizableResource(authorizable,
+                                        resourceResolver, String.format("%s/%s", path, relPath),
+                                        AuthorizableResourceProvider.this,
+                                        relPath);
+                            }
+                        }
+                    }
+                }
+            } catch (RepositoryException re) {
+                log.error("Exception while looking up authorizable resource.",
+                    re);
+            }
+            return null;
+        }
+
     }
 
     private final class ChildrenIterator implements Iterator<Resource> {

@@ -41,17 +41,12 @@ import org.apache.sling.jackrabbit.usermanager.resource.SystemUserManagerPaths;
     @Adapter(condition="If the resource is an AuthorizableResource and represents a JCR Group", value = Group.class)
 })
 public class AuthorizableResource extends AbstractResource {
-    private Authorizable authorizable = null;
-
-    private ResourceResolver resourceResolver = null;
-
+    protected final ResourceResolver resourceResolver;
+    protected final Authorizable authorizable;
     private final String path;
-
     private final String resourceType;
-
     private final ResourceMetadata metadata;
-
-    private final SystemUserManagerPaths systemUserManagerPaths;
+    protected final SystemUserManagerPaths systemUserManagerPaths;
 
     public AuthorizableResource(Authorizable authorizable,
             ResourceResolver resourceResolver, String path,
@@ -62,14 +57,23 @@ public class AuthorizableResource extends AbstractResource {
         this.authorizable = authorizable;
         this.path = path;
         this.systemUserManagerPaths = systemUserManagerPaths;
-        if (authorizable.isGroup()) {
-            this.resourceType = "sling/group";
-        } else {
-            this.resourceType = "sling/user";
-        }
+        this.resourceType = toResourceType(authorizable);
 
         this.metadata = new ResourceMetadata();
         metadata.setResolutionPath(path);
+    }
+
+    /**
+     * determine the resource type for the authorizable.
+     * @param authorizable the authorizable to consider
+     * @return the resource type
+     */
+    protected String toResourceType(Authorizable authorizable) {
+        if (authorizable.isGroup()) {
+            return "sling/group";
+        } else {
+            return "sling/user";
+        }
     }
 
     /*
@@ -117,15 +121,14 @@ public class AuthorizableResource extends AbstractResource {
      * @see org.apache.sling.api.adapter.Adaptable#adaptTo(java.lang.Class)
      */
     @Override
-    @SuppressWarnings("unchecked")
     public <T> T adaptTo(Class<T> type) {
         if (type == Map.class || type == ValueMap.class) {
-            return (T) new AuthorizableValueMap(authorizable, systemUserManagerPaths); // unchecked
-                                                                         // cast
+            ValueMap valueMap = new AuthorizableValueMap(authorizable, systemUserManagerPaths);
+            return type.cast(valueMap);
         } else if (type == Authorizable.class
             || (type == User.class && !authorizable.isGroup())
             || (type == Group.class && authorizable.isGroup())) {
-            return (T) authorizable;
+            return type.cast(authorizable);
         }
 
         return super.adaptTo(type);
