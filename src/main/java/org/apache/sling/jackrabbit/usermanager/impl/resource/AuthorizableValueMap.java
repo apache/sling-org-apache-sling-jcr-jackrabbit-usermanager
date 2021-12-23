@@ -22,7 +22,6 @@ import java.util.List;
 
 import javax.jcr.RepositoryException;
 import javax.jcr.UnsupportedRepositoryOperationException;
-import javax.jcr.Value;
 
 import org.apache.jackrabbit.api.security.user.Authorizable;
 import org.apache.jackrabbit.api.security.user.Group;
@@ -44,40 +43,32 @@ public class AuthorizableValueMap extends BaseAuthorizableValueMap {
 
     @Override
     protected Object read(String key) {
+        Object value = null;
         // if the item has been completely read, we need not check
         // again, as we certainly will not find the key
-        if (fullyRead) {
-            return null;
+        if (!fullyRead) {
+            try {
+                if (key.equals(MEMBERS_KEY) && authorizable.isGroup()) {
+                    value = getMembers((Group) authorizable, true);
+                } else if (key.equals(DECLARED_MEMBERS_KEY) && authorizable.isGroup()) {
+                    value = getMembers((Group) authorizable, false);
+                } else if (key.equals(MEMBER_OF_KEY)) {
+                    value = getMemberships(true);
+                } else if (key.equals(DECLARED_MEMBER_OF_KEY)) {
+                    value = getMemberships(false);
+                } else if (key.equals(PATH_KEY)) {
+                    value = getPath();
+                } else if (authorizable.hasProperty(key)) {
+                    value = readPropertyAndCache(key, key);
+                } else {
+                    // property not found or some error accessing it
+                }
+            } catch (RepositoryException re) {
+                log.error("Could not access authorizable property", re);
+            }
         }
 
-        try {
-            if (key.equals(MEMBERS_KEY) && authorizable.isGroup()) {
-                return getMembers((Group) authorizable, true);
-            }
-            if (key.equals(DECLARED_MEMBERS_KEY) && authorizable.isGroup()) {
-                return getMembers((Group) authorizable, false);
-            }
-            if (key.equals(MEMBER_OF_KEY)) {
-                return getMemberships(true);
-            }
-            if (key.equals(DECLARED_MEMBER_OF_KEY)) {
-                return getMemberships(false);
-            }
-            if (key.equals(PATH_KEY)) {
-                return getPath();
-            }
-            if (authorizable.hasProperty(key)) {
-                final Value[] property = authorizable.getProperty(key);
-                final Object value = valuesToJavaObject(property);
-                cache.put(key, value);
-                return value;
-            }
-        } catch (RepositoryException re) {
-            log.error("Could not access authorizable property", re);
-        }
-
-        // property not found or some error accessing it
-        return null;
+        return value;
     }
 
     @Override
@@ -101,9 +92,7 @@ public class AuthorizableValueMap extends BaseAuthorizableValueMap {
                 while (pi.hasNext()) {
                     String key = pi.next();
                     if (!cache.containsKey(key)) {
-                        Value[] property = authorizable.getProperty(key);
-                        Object value = valuesToJavaObject(property);
-                        cache.put(key, value);
+                        readPropertyAndCache(key, key);
                     }
                 }
 

@@ -222,18 +222,7 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
                                         AuthorizableResourceProvider.this);
                             } else if (resourcesForNestedProperties) {
                                 // check if the relPath resolves valid property names
-                                Iterator<String> propertyNames;
-                                try {
-                                    // TODO: there isn't any way to check if relPath is valid
-                                    //    as this call throws an exception instead of returning null
-                                    //    or an empty iterator.
-                                    propertyNames = authorizable.getPropertyNames(relPath);
-                                } catch (RepositoryException re) {
-                                    if (log.isDebugEnabled()) {
-                                        log.debug("Failed to get property names", re);
-                                    }
-                                    propertyNames = Collections.emptyIterator();
-                                }
+                                Iterator<String> propertyNames = getPropertyNames(relPath, authorizable);
                                 if (propertyNames.hasNext()) {
                                     // provide a resource that wraps for the specific nested properties
                                     return new NestedAuthorizableResource(authorizable,
@@ -251,6 +240,23 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
             }
         }
         return null;
+    }
+
+    protected static Iterator<String> getPropertyNames(String relPath, Authorizable authorizable) {
+        Iterator<String> propertyNames;
+        try {
+            // TODO: there isn't any way to check if relPath is valid
+            //    as this call throws an exception instead of returning null
+            //    or an empty iterator.
+            propertyNames = authorizable.getPropertyNames(relPath);
+        } catch (RepositoryException re) {
+            Logger logger = LoggerFactory.getLogger(AuthorizableResourceProvider.class);
+            if (logger.isDebugEnabled()) {
+                logger.debug("Failed to get property names", re);
+            }
+            propertyNames = Collections.emptyIterator();
+        }
+        return propertyNames;
     }
 
     @Override
@@ -321,7 +327,11 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
                                         r = r.getChild(relPath);
                                     }
                                     if (r != null) {
-                                        return new NestedChildrenIterator(parent, pid, r.getChildren().iterator());
+                                        // only include the children that are nested property containers
+                                        List<Resource> propContainers = filterPropertyContainers(relPath, authorizable, r);
+                                        if (!propContainers.isEmpty()) {
+                                            return new NestedChildrenIterator(parent, pid, r.getChildren().iterator());
+                                        }
                                     }
                                 }
                             }
@@ -340,14 +350,42 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
         return null;
     }
 
-    private final class NestedChildrenIterator implements Iterator<Resource> {
-        private Resource parent;
-        private String principalName;
-        private Iterator<Resource> children;
+    /**
+     * Filter the resource children to return only the resources that are
+     * nested property containers
+     * 
+     * @param relPath the relative path to start from
+     * @param authorizable the user or group
+     * @param r the resource to filter the children of
+     * @return list of resources that are property containers
+     */
+    protected List<Resource> filterPropertyContainers(String relPath, Authorizable authorizable, Resource r) {
+        List<Resource> propContainers = new ArrayList<>();
+        for (Resource cr : r.getChildren()) {
+            String childRelPath;
+            if (relPath == null) {
+                childRelPath = cr.getName();
+            } else {
+                childRelPath = String.format("%s/%s", relPath, cr.getName());
+            }
+            if (getPropertyNames(childRelPath, authorizable).hasNext()) {
+                propContainers.add(cr);
+            } else {
+                // child is not a property container?
+                if (log.isDebugEnabled()) {
+                    log.debug("skipping child that is not appear to be a nested property container: {}", cr.getName());
+                }
+            }
+        }
+        return propContainers;
+    }
 
-        private NestedChildrenIterator(Resource parent, String principalName, Iterator<Resource> children) {
+    private abstract class BaseChildrenIterator implements Iterator<Resource> {
+        private Resource parent;
+        private Iterator<?> children;
+
+        private BaseChildrenIterator(Resource parent, Iterator<?> children) {
             this.parent = parent;
-            this.principalName = principalName;
             this.children = children;
         }
 
@@ -358,7 +396,13 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
 
         @Override
         public Resource next() {
-            Resource child = children.next();
+            if (!hasNext()) {
+                throw new NoSuchElementException();
+            }
+
+            Resource next = null;
+            Object child = children.next();
+            String principalName = toPrincipalName(child);
             try {
                 ResourceResolver resourceResolver = parent.getResourceResolver();
                 Session session = resourceResolver.adaptTo(Session.class);
@@ -375,28 +419,7 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
                                 path = systemUserManagerUserPrefix
                                     + principalName;
                             }
-                            //calculate the path relative to the home folder root
-                            String relPath = child.getPath().substring(authorizable.getPath().length() + 1);
-
-                            // check if the relPath resolves any valid property names
-                            Iterator<String> propertyNames;
-                            try {
-                                // TODO: there isn't any way to check if relPath is valid
-                                //    as this call throws an exception instead of returning null
-                                //    or an empty iterator.
-                                propertyNames = authorizable.getPropertyNames(relPath);
-                            } catch (RepositoryException re) {
-                                if (log.isDebugEnabled()) {
-                                    log.debug("Failed to get property names", re);
-                                }
-                                propertyNames = Collections.emptyIterator();
-                            }
-                            if (propertyNames.hasNext()) {
-                                return new NestedAuthorizableResource(authorizable,
-                                        resourceResolver, String.format("%s/%s", path, relPath),
-                                        AuthorizableResourceProvider.this,
-                                        relPath);
-                            }
+                            next = createNext(child, resourceResolver, authorizable, path);
                         }
                     }
                 }
@@ -404,64 +427,81 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
                 log.error("Exception while looking up authorizable resource.",
                     re);
             }
-            return null;
-        }
-
-    }
-
-    private final class ChildrenIterator implements Iterator<Resource> {
-        private PrincipalIterator principals;
-
-        private Resource parent;
-
-        public ChildrenIterator(Resource parent, PrincipalIterator principals) {
-            this.parent = parent;
-            this.principals = principals;
-        }
-
-        public boolean hasNext() {
-            return principals.hasNext();
-        }
-
-        public Resource next() {
-            if (!hasNext()) {
-                throw new NoSuchElementException();
-            }
-
-            Principal nextPrincipal = principals.nextPrincipal();
-            try {
-                ResourceResolver resourceResolver = parent.getResourceResolver();
-                Session session = resourceResolver.adaptTo(Session.class);
-                if (session != null) {
-                    UserManager userManager = AccessControlUtil.getUserManager(session);
-                    if (userManager != null) {
-                        Authorizable authorizable = userManager.getAuthorizable(nextPrincipal.getName());
-                        if (authorizable != null) {
-                            String path;
-                            if (authorizable.isGroup()) {
-                                path = systemUserManagerGroupPrefix
-                                    + nextPrincipal.getName();
-                            } else {
-                                path = systemUserManagerUserPrefix
-                                    + nextPrincipal.getName();
-                            }
-                            return new AuthorizableResource(authorizable,
-                                resourceResolver, path,
-                                AuthorizableResourceProvider.this);
-                        }
-                    }
-                }
-            } catch (RepositoryException re) {
-                log.error("Exception while looking up authorizable resource.",
-                    re);
-            }
-            return null;
+            return next;
         }
 
         @Override
         public void remove() {
             throw new UnsupportedOperationException();
         }
+
+        protected abstract String toPrincipalName(Object child);
+
+        protected abstract Resource createNext(Object child, ResourceResolver resourceResolver,
+                Authorizable authorizable, String path) throws RepositoryException; 
+
+    }
+
+    private final class NestedChildrenIterator extends BaseChildrenIterator {
+
+        private String principalName;
+
+        private NestedChildrenIterator(Resource parent, String principalName, Iterator<Resource> children) {
+            super(parent, children);
+            this.principalName = principalName;
+        }
+
+        @Override
+        protected String toPrincipalName(Object child) {
+            return principalName;
+        }
+
+        @Override
+        protected Resource createNext(Object child, ResourceResolver resourceResolver, Authorizable authorizable,
+                String path) throws RepositoryException {
+            Resource next = null;
+            if (child instanceof Resource) {
+                Resource childResource = (Resource)child;
+                //calculate the path relative to the home folder root
+                String relPath = childResource.getPath().substring(authorizable.getPath().length() + 1);
+
+                // check if the relPath resolves any valid property names
+                Iterator<String> propertyNames = getPropertyNames(relPath, authorizable);
+                if (propertyNames.hasNext()) {
+                    next = new NestedAuthorizableResource(authorizable,
+                            resourceResolver, String.format("%s/%s", path, relPath),
+                            AuthorizableResourceProvider.this,
+                            relPath);
+                }
+            }
+            return next;
+        }
+
+    }
+
+    private final class ChildrenIterator extends BaseChildrenIterator {
+
+        public ChildrenIterator(Resource parent, PrincipalIterator principals) {
+            super(parent, principals);
+        }
+
+        @Override
+        protected String toPrincipalName(Object child) {
+            String principalName = null;
+            if (child instanceof Principal) {
+                principalName = ((Principal)child).getName();
+            }
+            return principalName;
+        }
+
+        @Override
+        protected Resource createNext(Object child, ResourceResolver resourceResolver, Authorizable authorizable,
+                String path) throws RepositoryException {
+            return new AuthorizableResource(authorizable,
+                    resourceResolver, path,
+                    AuthorizableResourceProvider.this);
+        }
+
     }
 
 }

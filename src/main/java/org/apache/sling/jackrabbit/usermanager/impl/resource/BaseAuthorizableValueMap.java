@@ -55,7 +55,7 @@ public abstract class BaseAuthorizableValueMap implements ValueMap {
     protected Authorizable authorizable;
     protected final SystemUserManagerPaths systemUserManagerPaths;
 
-    public BaseAuthorizableValueMap(Authorizable authorizable, SystemUserManagerPaths systemUserManagerPaths) {
+    protected BaseAuthorizableValueMap(Authorizable authorizable, SystemUserManagerPaths systemUserManagerPaths) {
         this.authorizable = authorizable;
         this.cache = new LinkedHashMap<>();
         this.fullyRead = false;
@@ -134,6 +134,13 @@ public abstract class BaseAuthorizableValueMap implements ValueMap {
     }
 
     protected abstract Object read(String key);
+
+    protected Object readPropertyAndCache(String key, String relPath) throws RepositoryException {
+        Value[] property = authorizable.getProperty(relPath);
+        Object value = valuesToJavaObject(property);
+        cache.put(key, value);
+        return value;
+    }
 
     /**
      * Converts a JCR Value to a corresponding Java Object

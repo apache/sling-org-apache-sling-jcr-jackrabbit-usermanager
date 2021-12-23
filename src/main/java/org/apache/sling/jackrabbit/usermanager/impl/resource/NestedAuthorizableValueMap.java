@@ -16,11 +16,9 @@
  */
 package org.apache.sling.jackrabbit.usermanager.impl.resource;
 
-import java.util.Collections;
 import java.util.Iterator;
 
 import javax.jcr.RepositoryException;
-import javax.jcr.Value;
 
 import org.apache.jackrabbit.api.security.user.Authorizable;
 import org.apache.sling.jackrabbit.usermanager.resource.SystemUserManagerPaths;
@@ -40,51 +38,35 @@ public class NestedAuthorizableValueMap extends BaseAuthorizableValueMap {
 
     @Override
     protected Object read(String key) {
+        Object value = null;
         // if the item has been completely read, we need not check
         // again, as we certainly will not find the key
-        if (fullyRead) {
-            return null;
-        }
-
-        try {
-            // prepend the relPath to the key
-            String relPropKey = String.format("%s/%s", relPropPath, key);
-            if (authorizable.hasProperty(relPropKey)) {
-                final Value[] property = authorizable.getProperty(relPropKey);
-                final Object value = valuesToJavaObject(property);
-                cache.put(key, value);
-                return value;
+        if (!fullyRead) {
+            try {
+                // prepend the relPath to the key
+                String relPropKey = String.format("%s/%s", relPropPath, key);
+                if (authorizable.hasProperty(relPropKey)) {
+                    value = readPropertyAndCache(key, relPropKey);
+                } else {
+                    // property not found or some error accessing it
+                }
+            } catch (RepositoryException re) {
+                log.error("Could not access authorizable property", re);
             }
-        } catch (RepositoryException re) {
-            log.error("Could not access authorizable property", re);
         }
 
-        // property not found or some error accessing it
-        return null;
+        return value;
     }
 
     @Override
     protected void readFully() {
         if (!fullyRead) {
             try {
-                Iterator<String> pi;
-                try {
-                    // TODO: there isn't any way to check if relPath is valid
-                    //    as this call throws an exception instead of returning null
-                    //    or an empty iterator.
-                    pi = authorizable.getPropertyNames(relPropPath);
-                } catch (RepositoryException re) {
-                    if (log.isDebugEnabled()) {
-                        log.debug("Failed to get property names", re);
-                    }
-                    pi = Collections.emptyIterator();
-                }
+                Iterator<String> pi = AuthorizableResourceProvider.getPropertyNames(relPropPath, authorizable);
                 while (pi.hasNext()) {
                     String key = pi.next();
                     if (!cache.containsKey(key)) {
-                        Value [] property = authorizable.getProperty(String.format("%s/%s", relPropPath, key));
-                        Object value = valuesToJavaObject(property);
-                        cache.put(key, value);
+                        readPropertyAndCache(key, String.format("%s/%s", relPropPath, key));
                     }
                 }
 
