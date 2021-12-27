@@ -40,6 +40,8 @@ import org.apache.sling.jcr.base.util.AccessControlUtil;
 import org.apache.sling.spi.resource.provider.ResolveContext;
 import org.apache.sling.spi.resource.provider.ResourceContext;
 import org.apache.sling.spi.resource.provider.ResourceProvider;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
@@ -188,6 +190,36 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
             return new SyntheticResource(ctx.getResourceResolver(), path, "sling/groups");
         }
 
+        AuthorizableWorker<Resource> worker = (authorizable, relPath) -> {
+            Resource result = null;
+            // found the Authorizable, so return the resource
+            // that wraps it.
+            if (relPath == null) {
+                result = new AuthorizableResource(authorizable,
+                                    ctx.getResourceResolver(), path,
+                                    AuthorizableResourceProvider.this);
+            } else if (resourcesForNestedProperties) {
+                // check if the relPath resolves valid property names
+                Iterator<String> propertyNames = getPropertyNames(relPath, authorizable);
+                if (propertyNames.hasNext()) {
+                    // provide a resource that wraps for the specific nested properties
+                    result = new NestedAuthorizableResource(authorizable,
+                                        ctx.getResourceResolver(), path,
+                                        AuthorizableResourceProvider.this,
+                                        relPath);
+                }
+            }
+            return result;
+        };
+        return maybeDoAuthorizableWork(ctx, path, worker);
+    }
+
+    /**
+     * If the path resolves to a user or group (with optional relPath suffix)
+     * then invoke the worker to do some work.
+     */
+    protected <T> T maybeDoAuthorizableWork(@NotNull ResolveContext<Object> ctx, @NotNull String path, @NotNull AuthorizableWorker<T> worker) {
+        T result = null;
         // the principalId should be the first segment after the prefix
         String suffix = null;
         if (path.startsWith(systemUserManagerUserPrefix)) {
@@ -207,39 +239,23 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
                 pid = suffix.substring(0, firstSlash);
                 relPath = suffix.substring(firstSlash + 1);
             }
-            try {
-                Session session = ctx.getResourceResolver().adaptTo(Session.class);
-                if (session != null) {
+            Session session = ctx.getResourceResolver().adaptTo(Session.class);
+            if (session != null) {
+                try {
                     UserManager userManager = AccessControlUtil.getUserManager(session);
                     if (userManager != null) {
                         Authorizable authorizable = userManager.getAuthorizable(pid);
                         if (authorizable != null) {
-                            // found the Authorizable, so return the resource
-                            // that wraps it.
-                            if (relPath == null) {
-                                return new AuthorizableResource(authorizable,
-                                        ctx.getResourceResolver(), path,
-                                        AuthorizableResourceProvider.this);
-                            } else if (resourcesForNestedProperties) {
-                                // check if the relPath resolves valid property names
-                                Iterator<String> propertyNames = getPropertyNames(relPath, authorizable);
-                                if (propertyNames.hasNext()) {
-                                    // provide a resource that wraps for the specific nested properties
-                                    return new NestedAuthorizableResource(authorizable,
-                                            ctx.getResourceResolver(), path,
-                                            AuthorizableResourceProvider.this,
-                                            relPath);
-                                }
-                            }
+                            result = worker.doWork(authorizable, relPath);
                         }
                     }
+                } catch (RepositoryException re) {
+                    throw new SlingException(
+                        "Error looking up Authorizable for principal: " + pid, re);
                 }
-            } catch (RepositoryException re) {
-                throw new SlingException(
-                    "Error looking up Authorizable for principal: " + pid, re);
             }
         }
-        return null;
+        return result;
     }
 
     protected static Iterator<String> getPropertyNames(String relPath, Authorizable authorizable) {
@@ -295,52 +311,22 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
             } else if (resourcesForNestedProperties) {
                 // handle nested property containers
 
-                String suffix = null;
-                if (path.startsWith(systemUserManagerUserPrefix)) {
-                    suffix = path.substring(systemUserManagerUserPrefix.length());
-                } else if (path.startsWith(systemUserManagerGroupPrefix)) {
-                    suffix = path.substring(systemUserManagerGroupPrefix.length());
-                }
-
-                if (suffix != null) {
-                    // the principalId should be the first segment after the prefix
-                    String pid;
-                    // the relPath is whatever is leftover
-                    String relPath;
-                    int firstSlash = suffix.indexOf('/');
-                    if (firstSlash == -1) {
-                        pid = suffix;
-                        relPath = null;
-                    } else {
-                        pid = suffix.substring(0, firstSlash);
-                        relPath = suffix.substring(firstSlash + 1);
+                AuthorizableWorker<Iterator<Resource>> worker = (authorizable, relPath) -> {
+                    Iterator<Resource> result = null;
+                    Resource r = ctx.getResourceResolver().resolve(authorizable.getPath());
+                    if (relPath != null) {
+                        r = r.getChild(relPath);
                     }
-                    try {
-                        Session session = ctx.getResourceResolver().adaptTo(Session.class);
-                        if (session != null) {
-                            UserManager userManager = AccessControlUtil.getUserManager(session);
-                            if (userManager != null) {
-                                Authorizable authorizable = userManager.getAuthorizable(pid);
-                                if (authorizable != null) {
-                                    Resource r = ctx.getResourceResolver().resolve(authorizable.getPath());
-                                    if (relPath != null) {
-                                        r = r.getChild(relPath);
-                                    }
-                                    if (r != null) {
-                                        // only include the children that are nested property containers
-                                        List<Resource> propContainers = filterPropertyContainers(relPath, authorizable, r);
-                                        if (!propContainers.isEmpty()) {
-                                            return new NestedChildrenIterator(parent, pid, r.getChildren().iterator());
-                                        }
-                                    }
-                                }
-                            }
+                    if (r != null) {
+                        // only include the children that are nested property containers
+                        List<Resource> propContainers = filterPropertyContainers(relPath, authorizable, r);
+                        if (!propContainers.isEmpty()) {
+                            result = new NestedChildrenIterator(parent, authorizable.getID(), r.getChildren().iterator());
                         }
-                    } catch (RepositoryException re) {
-                        throw new SlingException(
-                            "Error looking up Authorizable for principal: " + pid, re);
                     }
-                }
+                    return result;
+                };
+                return maybeDoAuthorizableWork(ctx, path, worker);
             }
         } catch (RepositoryException re) {
             throw new SlingException("Error listing children of resource: "
@@ -497,6 +483,13 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
                     AuthorizableResourceProvider.this);
         }
 
+    }
+
+    /**
+     * Interface for lambda expressions to do work on a resolved authorizable + optional relative path
+     */
+    protected static interface AuthorizableWorker<T> {
+        public T doWork(@NotNull Authorizable authorizable, @Nullable String relPath) throws RepositoryException;
     }
 
 }
