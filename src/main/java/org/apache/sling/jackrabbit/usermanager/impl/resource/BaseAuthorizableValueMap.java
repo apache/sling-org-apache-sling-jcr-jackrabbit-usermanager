@@ -19,6 +19,7 @@ package org.apache.sling.jackrabbit.usermanager.impl.resource;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Array;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
@@ -28,7 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.jcr.Property;
+import javax.jcr.Binary;
 import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
 import javax.jcr.Value;
@@ -37,6 +38,7 @@ import javax.jcr.ValueFormatException;
 import org.apache.jackrabbit.api.security.user.Authorizable;
 import org.apache.sling.api.resource.ValueMap;
 import org.apache.sling.jackrabbit.usermanager.resource.SystemUserManagerPaths;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -250,8 +252,11 @@ public abstract class BaseAuthorizableValueMap implements ValueMap {
                         result = convertToType(value, type);
                     }
                 }
+            } else {
+                // some synthetic property not stored with the authorizable?
+                //  fallback to the default impl from the ValueMap interface
+                result = ValueMap.super.get(name, type);
             }
-
         } catch (ValueFormatException vfe) {
             log.info(String.format("convertToType: Cannot convert value of %s to %s", name, type), vfe);
         } catch (RepositoryException re) {
@@ -264,18 +269,25 @@ public abstract class BaseAuthorizableValueMap implements ValueMap {
 
     private <T> T[] convertToArray(Value[] jcrValues, Class<T> type)
             throws RepositoryException {
-        List<T> values = new ArrayList<>();
+        // lazy create this list in case there are no valid type conversions
+        List<T> values = null;
         for (int i = 0; i < jcrValues.length; i++) {
             T value = convertToType(jcrValues[i], type);
             if (value != null) {
+                if (values == null) {
+                    values = new ArrayList<>();
+                }
                 values.add(value);
             }
         }
 
-        @SuppressWarnings("unchecked")
-        T[] result = (T[]) Array.newInstance(type, values.size());
-
-        return values.toArray(result);
+        T[] array = null;
+        if (values != null) {
+            @SuppressWarnings("unchecked")
+            T[] result = (T[]) Array.newInstance(type, values.size());
+            array = values.toArray(result);
+        }
+        return array;
     }
 
     @SuppressWarnings("unchecked")
@@ -286,6 +298,8 @@ public abstract class BaseAuthorizableValueMap implements ValueMap {
             return (T) jcrValue.getString();
         } else if (Byte.class == type) {
             return (T) Byte.valueOf((byte) jcrValue.getLong());
+        } else if (BigDecimal.class == type) {
+            return (T) jcrValue.getDecimal();
         } else if (Short.class == type) {
             return (T) Short.valueOf((short) jcrValue.getLong());
         } else if (Integer.class == type) {
@@ -302,6 +316,10 @@ public abstract class BaseAuthorizableValueMap implements ValueMap {
             return (T) jcrValue.getDate().getTime();
         } else if (Calendar.class == type) {
             return (T) jcrValue.getDate();
+        } else if (Binary.class == type) {
+            return (T) jcrValue.getBinary();
+        } else if (InputStream.class == type) {
+            return (T) jcrValue.getBinary().getStream();
         } else if (Value.class == type) {
             return (T) jcrValue;
         }
@@ -317,8 +335,10 @@ public abstract class BaseAuthorizableValueMap implements ValueMap {
             type = Date.class;
         } else if (Value.class.isAssignableFrom(type)) {
             type = Value.class;
-        } else if (Property.class.isAssignableFrom(type)) {
-            type = Property.class;
+        } else if (InputStream.class.isAssignableFrom(type)) {
+            type = InputStream.class;
+        } else if (Binary.class.isAssignableFrom(type)) {
+            type = Binary.class;
         }
         return type;
     }
@@ -331,7 +351,7 @@ public abstract class BaseAuthorizableValueMap implements ValueMap {
         /** The inputstream created on demand, null if not used */
         private InputStream delegatee;
 
-        public LazyInputStream(Value value) {
+        public LazyInputStream(@NotNull Value value) {
             this.value = value;
         }
 

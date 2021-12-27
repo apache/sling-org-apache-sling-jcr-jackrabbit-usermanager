@@ -21,6 +21,8 @@ package org.apache.sling.jcr.jackrabbit.usermanager.it.resource;
 import static org.junit.Assert.assertNotNull;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 import javax.inject.Inject;
@@ -30,6 +32,7 @@ import javax.jcr.SimpleCredentials;
 
 import org.apache.jackrabbit.api.security.user.Group;
 import org.apache.jackrabbit.api.security.user.User;
+import org.apache.sling.api.resource.LoginException;
 import org.apache.sling.api.resource.ResourceResolverFactory;
 import org.apache.sling.jackrabbit.usermanager.CreateGroup;
 import org.apache.sling.jackrabbit.usermanager.CreateUser;
@@ -52,7 +55,7 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class BaseAuthorizableResourcesIT extends UserManagerTestSupport {
     private static AtomicLong counter = new AtomicLong(0);
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+    protected final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Inject
     protected BundleContext bundleContext;
@@ -89,7 +92,7 @@ public abstract class BaseAuthorizableResourcesIT extends UserManagerTestSupport
     protected Group group1;
 
     @Before
-    public void setup() throws RepositoryException {
+    public void setup() throws RepositoryException, LoginException {
         adminSession = repository.login(new SimpleCredentials("admin", "admin".toCharArray()));
         assertNotNull("Expected adminSession to not be null", adminSession);
     }
@@ -126,6 +129,25 @@ public abstract class BaseAuthorizableResourcesIT extends UserManagerTestSupport
 
     protected String createUniqueName(String prefix) {
         return String.format("%s_%s%d", prefix, testName.getMethodName(), counter.incrementAndGet());
+    }
+
+    protected void createResourcesForAdaptTo() throws RepositoryException {
+        Map<String, Object> nestedProps = new HashMap<>();
+        nestedProps.put("key1", "value1");
+        nestedProps.put("private/key2", "value2");
+        nestedProps.put("private/sub/key3", "value3");
+
+        group1 = createGroup.createGroup(adminSession, createUniqueName("group"),
+                nestedProps, new ArrayList<>());
+        assertNotNull("Expected group1 to not be null", group1);
+        
+        user1 = createUser.createUser(adminSession, createUniqueName("user"), "testPwd", "testPwd",
+                nestedProps, new ArrayList<>());
+        assertNotNull("Expected user1 to not be null", user1);
+
+        if (adminSession.hasPendingChanges()) {
+            adminSession.save();
+        }
     }
 
 }

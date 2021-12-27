@@ -430,11 +430,6 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
             return next;
         }
 
-        @Override
-        public void remove() {
-            throw new UnsupportedOperationException();
-        }
-
         protected abstract String toPrincipalName(Object child);
 
         protected abstract Resource createNext(Object child, ResourceResolver resourceResolver,

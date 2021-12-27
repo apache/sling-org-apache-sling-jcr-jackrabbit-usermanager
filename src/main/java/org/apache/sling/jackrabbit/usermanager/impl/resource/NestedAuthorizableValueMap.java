@@ -77,4 +77,9 @@ public class NestedAuthorizableValueMap extends BaseAuthorizableValueMap {
         }
     }
 
+    @Override
+    protected <T> T convertToType(String name, Class<T> type) {
+        return super.convertToType(String.format("%s/%s", relPropPath, name), type);
+    }
+
 }

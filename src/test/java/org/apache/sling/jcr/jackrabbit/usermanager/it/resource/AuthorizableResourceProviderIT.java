@@ -20,94 +20,49 @@ package org.apache.sling.jcr.jackrabbit.usermanager.it.resource;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Dictionary;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.Iterator;
+import java.util.Map;
 
-import javax.inject.Inject;
 import javax.jcr.RepositoryException;
-import javax.jcr.Session;
-import javax.jcr.SimpleCredentials;
 
+import org.apache.jackrabbit.api.security.user.Authorizable;
 import org.apache.jackrabbit.api.security.user.Group;
 import org.apache.jackrabbit.api.security.user.User;
 import org.apache.sling.api.resource.LoginException;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ResourceResolver;
-import org.apache.sling.api.resource.ResourceResolverFactory;
-import org.apache.sling.jackrabbit.usermanager.CreateGroup;
-import org.apache.sling.jackrabbit.usermanager.CreateUser;
-import org.apache.sling.jackrabbit.usermanager.DeleteGroup;
-import org.apache.sling.jackrabbit.usermanager.DeleteUser;
+import org.apache.sling.api.resource.ValueMap;
 import org.apache.sling.jackrabbit.usermanager.impl.resource.AuthorizableResourceProvider;
 import org.apache.sling.jackrabbit.usermanager.resource.SystemUserManagerPaths;
-import org.apache.sling.jcr.api.SlingRepository;
-import org.apache.sling.jcr.jackrabbit.usermanager.it.UserManagerTestSupport;
 import org.apache.sling.jcr.resource.api.JcrResourceConstants;
-import org.junit.After;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.junit.PaxExam;
 import org.ops4j.pax.exam.spi.reactors.ExamReactorStrategy;
 import org.ops4j.pax.exam.spi.reactors.PerClass;
-import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
-import org.osgi.service.cm.ConfigurationAdmin;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Basic test of AuthorizableResourceProvider component
  */
 @RunWith(PaxExam.class)
 @ExamReactorStrategy(PerClass.class)
-public class AuthorizableResourceProviderIT extends UserManagerTestSupport {
+public class AuthorizableResourceProviderIT extends BaseAuthorizableResourcesIT {
     private static final String PEOPLE_ROOT = "/people";
-    private static AtomicLong counter = new AtomicLong(0);
-    private final Logger logger = LoggerFactory.getLogger(getClass());
-
-    @Inject
-    protected BundleContext bundleContext;
-
-    @Inject
-    protected SlingRepository repository;
-
-    @Inject
-    protected ResourceResolverFactory resourceResolverFactory;
-
-    @Inject
-    protected ConfigurationAdmin configAdmin;
-
-    @Inject
-    private CreateUser createUser;
-
-    @Inject
-    private CreateGroup createGroup;
-
-    @Inject
-    private DeleteUser deleteUser;
-
-    @Inject
-    private DeleteGroup deleteGroup;
-
-    @Rule
-    public TestName testName = new TestName();
-
-    protected Session adminSession;
-    protected User user1;
-    protected Group group1;
 
     @Before
-    public void setup() throws RepositoryException {
-        adminSession = repository.login(new SimpleCredentials("admin", "admin".toCharArray()));
-        assertNotNull("Expected adminSession to not be null", adminSession);
+    public void setup() throws RepositoryException, LoginException {
+        super.setup();
 
         user1 = createUser.createUser(adminSession, createUniqueName("user"), "testPwd", "testPwd",
                 Collections.emptyMap(), new ArrayList<>());
@@ -120,40 +75,6 @@ public class AuthorizableResourceProviderIT extends UserManagerTestSupport {
         if (adminSession.hasPendingChanges()) {
             adminSession.save();
         }
-    }
-
-    @After
-    public void teardown() {
-        try {
-            adminSession.refresh(false);
-            if (user1 != null) {
-                deleteUser.deleteUser(adminSession, user1.getID(), new ArrayList<>());
-            }
-
-            if (adminSession.hasPendingChanges()) {
-                adminSession.save();
-            }
-        } catch (RepositoryException e) {
-            logger.warn(String.format("Failed to delete user: %s", e.getMessage()), e);
-        }
-        try {
-            adminSession.refresh(false);
-            if (group1 != null) {
-                deleteGroup.deleteGroup(adminSession, group1.getID(), new ArrayList<>());
-            }
-
-            if (adminSession.hasPendingChanges()) {
-                adminSession.save();
-            }
-        } catch (RepositoryException e) {
-            logger.warn(String.format("Failed to delete group: %s", e.getMessage()), e);
-        }
-
-        adminSession.logout();
-    }
-
-    protected String createUniqueName(String prefix) {
-        return String.format("%s_%s%d", prefix, testName.getMethodName(), counter.incrementAndGet());
     }
 
     /**
@@ -176,6 +97,10 @@ public class AuthorizableResourceProviderIT extends UserManagerTestSupport {
 
             serviceReference = bundleContext.getServiceReference(SystemUserManagerPaths.class);
             assertEquals(PEOPLE_ROOT, serviceReference.getProperty("provider.root"));
+
+            SystemUserManagerPaths service = bundleContext.getService(serviceReference);
+            assertNotNull(service);
+            assertEquals(PEOPLE_ROOT, service.getRootPath());
 
             // now the userManager resource should be mounted under /people
             checkResourceTypes(PEOPLE_ROOT, "/system/userManager");
@@ -237,6 +162,179 @@ public class AuthorizableResourceProviderIT extends UserManagerTestSupport {
             resource = resourceResolver.resolve(unexpectedPrefix + "/group/" + group1.getID());
             assertTrue("Expected resource type of sling:nonexisting for: " + resource.getPath(),
                     resource.isResourceType("sling:nonexisting"));
+        }
+    }
+
+    /**
+     * Test iteration of the usermanager root resource children
+     */
+    @Test
+    public void listRootChildren() throws LoginException, RepositoryException, IOException {
+        try (ResourceResolver resourceResolver = resourceResolverFactory.getResourceResolver(Collections.singletonMap(JcrResourceConstants.AUTHENTICATION_INFO_SESSION, adminSession))) {
+            Resource resource = resourceResolver.resolve("/system/userManager");
+            assertTrue("Expected resource type of sling/userManager for: " + resource.getPath(),
+                    resource.isResourceType("sling/userManager"));
+
+            boolean foundUsers = false;
+            boolean foundGroups = false;
+            @NotNull
+            Iterable<Resource> children = resource.getChildren();
+            for (Iterator<Resource> iterator = children.iterator(); iterator.hasNext();) {
+                Resource child = (Resource) iterator.next();
+                if (child.isResourceType("sling/users")) {
+                    foundUsers = true;
+                } else if (child.isResourceType("sling/groups")) {
+                    foundGroups = true;
+                }
+            }
+            assertTrue(foundUsers);
+            assertTrue(foundGroups);
+        }
+    }
+
+    /**
+     * Test iteration of the usermanager users resource children
+     */
+    @Test
+    public void listUsersChildren() throws LoginException, RepositoryException, IOException {
+        try (ResourceResolver resourceResolver = resourceResolverFactory.getResourceResolver(Collections.singletonMap(JcrResourceConstants.AUTHENTICATION_INFO_SESSION, adminSession))) {
+            Resource resource = resourceResolver.resolve("/system/userManager/user");
+            assertTrue("Expected resource type of sling/users for: " + resource.getPath(),
+                    resource.isResourceType("sling/users"));
+
+            boolean foundUser = false;
+            @NotNull
+            Iterable<Resource> children = resource.getChildren();
+            for (Iterator<Resource> iterator = children.iterator(); iterator.hasNext();) {
+                Resource child = (Resource) iterator.next();
+                if (child.isResourceType("sling/user") && user1.getID().equals(child.getName())) {
+                    foundUser = true;
+                }
+            }
+            assertTrue(foundUser);
+        }
+    }
+
+    /**
+     * Test iteration of the usermanager groups resource children
+     */
+    @Test
+    public void listGroupsChildren() throws LoginException, RepositoryException, IOException {
+        try (ResourceResolver resourceResolver = resourceResolverFactory.getResourceResolver(Collections.singletonMap(JcrResourceConstants.AUTHENTICATION_INFO_SESSION, adminSession))) {
+            Resource resource = resourceResolver.resolve("/system/userManager/group");
+            assertTrue("Expected resource type of sling/groups for: " + resource.getPath(),
+                    resource.isResourceType("sling/groups"));
+
+            boolean foundGroup = false;
+            @NotNull
+            Iterable<Resource> children = resource.getChildren();
+            for (Iterator<Resource> iterator = children.iterator(); iterator.hasNext();) {
+                Resource child = (Resource) iterator.next();
+                if (child.isResourceType("sling/group") && group1.getID().equals(child.getName())) {
+                    foundGroup = true;
+                }
+            }
+            assertTrue(foundGroup);
+        }
+    }
+
+    @Test
+    public void adaptResourceToMap() throws LoginException, RepositoryException  {
+        createResourcesForAdaptTo();
+
+        try (ResourceResolver resourceResolver = resourceResolverFactory.getResourceResolver(Collections.singletonMap(JcrResourceConstants.AUTHENTICATION_INFO_SESSION, adminSession))) {
+            Resource groupResource = resourceResolver.resolve(String.format("%s%s", userManagerPaths.getGroupPrefix(), group1.getID()));
+            @Nullable
+            Map<?, ?> groupMap = groupResource.adaptTo(Map.class);
+            assertNotNull(groupMap);
+            assertEquals("value1", groupMap.get("key1"));
+
+            Resource userResource = resourceResolver.resolve(String.format("%s%s", userManagerPaths.getUserPrefix(), user1.getID()));
+            @Nullable
+            Map<?, ?> userMap = userResource.adaptTo(Map.class);
+            assertNotNull(userMap);
+            assertEquals("value1", userMap.get("key1"));
+        }
+    }
+
+    @Test
+    public void adaptResourceToValueMap() throws LoginException, RepositoryException  {
+        createResourcesForAdaptTo();
+
+        try (ResourceResolver resourceResolver = resourceResolverFactory.getResourceResolver(Collections.singletonMap(JcrResourceConstants.AUTHENTICATION_INFO_SESSION, adminSession))) {
+            Resource groupResource = resourceResolver.resolve(String.format("%s%s", userManagerPaths.getGroupPrefix(), group1.getID()));
+            @Nullable
+            ValueMap groupMap = groupResource.adaptTo(ValueMap.class);
+            assertNotNull(groupMap);
+            assertEquals("AuthorizableValueMap", groupMap.getClass().getSimpleName());
+            assertEquals("value1", groupMap.get("key1"));
+
+            Resource userResource = resourceResolver.resolve(String.format("%s%s", userManagerPaths.getUserPrefix(), user1.getID()));
+            @Nullable
+            ValueMap userMap = userResource.adaptTo(ValueMap.class);
+            assertNotNull(userMap);
+            assertEquals("AuthorizableValueMap", userMap.getClass().getSimpleName());
+            assertEquals("value1", userMap.get("key1"));
+        }
+    }
+
+    @Test
+    public void adaptResourceToAuthorizable() throws LoginException, RepositoryException  {
+        createResourcesForAdaptTo();
+
+        try (ResourceResolver resourceResolver = resourceResolverFactory.getResourceResolver(Collections.singletonMap(JcrResourceConstants.AUTHENTICATION_INFO_SESSION, adminSession))) {
+            Resource groupResource = resourceResolver.resolve(String.format("%s%s", userManagerPaths.getGroupPrefix(), group1.getID()));
+            @Nullable
+            Authorizable groupAuthorizable = groupResource.adaptTo(Authorizable.class);
+            assertNotNull(groupAuthorizable);
+            assertEquals(group1.getID(), groupAuthorizable.getID());
+
+            Resource userResource = resourceResolver.resolve(String.format("%s%s", userManagerPaths.getUserPrefix(), user1.getID()));
+            @Nullable
+            Authorizable userAuthorizable = userResource.adaptTo(Authorizable.class);
+            assertNotNull(userAuthorizable);
+            assertEquals(user1.getID(), userAuthorizable.getID());
+        }
+    }
+
+    @Test
+    public void adaptResourceToUserOrGroup() throws LoginException, RepositoryException  {
+        createResourcesForAdaptTo();
+
+        try (ResourceResolver resourceResolver = resourceResolverFactory.getResourceResolver(Collections.singletonMap(JcrResourceConstants.AUTHENTICATION_INFO_SESSION, adminSession))) {
+            Resource groupResource = resourceResolver.resolve(String.format("%s%s", userManagerPaths.getGroupPrefix(), group1.getID()));
+            @Nullable
+            Group group = groupResource.adaptTo(Group.class);
+            assertNotNull(group);
+            assertEquals(group1.getID(), group.getID());
+            assertNull(groupResource.adaptTo(User.class));
+
+            Resource userResource = resourceResolver.resolve(String.format("%s%s", userManagerPaths.getUserPrefix(), user1.getID()));
+            @Nullable
+            User user = userResource.adaptTo(User.class);
+            assertNotNull(user);
+            assertEquals(user1.getID(), user.getID());
+            assertNull(userResource.adaptTo(Group.class));
+        }
+    }
+
+    /**
+     * For code coverage, test some adaption that falls through to the super class impl
+     */
+    @Test
+    public void adaptResourceToSomethingElse() throws LoginException, RepositoryException  {
+        createResourcesForAdaptTo();
+
+        try (ResourceResolver resourceResolver = resourceResolverFactory.getResourceResolver(Collections.singletonMap(JcrResourceConstants.AUTHENTICATION_INFO_SESSION, adminSession))) {
+            Resource groupResource = resourceResolver.resolve(String.format("%s%s", userManagerPaths.getGroupPrefix(), group1.getID()));
+            @Nullable
+            NestedAuthorizableResourcesIT groupObj = groupResource.adaptTo(NestedAuthorizableResourcesIT.class);
+            assertNull(groupObj);
+
+            Resource userResource = resourceResolver.resolve(String.format("%s%s", userManagerPaths.getUserPrefix(), user1.getID()));
+            @Nullable
+            NestedAuthorizableResourcesIT userObj = userResource.adaptTo(NestedAuthorizableResourcesIT.class);
+            assertNull(userObj);
         }
     }
 
