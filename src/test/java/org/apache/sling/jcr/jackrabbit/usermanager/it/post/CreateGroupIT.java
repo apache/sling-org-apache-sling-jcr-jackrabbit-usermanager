@@ -77,7 +77,7 @@ public class CreateGroupIT extends UserManagerClientTestSupport {
         List<NameValuePair> postParams = new ArrayList<>();
         postParams.add(new BasicNameValuePair(":name", testGroupId2));
         postParams.add(new BasicNameValuePair("marker", testGroupId2));
-        assertAuthenticatedPostStatus(creds, postUrl, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, postParams, null);
+        assertAuthenticatedPostStatus(creds, postUrl, HttpServletResponse.SC_FORBIDDEN, postParams, null);
     }
 
     @Test
@@ -466,6 +466,113 @@ public class CreateGroupIT extends UserManagerClientTestSupport {
         testGroupId  = ResourceUtil.getName(jsonObj.getString("path"));
         assertNotNull(testGroupId);
         assertEquals(marker.substring(0, 20), testGroupId);
+    }
+
+
+    /**
+     * SLING-11023 Test for setting jcr:mixinTypes values
+     */
+    @Test
+    public void testCreateGroupMixins() throws IOException, JsonException {
+        String postUrl = String.format("%s/system/userManager/group.create.html", baseServerUri);
+
+        testGroupId = "testGroup" + getNextInt();
+        List<NameValuePair> postParams = new ArrayList<>();
+        postParams.add(new BasicNameValuePair(":name", testGroupId));
+        // add nested mixin params
+        postParams.add(new BasicNameValuePair("jcr:mixinTypes", "mix:lastModified"));
+        postParams.add(new BasicNameValuePair("nested/jcr:mixinTypes", "mix:title"));
+        postParams.add(new BasicNameValuePair("nested/again/jcr:mixinTypes", "mix:created"));
+        Credentials creds = new UsernamePasswordCredentials("admin", "admin");
+        assertAuthenticatedPostStatus(creds, postUrl, HttpServletResponse.SC_OK, postParams, null);
+
+        //fetch the user profile json to verify the settings
+        String getUrl = String.format("%s/system/userManager/group/%s.json", baseServerUri, testGroupId);
+        assertAuthenticatedHttpStatus(creds, getUrl, HttpServletResponse.SC_OK, null); //make sure the profile request returns some data
+        String json = getAuthenticatedContent(creds, getUrl, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
+        assertNotNull(json);
+        JsonObject jsonObj = parseJson(json);
+        // get path
+        String path = jsonObj.getString("path");
+        assertNotNull(path);
+        // retrieve property via regular GET servlet
+        getUrl = String.format("%s%s.json", baseServerUri, path);
+        json = getAuthenticatedContent(creds, getUrl, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
+        assertNotNull(json);
+        jsonObj = parseJson(json);
+        assertContains(jsonObj.getJsonArray("jcr:mixinTypes"), "mix:lastModified");
+        // retrieve nested property via regular GET servlet
+        getUrl = String.format("%s%s/nested.json", baseServerUri, path);
+        json = getAuthenticatedContent(creds, getUrl, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
+        assertNotNull(json);
+        jsonObj = parseJson(json);
+        assertContains(jsonObj.getJsonArray("jcr:mixinTypes"), "mix:title");
+        // retrieve nested/again property via regular GET servlet
+        getUrl = String.format("%s%s/nested/again.json", baseServerUri, path);
+        json = getAuthenticatedContent(creds, getUrl, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
+        assertNotNull(json);
+        jsonObj = parseJson(json);
+        assertContains(jsonObj.getJsonArray("jcr:mixinTypes"), "mix:created");
+    }
+
+    /**
+     * SLING-11023 Test for setting jcr:primaryType values
+     */
+    @Test
+    public void testCreateGroupNestedPrimaryTypes() throws IOException, JsonException {
+        String postUrl = String.format("%s/system/userManager/group.create.html", baseServerUri);
+
+        testGroupId = "testGroup" + getNextInt();
+        List<NameValuePair> postParams = new ArrayList<>();
+        postParams.add(new BasicNameValuePair(":name", testGroupId));
+        // add nested primaryType params
+        postParams.add(new BasicNameValuePair("nested/jcr:primaryType", "nt:unstructured"));
+        postParams.add(new BasicNameValuePair("nested/again/jcr:primaryType", "oak:Unstructured"));
+        Credentials creds = new UsernamePasswordCredentials("admin", "admin");
+        assertAuthenticatedPostStatus(creds, postUrl, HttpServletResponse.SC_OK, postParams, null);
+
+        //fetch the user profile json to verify the settings
+        String getUrl = String.format("%s/system/userManager/group/%s.json", baseServerUri, testGroupId);
+        assertAuthenticatedHttpStatus(creds, getUrl, HttpServletResponse.SC_OK, null); //make sure the profile request returns some data
+        String json = getAuthenticatedContent(creds, getUrl, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
+        assertNotNull(json);
+        JsonObject jsonObj = parseJson(json);
+        // get path
+        String path = jsonObj.getString("path");
+        assertNotNull(path);
+        // retrieve nested property via regular GET servlet
+        getUrl = String.format("%s%s/nested.json", baseServerUri, path);
+        json = getAuthenticatedContent(creds, getUrl, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
+        assertNotNull(json);
+        jsonObj = parseJson(json);
+        assertEquals("nt:unstructured", jsonObj.getString("jcr:primaryType"));
+        // retrieve nested/again property via regular GET servlet
+        getUrl = String.format("%s%s/nested/again.json", baseServerUri, path);
+        json = getAuthenticatedContent(creds, getUrl, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
+        assertNotNull(json);
+        jsonObj = parseJson(json);
+        assertEquals("oak:Unstructured", jsonObj.getString("jcr:primaryType"));
+    }
+
+    /**
+     * SLING-11023 Test for failing attempt to set jcr:primaryType value
+     */
+    @Test
+    public void testCreateGroupPrimaryTypeFails() throws IOException, JsonException {
+        String postUrl = String.format("%s/system/userManager/group.create.html", baseServerUri);
+
+        testGroupId = "testGroup" + getNextInt();
+        List<NameValuePair> postParams = new ArrayList<>();
+        postParams.add(new BasicNameValuePair(":name", testGroupId));
+        // add invalid primaryType param
+        postParams.add(new BasicNameValuePair("jcr:primaryType", "nt:unstructured"));
+        Credentials creds = new UsernamePasswordCredentials("admin", "admin");
+        assertAuthenticatedPostStatus(creds, postUrl, HttpServletResponse.SC_FORBIDDEN, postParams, null);
+
+        //fetch the user profile json to verify the settings
+        String getUrl = String.format("%s/system/userManager/group/%s.json", baseServerUri, testGroupId);
+        assertAuthenticatedHttpStatus(creds, getUrl, HttpServletResponse.SC_NOT_FOUND, null); //make sure the profile request returns no data
+        testGroupId = null;
     }
 
 }

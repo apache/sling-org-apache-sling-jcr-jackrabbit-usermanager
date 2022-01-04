@@ -250,11 +250,15 @@ public class CreateGroupServlet extends AbstractGroupPostServlet implements Crea
             String groupPath = systemUserManagerPaths.getGroupPrefix()
                 + group.getID();
             
-            Collection<RequestProperty> reqProperties = collectContent(properties);
+            Map<String, RequestProperty> reqPropertiesMap = collectContentMap(properties);
+            Collection<RequestProperty> reqPropertyValues = reqPropertiesMap.values();
             changes.add(Modification.onCreated(groupPath));
 
+            // ensure root of new content with the expected primary/mixin types
+            processCreate(jcrSession, group, reqPropertiesMap, changes);
+
             // write content from form
-            writeContent(jcrSession, group, reqProperties, changes);
+            writeContent(jcrSession, group, reqPropertyValues, changes);
 
             // update the group memberships
             ResourceResolver resourceResolver = null;
