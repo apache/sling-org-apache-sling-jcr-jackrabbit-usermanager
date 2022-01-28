@@ -212,12 +212,10 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
             }
             return result;
         };
-        PrincipalWorker<Resource> principalWorker = principal -> {
-            // found the Principal, so return the resource
-            // that wraps it.
-            return new PrincipalResource(principal,
-                            ctx.getResourceResolver(), path);
-        };
+        // found the Principal, so return the resource
+        // that wraps it.
+        PrincipalWorker<Resource> principalWorker = principal -> new PrincipalResource(principal,
+                ctx.getResourceResolver(), path);
         return maybeDoAuthorizableWork(ctx, path, authorizableWorker, principalWorker);
     }
 

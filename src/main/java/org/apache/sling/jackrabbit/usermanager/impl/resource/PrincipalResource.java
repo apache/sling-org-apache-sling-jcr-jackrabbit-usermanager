@@ -23,9 +23,7 @@ import java.util.Map;
 import org.apache.jackrabbit.api.security.principal.GroupPrincipal;
 import org.apache.sling.adapter.annotations.Adaptable;
 import org.apache.sling.adapter.annotations.Adapter;
-import org.apache.sling.api.resource.AbstractResource;
 import org.apache.sling.api.resource.Resource;
-import org.apache.sling.api.resource.ResourceMetadata;
 import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.api.resource.ValueMap;
 import org.apache.sling.api.wrappers.ValueMapDecorator;
@@ -37,24 +35,16 @@ import org.apache.sling.api.wrappers.ValueMapDecorator;
     @Adapter({Map.class, ValueMap.class, Principal.class}),
     @Adapter(condition="If the resource is an PrincipalResource and represents a JCR principal", value = Principal.class)
 })
-public class PrincipalResource extends AbstractResource {
-    protected final ResourceResolver resourceResolver;
+public class PrincipalResource extends BaseResource {
     protected final Principal principal;
-    private final String path;
     private final String resourceType;
-    private final ResourceMetadata metadata;
 
     public PrincipalResource(Principal principal,
             ResourceResolver resourceResolver, String path) {
-        super();
+        super(resourceResolver, path);
 
-        this.resourceResolver = resourceResolver;
         this.principal = principal;
-        this.path = path;
         this.resourceType = toResourceType(principal);
-
-        this.metadata = new ResourceMetadata();
-        metadata.setResolutionPath(path);
     }
 
     /**
@@ -68,38 +58,6 @@ public class PrincipalResource extends AbstractResource {
         } else {
             return "sling/user";
         }
-    }
-
-    /*
-     * (non-Javadoc)
-     * @see org.apache.sling.api.resource.Resource#getPath()
-     */
-    public String getPath() {
-        return path;
-    }
-
-    /*
-     * (non-Javadoc)
-     * @see org.apache.sling.api.resource.Resource#getResourceMetadata()
-     */
-    public ResourceMetadata getResourceMetadata() {
-        return metadata;
-    }
-
-    /*
-     * (non-Javadoc)
-     * @see org.apache.sling.api.resource.Resource#getResourceResolver()
-     */
-    public ResourceResolver getResourceResolver() {
-        return resourceResolver;
-    }
-
-    /*
-     * (non-Javadoc)
-     * @see org.apache.sling.api.resource.Resource#getResourceSuperType()
-     */
-    public String getResourceSuperType() {
-        return null;
     }
 
     /*
@@ -134,4 +92,5 @@ public class PrincipalResource extends AbstractResource {
         return getClass().getSimpleName() + ", id=" + id + ", path="
             + getPath();
     }
+
 }

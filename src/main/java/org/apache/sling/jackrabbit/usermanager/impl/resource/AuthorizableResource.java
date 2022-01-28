@@ -25,9 +25,7 @@ import org.apache.jackrabbit.api.security.user.Group;
 import org.apache.jackrabbit.api.security.user.User;
 import org.apache.sling.adapter.annotations.Adaptable;
 import org.apache.sling.adapter.annotations.Adapter;
-import org.apache.sling.api.resource.AbstractResource;
 import org.apache.sling.api.resource.Resource;
-import org.apache.sling.api.resource.ResourceMetadata;
 import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.api.resource.ValueMap;
 import org.apache.sling.jackrabbit.usermanager.resource.SystemUserManagerPaths;
@@ -40,27 +38,19 @@ import org.apache.sling.jackrabbit.usermanager.resource.SystemUserManagerPaths;
     @Adapter(condition="If the resource is an AuthorizableResource and represents a JCR User", value = User.class),
     @Adapter(condition="If the resource is an AuthorizableResource and represents a JCR Group", value = Group.class)
 })
-public class AuthorizableResource extends AbstractResource {
-    protected final ResourceResolver resourceResolver;
+public class AuthorizableResource extends BaseResource {
     protected final Authorizable authorizable;
-    private final String path;
     private final String resourceType;
-    private final ResourceMetadata metadata;
     protected final SystemUserManagerPaths systemUserManagerPaths;
 
     public AuthorizableResource(Authorizable authorizable,
             ResourceResolver resourceResolver, String path,
             SystemUserManagerPaths systemUserManagerPaths) {
-        super();
+        super(resourceResolver, path);
 
-        this.resourceResolver = resourceResolver;
         this.authorizable = authorizable;
-        this.path = path;
         this.systemUserManagerPaths = systemUserManagerPaths;
         this.resourceType = toResourceType(authorizable);
-
-        this.metadata = new ResourceMetadata();
-        metadata.setResolutionPath(path);
     }
 
     /**
@@ -74,38 +64,6 @@ public class AuthorizableResource extends AbstractResource {
         } else {
             return "sling/user";
         }
-    }
-
-    /*
-     * (non-Javadoc)
-     * @see org.apache.sling.api.resource.Resource#getPath()
-     */
-    public String getPath() {
-        return path;
-    }
-
-    /*
-     * (non-Javadoc)
-     * @see org.apache.sling.api.resource.Resource#getResourceMetadata()
-     */
-    public ResourceMetadata getResourceMetadata() {
-        return metadata;
-    }
-
-    /*
-     * (non-Javadoc)
-     * @see org.apache.sling.api.resource.Resource#getResourceResolver()
-     */
-    public ResourceResolver getResourceResolver() {
-        return resourceResolver;
-    }
-
-    /*
-     * (non-Javadoc)
-     * @see org.apache.sling.api.resource.Resource#getResourceSuperType()
-     */
-    public String getResourceSuperType() {
-        return null;
     }
 
     /*
