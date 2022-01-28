@@ -28,7 +28,7 @@ public abstract class BaseResource extends AbstractResource {
     private final String path;
     private final ResourceMetadata metadata;
 
-    public BaseResource(ResourceResolver resourceResolver, String path) {
+    protected BaseResource(ResourceResolver resourceResolver, String path) {
         super();
 
         this.resourceResolver = resourceResolver;
