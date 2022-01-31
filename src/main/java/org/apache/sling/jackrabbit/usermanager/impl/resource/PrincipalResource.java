@@ -16,50 +16,44 @@
  */
 package org.apache.sling.jackrabbit.usermanager.impl.resource;
 
+import java.security.Principal;
+import java.util.Collections;
 import java.util.Map;
 
-import javax.jcr.RepositoryException;
-
-import org.apache.jackrabbit.api.security.user.Authorizable;
-import org.apache.jackrabbit.api.security.user.Group;
-import org.apache.jackrabbit.api.security.user.User;
+import org.apache.jackrabbit.api.security.principal.GroupPrincipal;
 import org.apache.sling.adapter.annotations.Adaptable;
 import org.apache.sling.adapter.annotations.Adapter;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.api.resource.ValueMap;
-import org.apache.sling.jackrabbit.usermanager.resource.SystemUserManagerPaths;
+import org.apache.sling.api.wrappers.ValueMapDecorator;
 
 /**
- * Resource implementation for Authorizable
+ * Resource implementation for Principal (SLING-11098)
  */
 @Adaptable(adaptableClass = Resource.class, adapters = {
-    @Adapter({Map.class, ValueMap.class, Authorizable.class}),
-    @Adapter(condition="If the resource is an AuthorizableResource and represents a JCR User", value = User.class),
-    @Adapter(condition="If the resource is an AuthorizableResource and represents a JCR Group", value = Group.class)
+    @Adapter({Map.class, ValueMap.class, Principal.class}),
+    @Adapter(condition="If the resource is an PrincipalResource and represents a JCR principal", value = Principal.class)
 })
-public class AuthorizableResource extends BaseResource {
-    protected final Authorizable authorizable;
+public class PrincipalResource extends BaseResource {
+    protected final Principal principal;
     private final String resourceType;
-    protected final SystemUserManagerPaths systemUserManagerPaths;
 
-    public AuthorizableResource(Authorizable authorizable,
-            ResourceResolver resourceResolver, String path,
-            SystemUserManagerPaths systemUserManagerPaths) {
+    public PrincipalResource(Principal principal,
+            ResourceResolver resourceResolver, String path) {
         super(resourceResolver, path);
 
-        this.authorizable = authorizable;
-        this.systemUserManagerPaths = systemUserManagerPaths;
-        this.resourceType = toResourceType(authorizable);
+        this.principal = principal;
+        this.resourceType = toResourceType(principal);
     }
 
     /**
-     * determine the resource type for the authorizable.
-     * @param authorizable the authorizable to consider
+     * determine the resource type for the principal.
+     * @param principal the principal to consider
      * @return the resource type
      */
-    protected String toResourceType(Authorizable authorizable) {
-        if (authorizable.isGroup()) {
+    protected String toResourceType(Principal principal) {
+        if (principal instanceof GroupPrincipal) {
             return "sling/group";
         } else {
             return "sling/user";
@@ -81,12 +75,10 @@ public class AuthorizableResource extends BaseResource {
     @Override
     public <T> T adaptTo(Class<T> type) {
         if (type == Map.class || type == ValueMap.class) {
-            ValueMap valueMap = new AuthorizableValueMap(authorizable, systemUserManagerPaths);
+            ValueMap valueMap = new ValueMapDecorator(Collections.emptyMap());
             return type.cast(valueMap);
-        } else if (type == Authorizable.class
-            || (type == User.class && !authorizable.isGroup())
-            || (type == Group.class && authorizable.isGroup())) {
-            return type.cast(authorizable);
+        } else if (type == Principal.class) {
+            return type.cast(principal);
         }
 
         return super.adaptTo(type);
@@ -94,14 +86,11 @@ public class AuthorizableResource extends BaseResource {
 
     public String toString() {
         String id = null;
-        if (authorizable != null) {
-            try {
-                id = authorizable.getID();
-            } catch (RepositoryException e) {
-                // ignore it.
-            }
+        if (principal != null) {
+            id = principal.getName();
         }
         return getClass().getSimpleName() + ", id=" + id + ", path="
             + getPath();
     }
+
 }

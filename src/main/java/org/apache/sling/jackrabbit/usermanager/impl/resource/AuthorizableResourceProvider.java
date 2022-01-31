@@ -26,6 +26,7 @@ import java.util.NoSuchElementException;
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
 
+import org.apache.jackrabbit.api.security.principal.GroupPrincipal;
 import org.apache.jackrabbit.api.security.principal.PrincipalIterator;
 import org.apache.jackrabbit.api.security.principal.PrincipalManager;
 import org.apache.jackrabbit.api.security.user.Authorizable;
@@ -190,7 +191,7 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
             return new SyntheticResource(ctx.getResourceResolver(), path, "sling/groups");
         }
 
-        AuthorizableWorker<Resource> worker = (authorizable, relPath) -> {
+        AuthorizableWorker<Resource> authorizableWorker = (authorizable, relPath) -> {
             Resource result = null;
             // found the Authorizable, so return the resource
             // that wraps it.
@@ -211,14 +212,19 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
             }
             return result;
         };
-        return maybeDoAuthorizableWork(ctx, path, worker);
+        // found the Principal, so return the resource
+        // that wraps it.
+        PrincipalWorker<Resource> principalWorker = principal -> new PrincipalResource(principal,
+                ctx.getResourceResolver(), path);
+        return maybeDoAuthorizableWork(ctx, path, authorizableWorker, principalWorker);
     }
 
     /**
      * If the path resolves to a user or group (with optional relPath suffix)
      * then invoke the worker to do some work.
      */
-    protected <T> T maybeDoAuthorizableWork(@NotNull ResolveContext<Object> ctx, @NotNull String path, @NotNull AuthorizableWorker<T> worker) {
+    protected <T> T maybeDoAuthorizableWork(@NotNull ResolveContext<Object> ctx, @NotNull String path, 
+            @NotNull AuthorizableWorker<T> authorizableWorker, @Nullable PrincipalWorker<T> principalWorker) {
         T result = null;
         // the principalId should be the first segment after the prefix
         String suffix = null;
@@ -246,7 +252,17 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
                     if (userManager != null) {
                         Authorizable authorizable = userManager.getAuthorizable(pid);
                         if (authorizable != null) {
-                            result = worker.doWork(authorizable, relPath);
+                            result = authorizableWorker.doWork(authorizable, relPath);
+                        } else if (principalWorker != null && relPath == null){
+                            // SLING-11098 check for a principal that is not an authorizable like the everyone group
+                            PrincipalManager principalManager = AccessControlUtil.getPrincipalManager(session);
+                            if (principalManager != null) {
+                                @Nullable
+                                Principal principal = principalManager.getPrincipal(pid);
+                                if (principal != null) {
+                                    result = principalWorker.doWork(principal);
+                                }
+                            }
                         }
                     }
                 } catch (RepositoryException re) {
@@ -311,7 +327,7 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
             } else if (resourcesForNestedProperties) {
                 // handle nested property containers
 
-                AuthorizableWorker<Iterator<Resource>> worker = (authorizable, relPath) -> {
+                AuthorizableWorker<Iterator<Resource>> authorizableWorker = (authorizable, relPath) -> {
                     Iterator<Resource> result = null;
                     Resource r = ctx.getResourceResolver().resolve(authorizable.getPath());
                     if (relPath != null) {
@@ -326,7 +342,7 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
                     }
                     return result;
                 };
-                return maybeDoAuthorizableWork(ctx, path, worker);
+                return maybeDoAuthorizableWork(ctx, path, authorizableWorker, null);
             }
         } catch (RepositoryException re) {
             throw new SlingException("Error listing children of resource: "
@@ -393,25 +409,32 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
                 ResourceResolver resourceResolver = parent.getResourceResolver();
                 Session session = resourceResolver.adaptTo(Session.class);
                 if (session != null) {
-                    UserManager userManager = AccessControlUtil.getUserManager(session);
-                    if (userManager != null) {
-                        Authorizable authorizable = userManager.getAuthorizable(principalName);
-                        if (authorizable != null) {
-                            String path;
-                            if (authorizable.isGroup()) {
-                                path = systemUserManagerGroupPrefix
-                                    + principalName;
-                            } else {
-                                path = systemUserManagerUserPrefix
-                                    + principalName;
-                            }
-                            next = createNext(child, resourceResolver, authorizable, path);
-                        }
-                    }
+                    next = createNext(child, principalName, resourceResolver, session);
                 }
             } catch (RepositoryException re) {
                 log.error("Exception while looking up authorizable resource.",
                     re);
+            }
+            return next;
+        }
+
+        protected @Nullable Resource createNext(Object child, String principalName,
+                ResourceResolver resourceResolver, Session session) throws RepositoryException {
+            Resource next = null;
+            UserManager userManager = AccessControlUtil.getUserManager(session);
+            if (userManager != null) {
+                Authorizable authorizable = userManager.getAuthorizable(principalName);
+                if (authorizable != null) {
+                    String path;
+                    if (authorizable.isGroup()) {
+                        path = systemUserManagerGroupPrefix
+                            + principalName;
+                    } else {
+                        path = systemUserManagerUserPrefix
+                            + principalName;
+                    }
+                    next = createNext(child, resourceResolver, authorizable, path);
+                }
             }
             return next;
         }
@@ -476,6 +499,34 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
         }
 
         @Override
+        protected @Nullable Resource createNext(Object child, String principalName, ResourceResolver resourceResolver,
+                Session session) throws RepositoryException {
+            @Nullable
+            Resource next = super.createNext(child, principalName, resourceResolver, session);
+            if (next == null) {
+                // SLING-11098 check for principal that is not authorizable
+                PrincipalManager principalManager = AccessControlUtil.getPrincipalManager(session);
+                if (principalManager != null) {
+                    @Nullable
+                    Principal principal = principalManager.getPrincipal(principalName);
+                    if (principal != null) {
+                        String path;
+                        if (principal instanceof GroupPrincipal) {
+                            path = systemUserManagerGroupPrefix
+                                + principalName;
+                        } else {
+                            path = systemUserManagerUserPrefix
+                                + principalName;
+                        }
+                        return new PrincipalResource(principal,
+                                resourceResolver, path);
+                    }
+                }
+            }
+            return next;
+        }
+
+        @Override
         protected Resource createNext(Object child, ResourceResolver resourceResolver, Authorizable authorizable,
                 String path) throws RepositoryException {
             return new AuthorizableResource(authorizable,
@@ -492,4 +543,10 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
         public T doWork(@NotNull Authorizable authorizable, @Nullable String relPath) throws RepositoryException;
     }
 
+    /**
+     * Interface for lambda expressions to do work on a resolved principal
+     */
+    protected static interface PrincipalWorker<T> {
+        public T doWork(@NotNull Principal principal) throws RepositoryException;
+    }
 }
