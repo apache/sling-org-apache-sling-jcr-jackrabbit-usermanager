@@ -31,6 +31,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import javax.jcr.AccessDeniedException;
 import javax.jcr.Node;
@@ -39,6 +40,8 @@ import javax.jcr.RepositoryException;
 import javax.jcr.Session;
 import javax.jcr.Value;
 import javax.jcr.ValueFactory;
+import javax.jcr.nodetype.NodeType;
+import javax.jcr.nodetype.PropertyDefinition;
 
 import org.apache.jackrabbit.JcrConstants;
 import org.apache.jackrabbit.api.security.user.Authorizable;
@@ -57,6 +60,7 @@ import org.apache.sling.servlets.post.SlingPostConstants;
 import org.apache.sling.servlets.post.impl.helper.DateParser;
 import org.apache.sling.servlets.post.impl.helper.RequestProperty;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -553,6 +557,45 @@ public abstract class AbstractAuthorizablePostServlet extends
     }
 
     /**
+     * Find the PropertyDefinition for the specified propName
+     * 
+     * @param propName the propertyName to check
+     * @param parentNode the parent node where the property will be set
+     * @return the property definition of the property or null if it could not be determined
+     */
+    private @Nullable PropertyDefinition resolvePropertyDefinition(@NotNull String propName, @NotNull Node parentNode) throws RepositoryException {
+        NodeType primaryNodeType = parentNode.getPrimaryNodeType();
+        // try the primary type
+        PropertyDefinition propDef = resolvePropertyDefinition(propName, primaryNodeType);
+        if (propDef == null) {
+            // not found in the primary type, so try the mixins
+            NodeType[] mixinNodeTypes = parentNode.getMixinNodeTypes();
+            for (NodeType mixinNodeType : mixinNodeTypes) {
+                propDef = resolvePropertyDefinition(propName, mixinNodeType);
+                if (propDef != null) {
+                    break;
+                }
+            }
+        }
+        return propDef;
+    }
+
+    /**
+     * Inspect the NodeType definition to try to determine the
+     * requiredType for the specified property
+     * 
+     * @param propName the propertyName to check
+     * @param parentNode the parent node where the property will be set
+     * @return the required type of the property or {@link PropertyType#UNDEFINED} if it could not be determined
+     */
+    private @Nullable PropertyDefinition resolvePropertyDefinition(@NotNull String propName, @NotNull NodeType nodeType) {
+        return Stream.of(nodeType.getPropertyDefinitions())
+            .filter(pd -> propName.equals(pd.getName()))
+            .findFirst()
+            .orElse(null);
+    }
+
+    /**
      * set property without processing, except for type hints
      *
      * @param parent the parent node
@@ -574,11 +617,27 @@ public abstract class AbstractAuthorizablePostServlet extends
 
         // no explicit typehint
         int type = PropertyType.UNDEFINED;
+        boolean multiValue = false;
         if (prop.getTypeHint() != null) {
             try {
                 type = PropertyType.valueFromName(prop.getTypeHint());
+                multiValue = prop.hasMultiValueTypeHint();
             } catch (Exception e) {
                 // ignore
+            }
+        } else {
+            // inspect the node type definitions to see if there is a known PropertyDefintion
+            //  for the target property that we can get the required type from
+            String propParentPath = String.format("%s%s", parent.getPath(), prop.getParentPath());
+            if (session.nodeExists(propParentPath)) {
+                // try to determine required property type from the NodeType definition
+                Node parentNode = session.getNode(propParentPath);
+                @Nullable
+                PropertyDefinition propDef = resolvePropertyDefinition(prop.getName(), parentNode);
+                if (propDef != null) {
+                    type = propDef.getRequiredType();
+                    multiValue = propDef.isMultiple();
+                }
             }
         }
         // remove artificial "/" prepended to the prop path
@@ -615,7 +674,7 @@ public abstract class AbstractAuthorizablePostServlet extends
                     // try conversion
                     Calendar c = dateParser.parse(values[0]);
                     if (c != null) {
-                        if (prop.hasMultiValueTypeHint()) {
+                        if (multiValue) {
                             final Value[] array = new Value[1];
                             array[0] = session.getValueFactory().createValue(c);
                             parent.setProperty(relativePath, array);
@@ -637,7 +696,7 @@ public abstract class AbstractAuthorizablePostServlet extends
                         values[0], PropertyType.STRING);
                     parent.setProperty(relativePath, val);
                 } else {
-                    if (prop.hasMultiValueTypeHint()) {
+                    if (multiValue) {
                         final Value[] array = new Value[1];
                         array[0] = session.getValueFactory().createValue(
                             values[0], type);
