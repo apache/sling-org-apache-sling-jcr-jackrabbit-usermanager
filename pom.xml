@@ -28,7 +28,7 @@
     </parent>
 
     <artifactId>org.apache.sling.jcr.jackrabbit.usermanager</artifactId>
-    <version>2.2.21-SNAPSHOT</version>
+    <version>2.2.22</version>
     <name>Apache Sling JCR Jackrabbit User Manager</name>
     <description>
         Provides ResourceProvider and POST operations for the Jackrabbit
@@ -36,7 +36,7 @@
     </description>
 
     <properties>
-        <project.build.outputTimestamp>2022-04-04T21:55:33Z</project.build.outputTimestamp>
+        <project.build.outputTimestamp>2022-05-02T18:38:07Z</project.build.outputTimestamp>
         <org.ops4j.pax.exam.version>4.13.3</org.ops4j.pax.exam.version>
     </properties>
 
@@ -44,7 +44,7 @@
         <connection>scm:git:https://gitbox.apache.org/repos/asf/sling-org-apache-sling-jcr-jackrabbit-usermanager.git</connection>
         <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/sling-org-apache-sling-jcr-jackrabbit-usermanager.git</developerConnection>
         <url>https://gitbox.apache.org/repos/asf?p=sling-org-apache-sling-jcr-jackrabbit-usermanager.git</url>
-      <tag>HEAD</tag>
+      <tag>org.apache.sling.jcr.jackrabbit.usermanager-2.2.22</tag>
   </scm>
 
     <build>
