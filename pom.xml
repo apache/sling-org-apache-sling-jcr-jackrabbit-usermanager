@@ -29,10 +29,10 @@
 
     <artifactId>org.apache.sling.jcr.jackrabbit.usermanager</artifactId>
     <version>2.2.21-SNAPSHOT</version>
-    <name>Apache Sling Jackrabbit UserManager Support</name>
+    <name>Apache Sling JCR Jackrabbit User Manager</name>
     <description>
-        Provides ResourceProvider and SlingPostOperations for the Jackrabbit
-        UserManager.
+        Provides ResourceProvider and POST operations for the Jackrabbit
+        User Manager.
     </description>
 
     <properties>
