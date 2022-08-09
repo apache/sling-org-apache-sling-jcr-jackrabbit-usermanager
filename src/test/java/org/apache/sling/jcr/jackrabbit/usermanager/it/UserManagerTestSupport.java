@@ -127,14 +127,14 @@ public abstract class UserManagerTestSupport extends TestSupport {
             jacocoCommand = new VMOption(jacocoOpt);
         }
 
-        // newer version of sling.api and dependencies for SLING-10034
+        // newer version of sling.api and dependencies for SLING-10034 and SLING-11525
         //   may remove at a later date if the superclass includes these versions or later
         versionResolver.setVersionFromProject("org.apache.sling", "org.apache.sling.api");
-        versionResolver.setVersion("org.apache.sling", "org.apache.sling.engine", "2.9.0"); // to be compatible with current o.a.sling.api
-        versionResolver.setVersion("org.apache.sling", "org.apache.sling.resourceresolver", "1.8.0"); // to be compatible with current o.a.sling.api
+        versionResolver.setVersion("org.apache.sling", "org.apache.sling.engine", "2.10.2"); // to be compatible with current o.a.sling.api
+        versionResolver.setVersion("org.apache.sling", "org.apache.sling.resourceresolver", "1.10.0"); // to be compatible with current o.a.sling.api
         versionResolver.setVersion("org.apache.sling", "org.apache.sling.scripting.core", "2.4.0"); // to be compatible with current o.a.sling.api
         versionResolver.setVersion("org.apache.sling", "org.apache.sling.scripting.api", "2.2.0"); // to be compatible with current o.a.sling.api
-        versionResolver.setVersion("org.apache.sling", "org.apache.sling.servlets.resolver", "2.9.4"); // to be compatible with current o.a.sling.api
+        versionResolver.setVersion("org.apache.sling", "org.apache.sling.servlets.resolver", "2.9.8"); // to be compatible with current o.a.sling.api
         versionResolver.setVersion("org.apache.sling", "org.apache.sling.commons.compiler", "2.4.0"); // to be compatible with current o.a.sling.scripting.core
         versionResolver.setVersion("org.apache.sling", "org.apache.sling.auth.core", "1.5.4"); // to be compatible with current o.a.sling.engine
         versionResolver.setVersion("commons-codec", "commons-codec", "1.13"); // to be compatible with current o.a.sling.auth.core
