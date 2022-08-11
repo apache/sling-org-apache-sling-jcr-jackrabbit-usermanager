@@ -1,6 +1,3 @@
-# Temporary fix for SLING-11525 - remove when SLING-11531 is resolved and released
-Import-Package: org.apache.sling.api.request;version="[2.6,2.8)", \
-  *
 
 -includeresource:\
   @org.apache.sling.servlets.post-*.jar!/org/apache/sling/servlets/post/impl/helper/(RequestProperty*|DateParser*),\

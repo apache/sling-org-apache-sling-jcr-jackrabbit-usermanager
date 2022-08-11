@@ -28,10 +28,10 @@ import java.util.Map;
 
 import org.apache.jackrabbit.oak.spi.security.user.AuthorizableType;
 import org.apache.sling.api.request.RequestParameter;
+import org.apache.sling.api.request.builder.Builders;
 import org.apache.sling.jackrabbit.usermanager.PrincipalNameFilter;
 import org.apache.sling.jackrabbit.usermanager.PrincipalNameGenerator;
 import org.apache.sling.jackrabbit.usermanager.PrincipalNameGenerator.NameInfo;
-import org.apache.sling.jackrabbit.usermanager.impl.post.AbstractAuthorizablePostServlet.RequestParameterImpl;
 import org.apache.sling.jcr.jackrabbit.usermanager.it.post.CustomPrincipalNameFilterImpl;
 import org.apache.sling.servlets.post.SlingPostConstants;
 import org.junit.Test;
@@ -54,14 +54,26 @@ public class PrincipalNameGeneratorImplTest {
         this.type = type;
     }
 
+    /**
+     * Helper to reduce code duplication
+     * 
+     * @param map the map to add to
+     * @param paramName the parameter name
+     * @param paramValue the parameter value
+     * @return
+     */
+    private static RequestParameter[] addParam(Map<String, RequestParameter[]> map, String paramName, String paramValue) {
+        return map.put(paramName, new RequestParameter[] {
+                Builders.newRequestParameter(paramName, paramValue)
+        });
+    }
+
     @Test
     public void testPrincipalNameFromName() {
         PrincipalNameGenerator generator = new PrincipalNameGeneratorImpl();
         PrincipalNameFilter filter = null;
         Map<String, RequestParameter[]> parameters = new HashMap<>();
-        parameters.put(SlingPostConstants.RP_NODE_NAME, new RequestParameter[] {
-                new RequestParameterImpl("name1", "UTF-8")
-        });
+        addParam(parameters, SlingPostConstants.RP_NODE_NAME, "name1");
         NameInfo nameInfo = generator.getPrincipalName(parameters, type, filter, defaultGenerator);
         assertNotNull(nameInfo);
         assertEquals("name1", nameInfo.getPrincipalName());
@@ -73,9 +85,7 @@ public class PrincipalNameGeneratorImplTest {
         PrincipalNameGenerator generator = new PrincipalNameGeneratorImpl();
         PrincipalNameFilter filter = null;
         Map<String, RequestParameter[]> parameters = new HashMap<>();
-        parameters.put(SlingPostConstants.RP_NODE_NAME_HINT, new RequestParameter[] {
-                new RequestParameterImpl("name1", "UTF-8")
-        });
+        addParam(parameters, SlingPostConstants.RP_NODE_NAME_HINT, "name1");
         NameInfo nameInfo = generator.getPrincipalName(parameters, type, filter, defaultGenerator);
         assertNotNull(nameInfo);
         assertEquals("name1", nameInfo.getPrincipalName());
@@ -87,9 +97,7 @@ public class PrincipalNameGeneratorImplTest {
         PrincipalNameGenerator generator = new PrincipalNameGeneratorImpl();
         PrincipalNameFilter filter = new CustomPrincipalNameFilterImpl();
         Map<String, RequestParameter[]> parameters = new HashMap<>();
-        parameters.put(SlingPostConstants.RP_NODE_NAME_HINT, new RequestParameter[] {
-                new RequestParameterImpl("Na me1", "UTF-8")
-        });
+        addParam(parameters, SlingPostConstants.RP_NODE_NAME_HINT, "Na me1");
         NameInfo nameInfo = generator.getPrincipalName(parameters, type, filter, defaultGenerator);
         assertNotNull(nameInfo);
         assertEquals("na_me1", nameInfo.getPrincipalName());
@@ -101,9 +109,7 @@ public class PrincipalNameGeneratorImplTest {
         PrincipalNameGenerator generator = new PrincipalNameGeneratorImpl();
         PrincipalNameFilter filter = null;
         Map<String, RequestParameter[]> parameters = new HashMap<>();
-        parameters.put(SlingPostConstants.RP_NODE_NAME_HINT, new RequestParameter[] {
-                new RequestParameterImpl("namethatistoolong123456789", "UTF-8")
-        });
+        addParam(parameters, SlingPostConstants.RP_NODE_NAME_HINT, "namethatistoolong123456789");
         NameInfo nameInfo = generator.getPrincipalName(parameters, type, filter, defaultGenerator);
         assertNotNull(nameInfo);
         assertEquals("namethatistoolong123", nameInfo.getPrincipalName());
@@ -115,12 +121,8 @@ public class PrincipalNameGeneratorImplTest {
         PrincipalNameGenerator generator = new PrincipalNameGeneratorImpl();
         PrincipalNameFilter filter = null;
         Map<String, RequestParameter[]> parameters = new HashMap<>();
-        parameters.put("displayName", new RequestParameter[] {
-                new RequestParameterImpl("name1", "UTF-8")
-        });
-        parameters.put(String.format("%s%s", SlingPostConstants.RP_NODE_NAME, SlingPostConstants.VALUE_FROM_SUFFIX), new RequestParameter[] {
-                new RequestParameterImpl("displayName", "UTF-8")
-        });
+        addParam(parameters, "displayName", "name1");
+        addParam(parameters, String.format("%s%s", SlingPostConstants.RP_NODE_NAME, SlingPostConstants.VALUE_FROM_SUFFIX), "displayName");
         NameInfo nameInfo = generator.getPrincipalName(parameters, type, filter, defaultGenerator);
         assertNotNull(nameInfo);
         assertEquals("name1", nameInfo.getPrincipalName());
@@ -132,12 +134,8 @@ public class PrincipalNameGeneratorImplTest {
         PrincipalNameGenerator generator = new PrincipalNameGeneratorImpl();
         PrincipalNameFilter filter = null;
         Map<String, RequestParameter[]> parameters = new HashMap<>();
-        parameters.put("displayName", new RequestParameter[] {
-                new RequestParameterImpl("namethatistoolong123456789", "UTF-8")
-        });
-        parameters.put(String.format("%s%s", SlingPostConstants.RP_NODE_NAME, SlingPostConstants.VALUE_FROM_SUFFIX), new RequestParameter[] {
-                new RequestParameterImpl("displayName", "UTF-8")
-        });
+        addParam(parameters, "displayName", "namethatistoolong123456789");
+        addParam(parameters, String.format("%s%s", SlingPostConstants.RP_NODE_NAME, SlingPostConstants.VALUE_FROM_SUFFIX), "displayName");
         NameInfo nameInfo = generator.getPrincipalName(parameters, type, filter, defaultGenerator);
         assertNotNull(nameInfo);
         assertEquals("namethatistoolong123456789", nameInfo.getPrincipalName());
@@ -149,12 +147,8 @@ public class PrincipalNameGeneratorImplTest {
         PrincipalNameGenerator generator = new PrincipalNameGeneratorImpl();
         PrincipalNameFilter filter = new CustomPrincipalNameFilterImpl();
         Map<String, RequestParameter[]> parameters = new HashMap<>();
-        parameters.put("displayName", new RequestParameter[] {
-                new RequestParameterImpl("Na me1", "UTF-8")
-        });
-        parameters.put(String.format("%s%s", SlingPostConstants.RP_NODE_NAME, SlingPostConstants.VALUE_FROM_SUFFIX), new RequestParameter[] {
-                new RequestParameterImpl("displayName", "UTF-8")
-        });
+        addParam(parameters, "displayName", "Na me1");
+        addParam(parameters, String.format("%s%s", SlingPostConstants.RP_NODE_NAME, SlingPostConstants.VALUE_FROM_SUFFIX), "displayName");
         NameInfo nameInfo = generator.getPrincipalName(parameters, type, filter, defaultGenerator);
         assertNotNull(nameInfo);
         assertEquals("Na me1", nameInfo.getPrincipalName());
@@ -166,12 +160,8 @@ public class PrincipalNameGeneratorImplTest {
         PrincipalNameGenerator generator = new PrincipalNameGeneratorImpl();
         PrincipalNameFilter filter = null;
         Map<String, RequestParameter[]> parameters = new HashMap<>();
-        parameters.put("displayName", new RequestParameter[] {
-                new RequestParameterImpl("name1", "UTF-8")
-        });
-        parameters.put(String.format("%s%s", SlingPostConstants.RP_NODE_NAME_HINT, SlingPostConstants.VALUE_FROM_SUFFIX), new RequestParameter[] {
-                new RequestParameterImpl("displayName", "UTF-8")
-        });
+        addParam(parameters, "displayName", "name1");
+        addParam(parameters, String.format("%s%s", SlingPostConstants.RP_NODE_NAME_HINT, SlingPostConstants.VALUE_FROM_SUFFIX), "displayName");
         NameInfo nameInfo = generator.getPrincipalName(parameters, type, filter, defaultGenerator);
         assertNotNull(nameInfo);
         assertEquals("name1", nameInfo.getPrincipalName());
@@ -183,12 +173,8 @@ public class PrincipalNameGeneratorImplTest {
         PrincipalNameGenerator generator = new PrincipalNameGeneratorImpl();
         PrincipalNameFilter filter = null;
         Map<String, RequestParameter[]> parameters = new HashMap<>();
-        parameters.put("displayName", new RequestParameter[] {
-                new RequestParameterImpl("namethatistoolong123456789", "UTF-8")
-        });
-        parameters.put(String.format("%s%s", SlingPostConstants.RP_NODE_NAME_HINT, SlingPostConstants.VALUE_FROM_SUFFIX), new RequestParameter[] {
-                new RequestParameterImpl("displayName", "UTF-8")
-        });
+        addParam(parameters, "displayName", "namethatistoolong123456789");
+        addParam(parameters, String.format("%s%s", SlingPostConstants.RP_NODE_NAME_HINT, SlingPostConstants.VALUE_FROM_SUFFIX), "displayName");
         NameInfo nameInfo = generator.getPrincipalName(parameters, type, filter, defaultGenerator);
         assertNotNull(nameInfo);
         assertEquals("namethatistoolong123", nameInfo.getPrincipalName());
@@ -200,12 +186,8 @@ public class PrincipalNameGeneratorImplTest {
         PrincipalNameGenerator generator = new PrincipalNameGeneratorImpl();
         PrincipalNameFilter filter = new CustomPrincipalNameFilterImpl();
         Map<String, RequestParameter[]> parameters = new HashMap<>();
-        parameters.put("displayName", new RequestParameter[] {
-                new RequestParameterImpl("Na me1", "UTF-8")
-        });
-        parameters.put(String.format("%s%s", SlingPostConstants.RP_NODE_NAME_HINT, SlingPostConstants.VALUE_FROM_SUFFIX), new RequestParameter[] {
-                new RequestParameterImpl("displayName", "UTF-8")
-        });
+        addParam(parameters, "displayName", "Na me1");
+        addParam(parameters, String.format("%s%s", SlingPostConstants.RP_NODE_NAME_HINT, SlingPostConstants.VALUE_FROM_SUFFIX), "displayName");
         NameInfo nameInfo = generator.getPrincipalName(parameters, type, filter, defaultGenerator);
         assertNotNull(nameInfo);
         assertEquals("na_me1", nameInfo.getPrincipalName());
@@ -220,9 +202,7 @@ public class PrincipalNameGeneratorImplTest {
             10);
         PrincipalNameFilter filter = null;
         Map<String, RequestParameter[]> parameters = new HashMap<>();
-        parameters.put("displayName2", new RequestParameter[] {
-                new RequestParameterImpl("name1", "UTF-8")
-        });
+        addParam(parameters, "displayName2", "name1");
         NameInfo nameInfo = generator.getPrincipalName(parameters, type, filter, defaultGenerator);
         assertNotNull(nameInfo);
         assertEquals("name1", nameInfo.getPrincipalName());
@@ -237,9 +217,7 @@ public class PrincipalNameGeneratorImplTest {
             10);
         PrincipalNameFilter filter = new CustomPrincipalNameFilterImpl();
         Map<String, RequestParameter[]> parameters = new HashMap<>();
-        parameters.put("displayName2", new RequestParameter[] {
-                new RequestParameterImpl("Na me1", "UTF-8")
-        });
+        addParam(parameters, "displayName2", "Na me1");
         NameInfo nameInfo = generator.getPrincipalName(parameters, type, filter, defaultGenerator);
         assertNotNull(nameInfo);
         assertEquals("na_me1", nameInfo.getPrincipalName());
@@ -254,9 +232,7 @@ public class PrincipalNameGeneratorImplTest {
             10);
         PrincipalNameFilter filter = null;
         Map<String, RequestParameter[]> parameters = new HashMap<>();
-        parameters.put("displayName2", new RequestParameter[] {
-                new RequestParameterImpl("namethatistoolong", "UTF-8")
-        });
+        addParam(parameters, "displayName2", "namethatistoolong");
         NameInfo nameInfo = generator.getPrincipalName(parameters, type, filter, defaultGenerator);
         assertNotNull(nameInfo);
         assertEquals("namethatis", nameInfo.getPrincipalName());
