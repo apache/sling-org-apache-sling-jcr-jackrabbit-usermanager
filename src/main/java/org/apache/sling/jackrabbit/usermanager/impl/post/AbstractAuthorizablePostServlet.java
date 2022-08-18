@@ -16,9 +16,6 @@
  */
 package org.apache.sling.jackrabbit.usermanager.impl.post;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Array;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -47,8 +44,8 @@ import org.apache.jackrabbit.JcrConstants;
 import org.apache.jackrabbit.api.security.user.Authorizable;
 import org.apache.jackrabbit.api.security.user.UserManager;
 import org.apache.jackrabbit.oak.spi.security.user.AuthorizableType;
-import org.apache.sling.api.SlingIOException;
 import org.apache.sling.api.request.RequestParameter;
+import org.apache.sling.api.request.builder.Builders;
 import org.apache.sling.commons.osgi.OsgiUtil;
 import org.apache.sling.jackrabbit.usermanager.PrincipalNameFilter;
 import org.apache.sling.jackrabbit.usermanager.PrincipalNameGenerator;
@@ -852,13 +849,13 @@ public abstract class AbstractAuthorizablePostServlet extends
         RequestParameter [] paramArray = null;
         if (obj instanceof String) {
             paramArray = new RequestParameter[] {
-                new RequestParameterImpl((String)obj, null)
+                    Builders.newRequestParameter(null, (String)obj)
             };
         } else if (obj instanceof String[]) {
             String [] strValues = (String[])obj;
             paramArray = new RequestParameter[strValues.length];
             for (int i=0; i < strValues.length; i++) {
-                paramArray[i] = new RequestParameterImpl(strValues[i], null);
+                paramArray[i] = Builders.newRequestParameter(null, strValues[i]);
             }
         } else if (obj instanceof RequestParameter) {
             paramArray = new RequestParameter[] {(RequestParameter)obj};
@@ -867,123 +864,6 @@ public abstract class AbstractAuthorizablePostServlet extends
         }
 
         return paramArray == null ? new RequestParameter[0] : paramArray;
-    }
-
-    static class RequestParameterImpl implements RequestParameter {
-
-        private String value;
-        private String encoding;
-
-        private byte[] content;
-
-        RequestParameterImpl(String value, String encoding) {
-            this.encoding = encoding;
-            this.value = value;
-            this.content = null;
-        }
-
-        String getEncoding() {
-            return this.encoding;
-        }
-
-        void setEncoding(String encoding) {
-            // recode this parameter by encoding the string with the current
-            // encoding and decode the bytes with the encoding
-            try {
-                this.value = getString(encoding);
-            } catch (UnsupportedEncodingException uee) {
-                throw new SlingUnsupportedEncodingException(uee);
-            }
-            this.encoding = encoding;
-        }
-
-        /**
-         * @see org.apache.sling.api.request.RequestParameter#get()
-         */
-        public byte[] get() {
-            if (content == null) {
-                try {
-                    content = getString().getBytes(getEncoding());
-                } catch (Exception e) {
-                    // UnsupportedEncodingException, IllegalArgumentException
-                    content = getString().getBytes();
-                }
-            }
-            return content;
-        }
-
-        /**
-         * @see org.apache.sling.api.request.RequestParameter#getContentType()
-         */
-        public String getContentType() {
-            // none known for www-form-encoded parameters
-            return null;
-        }
-
-        /**
-         * @see org.apache.sling.api.request.RequestParameter#getInputStream()
-         */
-        public InputStream getInputStream() {
-            return new ByteArrayInputStream(this.get());
-        }
-
-        /**
-         * @see org.apache.sling.api.request.RequestParameter#getFileName()
-         */
-        public String getFileName() {
-            // no original file name
-            return null;
-        }
-
-        /**
-         * @see org.apache.sling.api.request.RequestParameter#getSize()
-         */
-        public long getSize() {
-            return this.get().length;
-        }
-
-        /**
-         * @see org.apache.sling.api.request.RequestParameter#getString()
-         */
-        public String getString() {
-            return value;
-        }
-
-        /**
-         * @see org.apache.sling.api.request.RequestParameter#getString(java.lang.String)
-         */
-        public String getString(String encoding)
-                throws UnsupportedEncodingException {
-            return new String(this.get(), encoding);
-        }
-
-        /**
-         * @see org.apache.sling.api.request.RequestParameter#isFormField()
-         */
-        public boolean isFormField() {
-            // www-form-encoded are always form fields
-            return true;
-        }
-
-        @Override
-        public String getName() {
-            return null;
-        }
-
-        @Override
-        public String toString() {
-            return this.getString();
-        }
-    }
-
-    static class SlingUnsupportedEncodingException extends SlingIOException {
-
-        private static final long serialVersionUID = -4482276105859280247L;
-
-        SlingUnsupportedEncodingException(UnsupportedEncodingException uee) {
-            super(uee);
-        }
-
     }
 
 }
