@@ -1,7 +1,6 @@
 
 -includeresource:\
-  @org.apache.sling.servlets.post-*.jar!/org/apache/sling/servlets/post/impl/helper/(RequestProperty*|DateParser*),\
-  ${project.build.directory}/adapter-plugin-generated
+  @org.apache.sling.servlets.post-*.jar!/org/apache/sling/servlets/post/impl/helper/(RequestProperty*|DateParser*)
 
 -removeheaders:\
   Include-Resource,\
