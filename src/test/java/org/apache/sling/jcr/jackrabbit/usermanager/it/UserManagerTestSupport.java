@@ -21,9 +21,9 @@ package org.apache.sling.jcr.jackrabbit.usermanager.it;
 import static org.apache.felix.hc.api.FormattingResultLog.msHumanReadable;
 import static org.apache.sling.testing.paxexam.SlingOptions.awaitility;
 import static org.apache.sling.testing.paxexam.SlingOptions.sling;
-import static org.apache.sling.testing.paxexam.SlingOptions.slingCommonsCompiler;
 import static org.apache.sling.testing.paxexam.SlingOptions.slingQuickstartOakTar;
 import static org.apache.sling.testing.paxexam.SlingOptions.versionResolver;
+import static org.apache.sling.testing.paxexam.SlingVersionResolver.SLING_GROUP_ID;
 import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -121,28 +121,21 @@ public abstract class UserManagerTestSupport extends TestSupport {
             vmOption = new VMOption(vmOpt);
         }
 
-        final String jacocoOpt = System.getProperty("jacoco.command");
-        VMOption jacocoCommand = null;
-        if (jacocoOpt != null && !jacocoOpt.isEmpty()) {
-            jacocoCommand = new VMOption(jacocoOpt);
-        }
-
         // newer version of sling.api and dependencies for SLING-10034 and SLING-11531
         //   may remove at a later date if the superclass includes these versions or later
-        versionResolver.setVersionFromProject("org.apache.sling", "org.apache.sling.api");
-        versionResolver.setVersion("org.apache.sling", "org.apache.sling.engine", "2.10.2"); // to be compatible with current o.a.sling.api
-        versionResolver.setVersion("org.apache.sling", "org.apache.sling.resourceresolver", "1.10.0"); // to be compatible with current o.a.sling.api
-        versionResolver.setVersion("org.apache.sling", "org.apache.sling.scripting.core", "2.4.0"); // to be compatible with current o.a.sling.api
-        versionResolver.setVersion("org.apache.sling", "org.apache.sling.scripting.api", "2.2.0"); // to be compatible with current o.a.sling.api
-        versionResolver.setVersion("org.apache.sling", "org.apache.sling.servlets.resolver", "2.9.8"); // to be compatible with current o.a.sling.api
-        versionResolver.setVersion("org.apache.sling", "org.apache.sling.commons.compiler", "2.4.0"); // to be compatible with current o.a.sling.scripting.core
-        versionResolver.setVersion("org.apache.sling", "org.apache.sling.auth.core", "1.5.4"); // to be compatible with current o.a.sling.engine
-        versionResolver.setVersion("commons-codec", "commons-codec", "1.13"); // to be compatible with current o.a.sling.auth.core
+        versionResolver.setVersion(SLING_GROUP_ID, "org.apache.sling.api", "2.27.2"); // to be compatible with current o.a.sling.api
+        versionResolver.setVersion(SLING_GROUP_ID, "org.apache.sling.engine", "2.15.4"); // to be compatible with current o.a.sling.api
+        versionResolver.setVersion(SLING_GROUP_ID, "org.apache.sling.resourceresolver", "1.10.0"); // to be compatible with current o.a.sling.api
+        versionResolver.setVersion(SLING_GROUP_ID, "org.apache.sling.servlets.resolver", "2.9.14"); // to be compatible with current o.a.sling.api
+
+        // workaround for FELIX-6656 - use jetty 4.x version instead of the 5.x version
+        //  may remove at a later date after http.jetty-5.1.2 is released and used
+        versionResolver.setVersion("org.apache.felix", "org.apache.felix.http.jetty", "4.2.0");
+        versionResolver.setVersion("org.apache.felix", "org.apache.felix.http.servlet-api", "2.0.0");
 
         return composite(
             super.baseConfiguration(),
             when(vmOption != null).useOptions(vmOption),
-            when(jacocoCommand != null).useOptions(jacocoCommand),
             optionalRemoteDebug(),
             quickstart(),
             sling(),
@@ -161,20 +154,13 @@ public abstract class UserManagerTestSupport extends TestSupport {
 
             // Sling JCR UserManager
             testBundle("bundle.filename"),
-            mavenBundle().groupId("org.apache.sling").artifactId("org.apache.sling.jcr.jackrabbit.accessmanager").versionAsInProject(),
+            mavenBundle().groupId(SLING_GROUP_ID).artifactId("org.apache.sling.jcr.jackrabbit.accessmanager").versionAsInProject(),
             junitBundles(),
             awaitility()
         ).add(
-            // needed by latest version of org.apache.sling.api
-            mavenBundle().groupId("org.apache.felix").artifactId("org.apache.felix.converter").version("1.0.14"),
-            // needed by latest version of org.apache.sling.scripting.core
-            slingCommonsCompiler(),
-            mavenBundle("org.apache.sling", "org.apache.sling.scripting.spi", "1.0.2"),
-            mavenBundle("org.apache.sling", "org.apache.sling.commons.johnzon", "1.2.6")
-        ).add(
             additionalOptions()
         ).remove(
-            mavenBundle() .groupId("org.apache.sling").artifactId("org.apache.sling.jcr.jackrabbit.usermanager").version(versionResolver)
+            mavenBundle() .groupId(SLING_GROUP_ID).artifactId("org.apache.sling.jcr.jackrabbit.usermanager").version(versionResolver)
         ).getOptions();
     }
 
