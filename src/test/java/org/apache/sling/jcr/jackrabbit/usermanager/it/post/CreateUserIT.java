@@ -26,8 +26,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.json.JsonException;
-import javax.json.JsonObject;
+import jakarta.json.JsonException;
+import jakarta.json.JsonObject;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.http.NameValuePair;

@@ -30,6 +30,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.ops4j.pax.exam.CoreOptions.composite;
+import static org.ops4j.pax.exam.CoreOptions.frameworkProperty;
 import static org.ops4j.pax.exam.CoreOptions.junitBundles;
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
 import static org.ops4j.pax.exam.CoreOptions.streamBundle;
@@ -51,7 +52,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import javax.inject.Inject;
-import javax.json.JsonArray;
+import jakarta.json.JsonArray;
 
 import org.apache.felix.hc.api.Result;
 import org.apache.felix.hc.api.ResultLog;
@@ -157,6 +158,12 @@ public abstract class UserManagerTestSupport extends TestSupport {
             mavenBundle().groupId(SLING_GROUP_ID).artifactId("org.apache.sling.jcr.jackrabbit.accessmanager").versionAsInProject(),
             junitBundles(),
             awaitility()
+        ).add(
+            // jakarta impl of JSON apis
+            frameworkProperty("org.apache.aries.spifly.auto.consumers").value("jakarta.json-api"),
+            frameworkProperty("org.apache.aries.spifly.auto.providers").value("org.eclipse.parsson"),
+            mavenBundle().groupId("jakarta.json").artifactId("jakarta.json-api").version("2.1.1"),
+            mavenBundle().groupId("org.eclipse.parsson").artifactId("parsson").version("1.1.1")
         ).add(
             additionalOptions()
         ).remove(
