@@ -19,7 +19,9 @@
 package org.apache.sling.jcr.jackrabbit.usermanager.it.post;
 
 import static org.apache.sling.testing.paxexam.SlingOptions.slingCommonsCompiler;
-import static org.apache.sling.testing.paxexam.SlingOptions.slingJcrJackrabbitSecurity;
+import static org.apache.sling.testing.paxexam.SlingOptions.slingBundleresource;
+import static org.apache.sling.testing.paxexam.SlingOptions.slingJcrJackrabbitAccessmanager;
+import static org.apache.sling.testing.paxexam.SlingOptions.slingJcrJackrabbitUsermanager;
 import static org.apache.sling.testing.paxexam.SlingOptions.slingScriptingJavascript;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -128,8 +130,10 @@ public abstract class UserManagerClientTestSupport extends UserManagerTestSuppor
         final Option bundle = buildBundleResourcesBundle();
 
         return new Option[]{
+            slingBundleresource(),
             // for usermanager support
-            slingJcrJackrabbitSecurity(),
+            slingJcrJackrabbitUsermanager(),
+            slingJcrJackrabbitAccessmanager(),
             // add javascript support for the test script
             slingCommonsCompiler(),
             when(bundle != null).useOptions(slingScriptingJavascript()),
