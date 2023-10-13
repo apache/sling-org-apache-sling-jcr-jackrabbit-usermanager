@@ -407,6 +407,17 @@ public abstract class AbstractAuthorizablePostServlet extends
     }
 
     /**
+     * SLING-12083 Convert the path use forward slashes as the separator
+     * to fix the path calculations when running in a windows
+     * environment
+     */
+    private String toResourcePath(Path path) {
+        StringBuilder foo = new StringBuilder();
+        path.iterator().forEachRemaining(part -> foo.append("/").append(part));
+        return foo.toString();
+    }
+
+    /**
      * Create resource(s) according to current request
      *
      * @param session the sessioin to write the authorizable properties
@@ -439,7 +450,7 @@ public abstract class AbstractAuthorizablePostServlet extends
                 if (parentPath == null || "/".equals(parentPath)) {
                     tp = path;
                 } else if (parentPath.startsWith("/")){
-                    tp = Paths.get(path, parentPath.substring(1)).toString();
+                    tp = toResourcePath(Paths.get(path, parentPath.substring(1)));
                 }
                 if (tp != null && (tp.equals(path) || Paths.get(tp).startsWith(path))) {
                     Node node = null;
@@ -451,7 +462,7 @@ public abstract class AbstractAuthorizablePostServlet extends
                         Iterator<Path> elements = Paths.get(parentPath).iterator();
                         while (elements.hasNext()) {
                             String segment = elements.next().toString();
-                            String tempPath = Paths.get(tempNode.getPath(), segment).toString();
+                            String tempPath = toResourcePath(Paths.get(tempNode.getPath(), segment));
                             if (session.nodeExists(tempPath)) {
                                 tempNode = session.getNode(tempPath);
                             } else {
