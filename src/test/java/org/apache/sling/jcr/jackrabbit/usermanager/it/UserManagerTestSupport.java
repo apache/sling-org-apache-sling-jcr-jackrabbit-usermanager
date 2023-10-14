@@ -30,6 +30,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.ops4j.pax.exam.CoreOptions.composite;
+import static org.ops4j.pax.exam.CoreOptions.frameworkProperty;
 import static org.ops4j.pax.exam.CoreOptions.junitBundles;
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
 import static org.ops4j.pax.exam.CoreOptions.streamBundle;
@@ -51,7 +52,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import javax.inject.Inject;
-import javax.json.JsonArray;
+import jakarta.json.JsonArray;
 
 import org.apache.felix.hc.api.Result;
 import org.apache.felix.hc.api.ResultLog;
@@ -59,6 +60,10 @@ import org.apache.felix.hc.api.execution.HealthCheckExecutionResult;
 import org.apache.felix.hc.api.execution.HealthCheckExecutor;
 import org.apache.felix.hc.api.execution.HealthCheckSelector;
 import org.apache.sling.testing.paxexam.TestSupport;
+import org.junit.Rule;
+import org.junit.rules.TestRule;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 import org.ops4j.pax.exam.Configuration;
 import org.ops4j.pax.exam.Option;
 import org.ops4j.pax.exam.options.ModifiableCompositeOption;
@@ -82,6 +87,27 @@ public abstract class UserManagerTestSupport extends TestSupport {
 
     @Inject
     private HealthCheckExecutor hcExecutor;
+
+    @Rule
+    public TestRule watcher = new TestWatcher() {
+
+        /* (non-Javadoc)
+         * @see org.junit.rules.TestWatcher#starting(org.junit.runner.Description)
+         */
+        @Override
+        protected void starting(Description description) {
+            logger.info("Starting test: {}", description.getMethodName());
+        }
+
+        /* (non-Javadoc)
+         * @see org.junit.rules.TestWatcher#finished(org.junit.runner.Description)
+         */
+        @Override
+        protected void finished(Description description) {
+           logger.info("Finished test: {}", description.getMethodName());
+        }
+
+    };
 
     /**
      * Use after using ConfigurationAdmin to change the configuration of
@@ -157,6 +183,12 @@ public abstract class UserManagerTestSupport extends TestSupport {
             mavenBundle().groupId(SLING_GROUP_ID).artifactId("org.apache.sling.jcr.jackrabbit.accessmanager").versionAsInProject(),
             junitBundles(),
             awaitility()
+        ).add(
+            // jakarta impl of JSON apis
+            frameworkProperty("org.apache.aries.spifly.auto.consumers").value("jakarta.json-api"),
+            frameworkProperty("org.apache.aries.spifly.auto.providers").value("org.eclipse.parsson"),
+            mavenBundle().groupId("jakarta.json").artifactId("jakarta.json-api").version("2.1.1"),
+            mavenBundle().groupId("org.eclipse.parsson").artifactId("parsson").version("1.1.1")
         ).add(
             additionalOptions()
         ).remove(

@@ -37,11 +37,11 @@ import javax.inject.Inject;
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
 import javax.jcr.SimpleCredentials;
-import javax.json.JsonArray;
-import javax.json.JsonException;
-import javax.json.JsonObject;
-import javax.json.JsonValue;
-import javax.json.JsonValue.ValueType;
+import jakarta.json.JsonArray;
+import jakarta.json.JsonException;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonValue;
+import jakarta.json.JsonValue.ValueType;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.http.NameValuePair;
