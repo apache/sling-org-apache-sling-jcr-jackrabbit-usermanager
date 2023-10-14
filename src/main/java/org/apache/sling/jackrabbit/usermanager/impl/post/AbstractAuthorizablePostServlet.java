@@ -17,8 +17,6 @@
 package org.apache.sling.jackrabbit.usermanager.impl.post;
 
 import java.lang.reflect.Array;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.SecureRandom;
 import java.util.Calendar;
 import java.util.Collection;
@@ -407,14 +405,14 @@ public abstract class AbstractAuthorizablePostServlet extends
     }
 
     /**
-     * SLING-12083 Convert the path use forward slashes as the separator
-     * to fix the path calculations when running in a windows
-     * environment
+     * Helper utility to join a path with a descandant subpath
+     *
+     * @param parentPath the parent path
+     * @param other the descendant path
+     * @return the joined path
      */
-    private String toResourcePath(Path path) {
-        StringBuilder foo = new StringBuilder();
-        path.iterator().forEachRemaining(part -> foo.append("/").append(part));
-        return foo.toString();
+    protected String concatPath(@NotNull String parentPath, @NotNull String other) {
+        return String.format("%s/%s", parentPath, other);
     }
 
     /**
@@ -450,29 +448,29 @@ public abstract class AbstractAuthorizablePostServlet extends
                 if (parentPath == null || "/".equals(parentPath)) {
                     tp = path;
                 } else if (parentPath.startsWith("/")){
-                    tp = toResourcePath(Paths.get(path, parentPath.substring(1)));
+                    tp = path.concat(parentPath);
                 }
-                if (tp != null && (tp.equals(path) || Paths.get(tp).startsWith(path))) {
+                if (tp != null && (tp.equals(path) || tp.startsWith(path.concat("/")))) {
                     Node node = null;
                     if (session.nodeExists(tp)) {
                         node = session.getNode(tp);
                     } else {
                         Node tempNode = session.getNode(path);
                         // create any missing intermediate nodes
-                        Iterator<Path> elements = Paths.get(parentPath).iterator();
-                        while (elements.hasNext()) {
-                            String segment = elements.next().toString();
-                            String tempPath = toResourcePath(Paths.get(tempNode.getPath(), segment));
-                            if (session.nodeExists(tempPath)) {
-                                tempNode = session.getNode(tempPath);
-                            } else {
-                                String primaryType = getPrimaryType(reqProperties, tempPath);
-                                if (primaryType != null) {
-                                    tempNode = tempNode.addNode(segment, primaryType);
+                        if (parentPath != null) {
+                            for (String segment : parentPath.split("/")) {
+                                String tempPath = concatPath(tempNode.getPath(), segment);
+                                if (session.nodeExists(tempPath)) {
+                                    tempNode = session.getNode(tempPath);
                                 } else {
-                                    tempNode = tempNode.addNode(segment);
+                                    String primaryType = getPrimaryType(reqProperties, tempPath);
+                                    if (primaryType != null) {
+                                        tempNode = tempNode.addNode(segment, primaryType);
+                                    } else {
+                                        tempNode = tempNode.addNode(segment);
+                                    }
+                                    changes.add(Modification.onCreated(tempNode.getPath()));
                                 }
-                                changes.add(Modification.onCreated(tempNode.getPath()));
                             }
                         }
                         node = tempNode;
@@ -488,7 +486,7 @@ public abstract class AbstractAuthorizablePostServlet extends
                                 final String nodeType = prop == null ? null : prop.getStringValues()[0];
                                 if (nodeType != null && !node.isNodeType(nodeType)) {
                                     node.setPrimaryType(nodeType);
-                                    changes.add(Modification.onModified(Paths.get(node.getPath(), propName).toString()));
+                                    changes.add(Modification.onModified(concatPath(node.getPath(), propName)));
                                 }
                             }
                         } else if (JcrConstants.JCR_MIXINTYPES.equals(propName)) {
@@ -497,7 +495,7 @@ public abstract class AbstractAuthorizablePostServlet extends
                                 for (final String mixin : mixins) {
                                     if (!node.isNodeType(mixin)) {
                                         node.addMixin(mixin);
-                                        changes.add(Modification.onModified(Paths.get(node.getPath(), propName).toString()));
+                                        changes.add(Modification.onModified(concatPath(node.getPath(), propName)));
                                     }
                                 }
                             }
@@ -517,7 +515,7 @@ public abstract class AbstractAuthorizablePostServlet extends
      */
     private String getPrimaryType(Map<String, RequestProperty> reqProperties,
             String path) {
-        RequestProperty prop = reqProperties.get(String.format("%s/%s", path, JcrConstants.JCR_PRIMARYTYPE));
+        RequestProperty prop = reqProperties.get(concatPath(path, JcrConstants.JCR_PRIMARYTYPE));
         return prop == null ? null : prop.getStringValues()[0];
     }
 
