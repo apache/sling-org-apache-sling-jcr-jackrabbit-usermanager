@@ -719,10 +719,13 @@ public abstract class AbstractAuthorizablePostServlet extends
         } else {
             if (type == PropertyType.DATE) {
                 // try conversion
-                ValueFactory valFac = session.getValueFactory();
-                Value[] c = dateParser.parse(values, valFac);
+                Calendar[] c = dateParser.parse(values);
                 if (c != null) {
-                    parent.setProperty(relativePath, c);
+                    ValueFactory vf = session.getValueFactory();
+                    Value[] cVals = Stream.of(c)
+                            .map(vf::createValue)
+                            .toArray(Value[]::new);
+                    parent.setProperty(relativePath, cVals);
                     changes.add(Modification.onModified(parentPath + "/"
                         + relativePath));
                     return;
