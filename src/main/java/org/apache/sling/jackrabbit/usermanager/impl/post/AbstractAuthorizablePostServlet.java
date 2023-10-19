@@ -141,7 +141,9 @@ public abstract class AbstractAuthorizablePostServlet extends
     /**
      * Get or generate the name of the principal being created
      * 
-     * @param request the current request
+     * @param jcrSession the JCR session
+     * @param properties the properties to consider when generating a name
+     * @param type the type of authorizable
      * @return the principal name
      */
     protected String getOrGeneratePrincipalName(Session jcrSession, Map<String, ?> properties, AuthorizableType type) throws RepositoryException {

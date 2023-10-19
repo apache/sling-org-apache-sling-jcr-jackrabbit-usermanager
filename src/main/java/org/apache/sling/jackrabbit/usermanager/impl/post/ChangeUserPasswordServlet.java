@@ -55,8 +55,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * <h2>
+ * Changes the password associated with a user.
+ * </h2>
  * <p>
- * Changes the password associated with a user. Maps on to nodes of resourceType <code>sling/user</code> like
+ * Maps on to nodes of resourceType <code>sling/user</code> like
  * <code>/rep:system/rep:userManager/rep:users/ae/fd/3e/ieb</code> mapped to a resource url
  * <code>/system/userManager/user/ieb</code>. This servlet responds at
  * <code>/system/userManager/user/ieb.changePassword.html</code>
