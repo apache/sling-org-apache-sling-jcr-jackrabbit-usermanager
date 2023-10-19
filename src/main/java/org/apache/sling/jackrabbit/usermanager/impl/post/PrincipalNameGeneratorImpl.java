@@ -41,6 +41,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
  * <p>
  * The value is resolved by the locating the first request parameter that is a 
  * match of one of the choices in the following order:
+ * </p>
  * <ol>
  * <li>":name" - value is the exact name to use</li>
  * <li>":name@ValueFrom" - value is the name of another submitted parameter whose value is the exact name to use</li>
@@ -48,7 +49,6 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
  * <li>":nameHint@ValueFrom" - value is the name of another submitted parameter whose value is filtered, trimmed and made unique</li>
  * <li>otherwise, try the value of any configured "principalNameHints" parameters to treat as a hint that is filtered, trimmed and made unique</li>
  * </ol>
- * </p>
  */
 @Component(
         configurationPid = "org.apache.sling.jackrabbit.usermanager.PrincipalNameGenerator",
@@ -189,10 +189,10 @@ public class PrincipalNameGeneratorImpl implements PrincipalNameGenerator {
     /**
      * Get a "nice" principal name, if possible, based on given request
      *
-     * @param request request
+     * @param parameters the properties to consider when generating a name
      * @param type the type of principal
+     * @param principalNameFilter the filter to make a value work as a principal name
      * @param defaultPrincipalNameGenerator the default principal name generator
-     *
      * @return the principal name to be created or null if other PrincipalNameGenerators should be consulted
      */
     @Override

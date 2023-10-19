@@ -141,7 +141,9 @@ public abstract class AbstractAuthorizablePostServlet extends
     /**
      * Get or generate the name of the principal being created
      * 
-     * @param request the current request
+     * @param jcrSession the JCR session
+     * @param properties the properties to consider when generating a name
+     * @param type the type of authorizable
      * @return the principal name
      */
     protected String getOrGeneratePrincipalName(Session jcrSession, Map<String, ?> properties, AuthorizableType type) throws RepositoryException {
@@ -719,10 +721,13 @@ public abstract class AbstractAuthorizablePostServlet extends
         } else {
             if (type == PropertyType.DATE) {
                 // try conversion
-                ValueFactory valFac = session.getValueFactory();
-                Value[] c = dateParser.parse(values, valFac);
+                Calendar[] c = dateParser.parse(values);
                 if (c != null) {
-                    parent.setProperty(relativePath, c);
+                    ValueFactory vf = session.getValueFactory();
+                    Value[] cVals = Stream.of(c)
+                            .map(vf::createValue)
+                            .toArray(Value[]::new);
+                    parent.setProperty(relativePath, cVals);
                     changes.add(Modification.onModified(parentPath + "/"
                         + relativePath));
                     return;
