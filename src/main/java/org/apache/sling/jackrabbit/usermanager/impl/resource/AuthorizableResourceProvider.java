@@ -30,6 +30,8 @@ import org.apache.jackrabbit.api.security.principal.GroupPrincipal;
 import org.apache.jackrabbit.api.security.principal.PrincipalIterator;
 import org.apache.jackrabbit.api.security.principal.PrincipalManager;
 import org.apache.jackrabbit.api.security.user.Authorizable;
+import org.apache.jackrabbit.api.security.user.Group;
+import org.apache.jackrabbit.api.security.user.User;
 import org.apache.jackrabbit.api.security.user.UserManager;
 import org.apache.sling.api.SlingException;
 import org.apache.sling.api.resource.Resource;
@@ -228,10 +230,13 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
         T result = null;
         // the principalId should be the first segment after the prefix
         String suffix = null;
+        Class<? extends Authorizable> expectedAuthorizableClass = null;
         if (path.startsWith(systemUserManagerUserPrefix)) {
             suffix = path.substring(systemUserManagerUserPrefix.length());
+            expectedAuthorizableClass = User.class;
         } else if (path.startsWith(systemUserManagerGroupPrefix)) {
             suffix = path.substring(systemUserManagerGroupPrefix.length());
+            expectedAuthorizableClass = Group.class;
         }
 
         if (suffix != null) {
@@ -252,7 +257,9 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
                     if (userManager != null) {
                         Authorizable authorizable = userManager.getAuthorizable(pid);
                         if (authorizable != null) {
-                            result = authorizableWorker.doWork(authorizable, relPath);
+                            if (expectedAuthorizableClass.isInstance(authorizable)) { // SLING-12185
+                                result = authorizableWorker.doWork(authorizable, relPath);
+                            }
                         } else if (principalWorker != null && relPath == null){
                             // SLING-11098 check for a principal that is not an authorizable like the everyone group
                             PrincipalManager principalManager = AccessControlUtil.getPrincipalManager(session);

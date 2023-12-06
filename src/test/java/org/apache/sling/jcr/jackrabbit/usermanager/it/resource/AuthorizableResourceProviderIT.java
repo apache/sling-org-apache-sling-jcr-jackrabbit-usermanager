@@ -338,4 +338,19 @@ public class AuthorizableResourceProviderIT extends BaseAuthorizableResourcesIT 
         }
     }
 
+    /**
+     * Test to verify the fix for SLING-12185
+     */
+    @Test
+    public void getResourceWithWrongPathPrefix() throws LoginException, RepositoryException {
+        createResourcesForAdaptTo();
+
+        try (ResourceResolver resourceResolver = resourceResolverFactory.getResourceResolver(Collections.singletonMap(JcrResourceConstants.AUTHENTICATION_INFO_SESSION, adminSession))) {
+            Resource groupResource = resourceResolver.getResource(String.format("%s%s", userManagerPaths.getUserPrefix(), group1.getID()));
+            assertNull(groupResource);
+
+            Resource userResource = resourceResolver.getResource(String.format("%s%s", userManagerPaths.getGroupPrefix(), user1.getID()));
+            assertNull(userResource);
+        }
+    }
 }
