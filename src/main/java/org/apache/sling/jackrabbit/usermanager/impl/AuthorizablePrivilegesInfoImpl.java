@@ -97,15 +97,21 @@ public class AuthorizablePrivilegesInfoImpl implements AuthorizablePrivilegesInf
     private String usersPath;
     private String groupsPath;
     private boolean selfRegistrationEnabled;
-    private boolean alwaysAllowSelfChangePassword = false;
+    private boolean allowSelfChangePassword = false;
 
     @Reference(cardinality=ReferenceCardinality.OPTIONAL, policy = ReferencePolicy.DYNAMIC)
     private void bindChangeUserPassword(ChangeUserPassword changeUserPassword, Map<String, Object> properties) {
-        alwaysAllowSelfChangePassword = OsgiUtil.toBoolean(properties.get("alwaysAllowSelfChangePassword"), false);
+        if (properties.containsKey("alwaysAllowSelfChangePassword")) {
+            // log warning about the wrong property name
+            log.warn("Obsolete 'alwaysAllowSelfChangePassword' configuration key was detected for the bound ChangeUserPassword component. Please change that key in your configuration to 'allowSelfChangePassword'.");
+            allowSelfChangePassword = OsgiUtil.toBoolean(properties.get("alwaysAllowSelfChangePassword"), false);
+        } else {
+            allowSelfChangePassword = OsgiUtil.toBoolean(properties.get("allowSelfChangePassword"), false);
+        }
     }
     @SuppressWarnings("unused")
     private void unbindChangeUserPassword(ChangeUserPassword changeUserPassword, Map<String, Object> properties) {
-        alwaysAllowSelfChangePassword = false;
+        allowSelfChangePassword = false;
     }
     
     @Reference(cardinality=ReferenceCardinality.OPTIONAL, policy = ReferencePolicy.DYNAMIC)
@@ -365,7 +371,7 @@ public class AuthorizablePrivilegesInfoImpl implements AuthorizablePrivilegesInf
                         if (!allowed && jcrSession.getUserID().equals(userId)) {
                             // check if the ChangeUserPassword service is configured to always allow
                             // a user to change their own password.
-                            allowed = alwaysAllowSelfChangePassword;
+                            allowed = allowSelfChangePassword;
                         }
                         return allowed;
                     });

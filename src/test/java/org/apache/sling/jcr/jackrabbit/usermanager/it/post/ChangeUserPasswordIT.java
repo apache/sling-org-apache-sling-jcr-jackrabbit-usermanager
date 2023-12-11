@@ -170,13 +170,13 @@ public class ChangeUserPasswordIT extends UserManagerTestSupport {
         ServiceReference<ChangeUserPassword> serviceReference = null;
         try {
             // update the service configuration to ensure the option is enabled
-            Dictionary<String, Object> newServiceProps = replaceConfigProp(originalServiceProps, "alwaysAllowSelfChangePassword", Boolean.TRUE);
+            Dictionary<String, Object> newServiceProps = replaceConfigProp(originalServiceProps, "allowSelfChangePassword", Boolean.TRUE);
             configuration.update(newServiceProps);
             new WaitForServiceUpdated(5000, 100, bundleContext, ChangeUserPassword.class,
-                    "alwaysAllowSelfChangePassword", Boolean.TRUE);
+                    "allowSelfChangePassword", Boolean.TRUE);
 
             serviceReference = bundleContext.getServiceReference(ChangeUserPassword.class);
-            assertEquals(Boolean.TRUE, serviceReference.getProperty("alwaysAllowSelfChangePassword"));
+            assertEquals(Boolean.TRUE, serviceReference.getProperty("allowSelfChangePassword"));
             ChangeUserPassword changeUserPassword = bundleContext.getService(serviceReference);
             assertNotNull(changeUserPassword);
 
@@ -204,8 +204,8 @@ public class ChangeUserPasswordIT extends UserManagerTestSupport {
 
             //put the original config back
             configuration.update(originalServiceProps);
-            new WaitForServiceUpdated(5000, 100, bundleContext, ChangeUserPassword.class, "alwaysAllowSelfChangePassword",
-                    originalServiceProps == null ? null :originalServiceProps.get("alwaysAllowSelfChangePassword"));
+            new WaitForServiceUpdated(5000, 100, bundleContext, ChangeUserPassword.class, "allowSelfChangePassword",
+                    originalServiceProps == null ? null :originalServiceProps.get("allowSelfChangePassword"));
         }
     }
 
@@ -219,13 +219,13 @@ public class ChangeUserPasswordIT extends UserManagerTestSupport {
         ServiceReference<ChangeUserPassword> serviceReference = null;
         try {
             // update the service configuration to ensure the option is disabled
-            Dictionary<String, Object> newServiceProps = replaceConfigProp(originalServiceProps, "alwaysAllowSelfChangePassword", Boolean.FALSE);
+            Dictionary<String, Object> newServiceProps = replaceConfigProp(originalServiceProps, "allowSelfChangePassword", Boolean.FALSE);
             configuration.update(newServiceProps);
             new WaitForServiceUpdated(5000, 100, bundleContext, ChangeUserPassword.class,
-                    "alwaysAllowSelfChangePassword", Boolean.FALSE);
+                    "allowSelfChangePassword", Boolean.FALSE);
 
             serviceReference = bundleContext.getServiceReference(ChangeUserPassword.class);
-            assertEquals(Boolean.FALSE, serviceReference.getProperty("alwaysAllowSelfChangePassword"));
+            assertEquals(Boolean.FALSE, serviceReference.getProperty("allowSelfChangePassword"));
             ChangeUserPassword changeUserPassword = bundleContext.getService(serviceReference);
             assertNotNull(changeUserPassword);
 
@@ -257,8 +257,8 @@ public class ChangeUserPasswordIT extends UserManagerTestSupport {
 
             //put the original config back
             configuration.update(originalServiceProps);
-            new WaitForServiceUpdated(5000, 100, bundleContext, ChangeUserPassword.class, "alwaysAllowSelfChangePassword",
-                    originalServiceProps == null ? null :originalServiceProps.get("alwaysAllowSelfChangePassword"));
+            new WaitForServiceUpdated(5000, 100, bundleContext, ChangeUserPassword.class, "allowSelfChangePassword",
+                    originalServiceProps == null ? null :originalServiceProps.get("allowSelfChangePassword"));
         }
     }
 
@@ -272,13 +272,13 @@ public class ChangeUserPasswordIT extends UserManagerTestSupport {
         ServiceReference<ChangeUserPassword> serviceReference = null;
         try {
             // update the service configuration to ensure the option is enabled
-            Dictionary<String, Object> newServiceProps = replaceConfigProp(originalServiceProps, "alwaysAllowSelfChangePassword", Boolean.TRUE);
+            Dictionary<String, Object> newServiceProps = replaceConfigProp(originalServiceProps, "allowSelfChangePassword", Boolean.TRUE);
             configuration.update(newServiceProps);
             new WaitForServiceUpdated(5000, 100, bundleContext, ChangeUserPassword.class,
-                    "alwaysAllowSelfChangePassword", Boolean.TRUE);
+                    "allowSelfChangePassword", Boolean.TRUE);
 
             serviceReference = bundleContext.getServiceReference(ChangeUserPassword.class);
-            assertEquals(Boolean.TRUE, serviceReference.getProperty("alwaysAllowSelfChangePassword"));
+            assertEquals(Boolean.TRUE, serviceReference.getProperty("allowSelfChangePassword"));
             ChangeUserPassword changeUserPassword = bundleContext.getService(serviceReference);
             assertNotNull(changeUserPassword);
 
@@ -324,8 +324,8 @@ public class ChangeUserPasswordIT extends UserManagerTestSupport {
 
             //put the original config back
             configuration.update(originalServiceProps);
-            new WaitForServiceUpdated(5000, 100, bundleContext, ChangeUserPassword.class, "alwaysAllowSelfChangePassword",
-                    originalServiceProps == null ? null :originalServiceProps.get("alwaysAllowSelfChangePassword"));
+            new WaitForServiceUpdated(5000, 100, bundleContext, ChangeUserPassword.class, "allowSelfChangePassword",
+                    originalServiceProps == null ? null :originalServiceProps.get("allowSelfChangePassword"));
         }
     }
 
@@ -428,6 +428,54 @@ public class ChangeUserPasswordIT extends UserManagerTestSupport {
                 // done with this.
                 bundleContext.ungetService(serviceReference);
             }
+        }
+    }
+
+    /**
+     */
+    @Test
+    public void changePasswordAsSelfGrantedWithObsoleteConfigurationKey() throws Exception {
+        org.osgi.service.cm.Configuration configuration = configAdmin.getConfiguration("org.apache.sling.jackrabbit.usermanager.impl.post.ChangeUserPasswordServlet", null);
+        Dictionary<String, Object> originalServiceProps = configuration.getProperties();
+        ServiceReference<ChangeUserPassword> serviceReference = null;
+        try {
+            // update the service configuration to ensure the option is disabled
+            Dictionary<String, Object> newServiceProps = replaceConfigProp(originalServiceProps, "alwaysAllowSelfChangePassword", Boolean.TRUE);
+            configuration.update(newServiceProps);
+            new WaitForServiceUpdated(5000, 100, bundleContext, ChangeUserPassword.class,
+                    "alwaysAllowSelfChangePassword", Boolean.TRUE);
+
+            serviceReference = bundleContext.getServiceReference(ChangeUserPassword.class);
+            assertEquals(Boolean.TRUE, serviceReference.getProperty("alwaysAllowSelfChangePassword"));
+            ChangeUserPassword changeUserPassword = bundleContext.getService(serviceReference);
+            assertNotNull(changeUserPassword);
+
+            // user can do the operation
+            assertTrue("Should be allowed to change the user password",
+                    privilegesInfo.canChangePassword(user1Session, user1.getID()));
+
+            changeUserPassword.changePassword(user1Session,
+                    user1.getID(),
+                    "testPwd",
+                    "testPwdChanged",
+                    "testPwdChanged",
+                    new ArrayList<>());
+            try {
+                user1Session.save();
+            } catch (AccessDeniedException e) {
+                logger.error(String.format("Did not expect AccessDeniedException when changing user passsword: %s", e.getMessage()), e);
+                fail("Did not expect AccessDeniedException when changing user passsword: " + e.getMessage());
+            }
+        } finally {
+            if (serviceReference != null) {
+                // done with this.
+                bundleContext.ungetService(serviceReference);
+            }
+
+            //put the original config back
+            configuration.update(originalServiceProps);
+            new WaitForServiceUpdated(5000, 100, bundleContext, ChangeUserPassword.class, "alwaysAllowSelfChangePassword",
+                    originalServiceProps == null ? null :originalServiceProps.get("alwaysAllowSelfChangePassword"));
         }
     }
 
