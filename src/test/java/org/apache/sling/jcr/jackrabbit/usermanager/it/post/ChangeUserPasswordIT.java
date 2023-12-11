@@ -432,6 +432,87 @@ public class ChangeUserPasswordIT extends UserManagerTestSupport {
     }
 
     /**
+     * For code coverage, test that changing another user's password works while 
+     * the allowSelfChangePassword config is true
+     */
+    @Test
+    public void changePasswordAsSelfGrantedForOtherUserWithOldPassword() throws RepositoryException, IOException {
+        org.osgi.service.cm.Configuration configuration = configAdmin.getConfiguration("org.apache.sling.jackrabbit.usermanager.impl.post.ChangeUserPasswordServlet", null);
+        Dictionary<String, Object> originalServiceProps = configuration.getProperties();
+        ServiceReference<ChangeUserPassword> serviceReference = null;
+        User user2 = null;
+        try {
+            // create a second user to attempt the change password on
+            user2 = createUser.createUser(adminSession, createUniqueName("user"), "testPwd", "testPwd",
+                    Collections.emptyMap(), new ArrayList<>());
+            if (adminSession.hasPendingChanges()) {
+                adminSession.save();
+            }
+
+            // update the service configuration to ensure the option is enabled
+            Dictionary<String, Object> newServiceProps = replaceConfigProp(originalServiceProps, "allowSelfChangePassword", Boolean.TRUE);
+            configuration.update(newServiceProps);
+            new WaitForServiceUpdated(5000, 100, bundleContext, ChangeUserPassword.class,
+                    "allowSelfChangePassword", Boolean.TRUE);
+
+            serviceReference = bundleContext.getServiceReference(ChangeUserPassword.class);
+            assertEquals(Boolean.TRUE, serviceReference.getProperty("allowSelfChangePassword"));
+            ChangeUserPassword changeUserPassword = bundleContext.getService(serviceReference);
+            assertNotNull(changeUserPassword);
+
+            //make sure the user1 has the expected privileges granted
+            Map<String, String> privileges = new HashMap<>();
+            privileges.put(String.format("privilege@%s", Privilege.JCR_READ), "granted");
+            privileges.put(String.format("privilege@%s", PrivilegeConstants.REP_USER_MANAGEMENT), "granted");
+            modifyAce.modifyAce(adminSession, user2.getPath(), user1.getID(),
+                    privileges,
+                    "first");
+
+
+            // create a fresh session so changes from the adminSession are picked up
+            user1Session.logout();
+            user1Session = repository.login(new SimpleCredentials(user1.getID(), "testPwd".toCharArray()));
+            assertNotNull("Expected user1Session to not be null", user1Session);
+
+            // user can do the operation
+            assertTrue("Should be allowed to change the user password",
+                    privilegesInfo.canChangePassword(user1Session, user2.getID()));
+
+            // no oldPassword submitted
+            try {
+                changeUserPassword.changePassword(user1Session,
+                        user2.getID(),
+                        "testPwd",
+                        "testPwdChanged",
+                        "testPwdChanged",
+                        new ArrayList<>());
+            } catch (RepositoryException e) {
+                fail("Did not expect a RepositoryException when changing user passsword.");
+            }
+            try {
+                user1Session.save();
+            } catch (AccessDeniedException e) {
+                logger.error(String.format("Did not expect AccessDeniedException when changing user passsword: %s", e.getMessage()), e);
+                fail("Did not expect AccessDeniedException when changing user passsword: " + e.getMessage());
+            }
+        } finally {
+            if (user2 != null) {
+                deleteUser.deleteUser(adminSession, user2.getID(), new ArrayList<>());
+            }
+
+            if (serviceReference != null) {
+                // done with this.
+                bundleContext.ungetService(serviceReference);
+            }
+
+            //put the original config back
+            configuration.update(originalServiceProps);
+            new WaitForServiceUpdated(5000, 100, bundleContext, ChangeUserPassword.class, "allowSelfChangePassword",
+                    originalServiceProps == null ? null :originalServiceProps.get("allowSelfChangePassword"));
+        }
+    }
+
+    /**
      */
     @Test
     public void changePasswordAsSelfGrantedWithObsoleteConfigurationKey() throws Exception {
