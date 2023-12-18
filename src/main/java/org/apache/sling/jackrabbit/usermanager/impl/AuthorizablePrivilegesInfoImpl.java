@@ -37,6 +37,7 @@ import org.apache.sling.jackrabbit.usermanager.AuthorizablePrivilegesInfo;
 import org.apache.sling.jackrabbit.usermanager.ChangeUserPassword;
 import org.apache.sling.jackrabbit.usermanager.CreateUser;
 import org.apache.sling.jcr.base.util.AccessControlUtil;
+import org.jetbrains.annotations.NotNull;
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -98,6 +99,7 @@ public class AuthorizablePrivilegesInfoImpl implements AuthorizablePrivilegesInf
     private String groupsPath;
     private boolean selfRegistrationEnabled;
     private boolean allowSelfChangePassword = false;
+    private String userAdminGroupName;
 
     @Reference(cardinality=ReferenceCardinality.OPTIONAL, policy = ReferencePolicy.DYNAMIC)
     private void bindChangeUserPassword(ChangeUserPassword changeUserPassword, Map<String, Object> properties) {
@@ -108,6 +110,8 @@ public class AuthorizablePrivilegesInfoImpl implements AuthorizablePrivilegesInf
         } else {
             allowSelfChangePassword = OsgiUtil.toBoolean(properties.get("allowSelfChangePassword"), false);
         }
+
+        userAdminGroupName = OsgiUtil.toString(properties.get(PAR_USER_ADMIN_GROUP_NAME), DEFAULT_USER_ADMIN_GROUP_NAME);
     }
     @SuppressWarnings("unused")
     private void unbindChangeUserPassword(ChangeUserPassword changeUserPassword, Map<String, Object> properties) {
@@ -380,6 +384,39 @@ public class AuthorizablePrivilegesInfoImpl implements AuthorizablePrivilegesInf
         }
         return hasRights;
     }
+
+    /* (non-Javadoc)
+     * @see org.apache.sling.jackrabbit.usermanager.AuthorizablePrivilegesInfo#canChangePasswordWithoutOldPassword(javax.jcr.Session, java.lang.String)
+     */
+    @Override
+    public boolean canChangePasswordWithoutOldPassword(@NotNull Session jcrSession, @NotNull String userId) {
+        boolean can = false;
+        try {
+            // can't change your own password without the old password
+            if (!jcrSession.getUserID().equals(userId)) {
+                UserManager um = AccessControlUtil.getUserManager(jcrSession);
+                Authorizable authorizable = um.getAuthorizable(jcrSession.getUserID());
+                if (authorizable instanceof User) {
+                    Authorizable targetUser = um.getAuthorizable(userId);
+                    //system users and anonymous have no passwords
+                    if (targetUser instanceof User && !((User)targetUser).isSystemUser() && !"anonymous".equals(targetUser.getID())) {
+                        if (((User)authorizable).isAdmin()) {
+                            can = true;
+                        } else if (userAdminGroupName != null) {
+                            Authorizable group = um.getAuthorizable(userAdminGroupName);
+                            if (group instanceof Group) {
+                                can = ((Group)group).isMember(authorizable);
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (RepositoryException e) {
+            log.warn("Failed to determine if {} is a user admin", userId);
+        }
+        return can;
+    }
+
 
     // ---------- SCR Integration ----------------------------------------------
 

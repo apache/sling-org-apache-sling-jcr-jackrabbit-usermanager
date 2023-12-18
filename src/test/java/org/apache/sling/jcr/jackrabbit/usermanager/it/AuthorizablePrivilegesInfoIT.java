@@ -39,6 +39,7 @@ import javax.jcr.Session;
 import javax.jcr.SimpleCredentials;
 import javax.jcr.security.Privilege;
 
+import org.apache.jackrabbit.api.JackrabbitSession;
 import org.apache.jackrabbit.api.security.user.Group;
 import org.apache.jackrabbit.api.security.user.User;
 import org.apache.jackrabbit.api.security.user.UserManager;
@@ -1078,6 +1079,49 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
                 privilegesInfo.canChangePassword(user1Session, "sling-jcr-usermanager"));
         assertFalse("Should not be allowed to change the user password",
                 privilegesInfo.canChangePassword(adminSession, "sling-jcr-usermanager"));
+    }
+
+    /**
+     * Tests for SLING-12202
+     */
+    @Test
+    public void canChangePasswordWithoutOldPasswordForSelf() throws RepositoryException {
+        assertFalse(privilegesInfo.canChangePasswordWithoutOldPassword(adminSession, "admin"));
+    }
+    @Test
+    public void canChangePasswordWithoutOldPasswordForAdminUser() throws RepositoryException {
+        assertTrue(privilegesInfo.canChangePasswordWithoutOldPassword(adminSession, user1.getID()));
+    }
+    @Test
+    public void canChangePasswordWithoutOldPasswordForAnonymousUser() throws RepositoryException {
+        assertFalse(privilegesInfo.canChangePasswordWithoutOldPassword(adminSession, "anonymous"));
+    }
+    @Test
+    public void canChangePasswordWithoutOldPasswordForServiceUser() throws RepositoryException {
+        User systemuser1 = ((JackrabbitSession)adminSession).getUserManager().createSystemUser("systemuser1", null);
+        assertFalse(privilegesInfo.canChangePasswordWithoutOldPassword(adminSession, systemuser1.getID()));
+    }
+    @Test
+    public void canChangePasswordWithoutOldPasswordForUserAdminGroupMember() throws RepositoryException {
+        User testuser2 = ((JackrabbitSession)adminSession).getUserManager().createUser("testuser2", "testPwd");
+        Group userAdmin = createGroup.createGroup(adminSession, "UserAdmin", new HashMap<>(), new ArrayList<>());
+        // grant user1 rights to user2 profile
+        Map<String, String> privileges = new HashMap<>();
+        privileges.put(String.format("privilege@%s", Privilege.JCR_READ), "granted");
+        modifyAce.modifyAce(adminSession, userAdmin.getPath(), user1.getID(),
+                privileges,
+                "first");
+        modifyAce.modifyAce(adminSession, testuser2.getPath(), user1.getID(),
+                privileges,
+                "first");
+        adminSession.save();
+        user1Session.refresh(true);
+        assertFalse(privilegesInfo.canChangePasswordWithoutOldPassword(user1Session, testuser2.getID()));
+
+        userAdmin.addMember(user1);
+        adminSession.save();
+        user1Session.refresh(true);
+        assertTrue(privilegesInfo.canChangePasswordWithoutOldPassword(user1Session, testuser2.getID()));
     }
 
 }

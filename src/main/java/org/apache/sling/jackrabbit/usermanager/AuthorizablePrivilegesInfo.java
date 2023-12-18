@@ -18,6 +18,8 @@ package org.apache.sling.jackrabbit.usermanager;
 
 import javax.jcr.Session;
 
+import org.jetbrains.annotations.NotNull;
+
 public interface AuthorizablePrivilegesInfo {
 
     /**
@@ -168,6 +170,20 @@ public interface AuthorizablePrivilegesInfo {
      */
     default boolean canChangePassword(Session jcrSession,
             String userId) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Checks whether the current user has been granted privileges
+     * to change the password of the specified user without knowing
+     * the current password of the user.
+     *
+     * @param jcrSession the JCR session of the current user
+     * @param userId the user id to check
+     * @return true if the current user has the privileges, false otherwise
+     */
+    default boolean canChangePasswordWithoutOldPassword(@NotNull Session jcrSession,
+            @NotNull String userId) {
         throw new UnsupportedOperationException();
     }
 
