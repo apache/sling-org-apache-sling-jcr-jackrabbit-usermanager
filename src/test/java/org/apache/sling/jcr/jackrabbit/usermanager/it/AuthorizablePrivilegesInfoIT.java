@@ -24,8 +24,10 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
@@ -65,6 +67,8 @@ import org.ops4j.pax.exam.junit.PaxExam;
 import org.ops4j.pax.exam.spi.reactors.ExamReactorStrategy;
 import org.ops4j.pax.exam.spi.reactors.PerClass;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceReference;
+import org.osgi.service.cm.ConfigurationAdmin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,6 +86,9 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
 
     @Inject
     protected SlingRepository repository;
+
+    @Inject
+    protected ConfigurationAdmin configAdmin;
 
     @Inject
     private AuthorizablePrivilegesInfo privilegesInfo;
@@ -962,6 +969,84 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
             if (user2 != null) {
                 deleteUser.deleteUser(adminSession, user2.getID(), new ArrayList<>());
             }
+        }
+    }
+
+    /**
+     * Checks whether the current user can change their own password
+     */
+    @Test
+    public void canChangePasswordForSelf() throws RepositoryException {
+        assertNotNull("Expected privilegesInfo to not be null", privilegesInfo);
+
+        assertTrue("Should be allowed to change the user password",
+                privilegesInfo.canChangePassword(user1Session, user1.getID()));
+    }
+
+    /**
+     * Checks whether the current user can change their own password using the obsolete configuration key
+     */
+    @Test
+    public void canChangePasswordForSelfWithObsoleteConfigurationKey() throws RepositoryException, IOException {
+        // deny user1 rights to their own profile
+        Map<String, String> privileges = new HashMap<>();
+        privileges.put(String.format("privilege@%s", PrivilegeConstants.REP_USER_MANAGEMENT), "denied");
+        modifyAce.modifyAce(adminSession, user1.getPath(), user1.getID(),
+                privileges,
+                "first");
+
+        // first try with the allowSelfChangePassword set to false
+        org.osgi.service.cm.Configuration configuration = configAdmin.getConfiguration("org.apache.sling.jackrabbit.usermanager.impl.post.ChangeUserPasswordServlet", null);
+        Dictionary<String, Object> originalServiceProps = configuration.getProperties();
+        ServiceReference<ChangeUserPassword> serviceReference = null;
+        try {
+            // update the service configuration to ensure the option is disabled
+            Dictionary<String, Object> newServiceProps = replaceConfigProp(originalServiceProps, "alwaysAllowSelfChangePassword", Boolean.FALSE);
+            configuration.update(newServiceProps);
+            new WaitForServiceUpdated(5000, 100, bundleContext, ChangeUserPassword.class,
+                    "alwaysAllowSelfChangePassword", Boolean.FALSE);
+
+            assertNotNull("Expected privilegesInfo to not be null", privilegesInfo);
+
+            assertFalse("Should be not allowed to change the user password",
+                    privilegesInfo.canChangePassword(user1Session, user1.getID()));
+        } finally {
+            if (serviceReference != null) {
+                // done with this.
+                bundleContext.ungetService(serviceReference);
+            }
+
+            //put the original config back
+            configuration.update(originalServiceProps);
+            new WaitForServiceUpdated(5000, 100, bundleContext, ChangeUserPassword.class, "alwaysAllowSelfChangePassword",
+                    originalServiceProps == null ? null :originalServiceProps.get("alwaysAllowSelfChangePassword"));
+        }
+
+        // second try with the allowSelfChangePassword set to true
+        configuration = configAdmin.getConfiguration("org.apache.sling.jackrabbit.usermanager.impl.post.ChangeUserPasswordServlet", null);
+        originalServiceProps = configuration.getProperties();
+        serviceReference = null;
+        try {
+            // update the service configuration to ensure the option is disabled
+            Dictionary<String, Object> newServiceProps = replaceConfigProp(originalServiceProps, "alwaysAllowSelfChangePassword", Boolean.TRUE);
+            configuration.update(newServiceProps);
+            new WaitForServiceUpdated(5000, 100, bundleContext, ChangeUserPassword.class,
+                    "alwaysAllowSelfChangePassword", Boolean.TRUE);
+
+            assertNotNull("Expected privilegesInfo to not be null", privilegesInfo);
+
+            assertTrue("Should be allowed to change the user password",
+                    privilegesInfo.canChangePassword(user1Session, user1.getID()));
+        } finally {
+            if (serviceReference != null) {
+                // done with this.
+                bundleContext.ungetService(serviceReference);
+            }
+
+            //put the original config back
+            configuration.update(originalServiceProps);
+            new WaitForServiceUpdated(5000, 100, bundleContext, ChangeUserPassword.class, "alwaysAllowSelfChangePassword",
+                    originalServiceProps == null ? null :originalServiceProps.get("alwaysAllowSelfChangePassword"));
         }
     }
 

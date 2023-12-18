@@ -146,7 +146,7 @@ public class ChangeUserPasswordServlet extends AbstractAuthorizablePostServlet i
 
     private String userAdminGroupName = DEFAULT_USER_ADMIN_GROUP_NAME;
 
-    private boolean alwaysAllowSelfChangePassword = true;
+    private boolean allowSelfChangePassword = true;
 
     /**
      * The JCR Repository we access to resolve resources
@@ -170,7 +170,13 @@ public class ChangeUserPasswordServlet extends AbstractAuthorizablePostServlet i
     protected void activate(final Map<String, Object> props) {
         super.activate(props);
 
-        alwaysAllowSelfChangePassword = OsgiUtil.toBoolean(props.get("alwaysAllowSelfChangePassword"), false);
+        if (props.containsKey("alwaysAllowSelfChangePassword")) {
+            // log warning about the wrong property name
+            log.warn("Obsolete 'alwaysAllowSelfChangePassword' configuration key was detected. Please change the key name in your configuration to 'allowSelfChangePassword'");
+            allowSelfChangePassword = OsgiUtil.toBoolean(props.get("alwaysAllowSelfChangePassword"), false);
+        } else {
+            allowSelfChangePassword = OsgiUtil.toBoolean(props.get("allowSelfChangePassword"), false);
+        }
 
         this.userAdminGroupName = OsgiUtil.toString(props.get(PAR_USER_ADMIN_GROUP_NAME),
                 DEFAULT_USER_ADMIN_GROUP_NAME);
@@ -301,7 +307,7 @@ public class ChangeUserPasswordServlet extends AbstractAuthorizablePostServlet i
 
         if (oldPassword != null && oldPassword.length() > 0) {
             // verify old password
-            if (alwaysAllowSelfChangePassword && jcrSession.getUserID().equals(name)) {
+            if (allowSelfChangePassword && jcrSession.getUserID().equals(name)) {
                 // first check if the current user has enough permissions to do this without
                 //   the aid of a service session
                 AccessControlManager acm = jcrSession.getAccessControlManager();
