@@ -39,6 +39,7 @@ import javax.jcr.nodetype.NodeType;
 import javax.jcr.nodetype.PropertyDefinition;
 
 import org.apache.jackrabbit.JcrConstants;
+import org.apache.jackrabbit.api.JackrabbitSession;
 import org.apache.jackrabbit.api.security.user.Authorizable;
 import org.apache.jackrabbit.api.security.user.UserManager;
 import org.apache.jackrabbit.oak.spi.security.user.AuthorizableType;
@@ -49,7 +50,6 @@ import org.apache.sling.jackrabbit.usermanager.PrincipalNameFilter;
 import org.apache.sling.jackrabbit.usermanager.PrincipalNameGenerator;
 import org.apache.sling.jackrabbit.usermanager.PrincipalNameGenerator.NameInfo;
 import org.apache.sling.jackrabbit.usermanager.resource.SystemUserManagerPaths;
-import org.apache.sling.jcr.base.util.AccessControlUtil;
 import org.apache.sling.servlets.post.Modification;
 import org.apache.sling.servlets.post.SlingPostConstants;
 import org.apache.sling.servlets.post.impl.helper.DateParser;
@@ -168,7 +168,7 @@ public abstract class AbstractAuthorizablePostServlet extends
                 principalName = nameInfo.getPrincipalName();
                 if (principalName != null && nameInfo.isMakeUnique()) {
                     // make sure the name is not already used
-                    UserManager um = AccessControlUtil.getUserManager(jcrSession);
+                    UserManager um = ((JackrabbitSession)jcrSession).getUserManager();
 
                     // if resulting authorizable exists, add a random suffix until it's not the case
                     // anymore

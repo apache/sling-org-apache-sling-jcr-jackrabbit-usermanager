@@ -26,6 +26,7 @@ import javax.jcr.Session;
 import javax.servlet.Servlet;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.jackrabbit.api.JackrabbitSession;
 import org.apache.jackrabbit.api.security.user.Authorizable;
 import org.apache.jackrabbit.api.security.user.Group;
 import org.apache.jackrabbit.api.security.user.User;
@@ -38,7 +39,6 @@ import org.apache.sling.jackrabbit.usermanager.DeleteAuthorizables;
 import org.apache.sling.jackrabbit.usermanager.DeleteGroup;
 import org.apache.sling.jackrabbit.usermanager.DeleteUser;
 import org.apache.sling.jackrabbit.usermanager.resource.SystemUserManagerPaths;
-import org.apache.sling.jcr.base.util.AccessControlUtil;
 import org.apache.sling.servlets.post.Modification;
 import org.apache.sling.servlets.post.PostResponse;
 import org.apache.sling.servlets.post.PostResponseCreator;
@@ -163,7 +163,7 @@ public class DeleteAuthorizableServlet extends AbstractPostServlet
             List<Modification> changes) throws RepositoryException {
 
         User user;
-        UserManager userManager = AccessControlUtil.getUserManager(jcrSession);
+        UserManager userManager = ((JackrabbitSession)jcrSession).getUserManager();
         Authorizable authorizable = userManager.getAuthorizable(name);
         if (authorizable instanceof User) {
             user = (User)authorizable;
@@ -186,7 +186,7 @@ public class DeleteAuthorizableServlet extends AbstractPostServlet
                             List<Modification> changes) throws RepositoryException {
 
         Group group;
-        UserManager userManager = AccessControlUtil.getUserManager(jcrSession);
+        UserManager userManager = ((JackrabbitSession)jcrSession).getUserManager();
         Authorizable authorizable = userManager.getAuthorizable(name);
         if (authorizable instanceof Group) {
             group = (Group)authorizable;

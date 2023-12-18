@@ -26,6 +26,7 @@ import javax.jcr.security.AccessControlManager;
 import javax.jcr.security.Privilege;
 import javax.servlet.Servlet;
 
+import org.apache.jackrabbit.api.JackrabbitSession;
 import org.apache.jackrabbit.api.security.user.Authorizable;
 import org.apache.jackrabbit.api.security.user.User;
 import org.apache.jackrabbit.api.security.user.UserManager;
@@ -39,7 +40,6 @@ import org.apache.sling.jackrabbit.usermanager.PrincipalNameFilter;
 import org.apache.sling.jackrabbit.usermanager.PrincipalNameGenerator;
 import org.apache.sling.jackrabbit.usermanager.resource.SystemUserManagerPaths;
 import org.apache.sling.jcr.api.SlingRepository;
-import org.apache.sling.jcr.base.util.AccessControlUtil;
 import org.apache.sling.serviceusermapping.ServiceUserMapped;
 import org.apache.sling.servlets.post.Modification;
 import org.apache.sling.servlets.post.ModificationType;
@@ -321,7 +321,7 @@ public class CreateUserServlet extends AbstractAuthorizablePostServlet implement
         // check for an administrator
         boolean administrator = false;
         try {
-            UserManager um = AccessControlUtil.getUserManager(jcrSession);
+            UserManager um = ((JackrabbitSession)jcrSession).getUserManager();
             User currentUser = (User) um.getAuthorizable(jcrSession.getUserID());
             administrator = currentUser.isAdmin();
 
@@ -372,7 +372,7 @@ public class CreateUserServlet extends AbstractAuthorizablePostServlet implement
                 selfRegSession = getSession();
             }
 
-            UserManager userManager = AccessControlUtil.getUserManager(selfRegSession);
+            UserManager userManager = ((JackrabbitSession)selfRegSession).getUserManager();
             Authorizable authorizable = userManager.getAuthorizable(principalName);
 
             if (authorizable != null) {
@@ -402,7 +402,7 @@ public class CreateUserServlet extends AbstractAuthorizablePostServlet implement
 
                 if (useAdminSession) {
                     //lookup the user from the user session so we can return a live object
-                    UserManager userManager2 = AccessControlUtil.getUserManager(jcrSession);
+                    UserManager userManager2 = ((JackrabbitSession)jcrSession).getUserManager();
                     Authorizable authorizable2 = userManager2.getAuthorizable(user.getID());
                     if (authorizable2 instanceof User) {
                         user = (User)authorizable2;

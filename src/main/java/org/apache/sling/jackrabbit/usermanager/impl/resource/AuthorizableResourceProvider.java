@@ -26,6 +26,7 @@ import java.util.NoSuchElementException;
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
 
+import org.apache.jackrabbit.api.JackrabbitSession;
 import org.apache.jackrabbit.api.security.principal.GroupPrincipal;
 import org.apache.jackrabbit.api.security.principal.PrincipalIterator;
 import org.apache.jackrabbit.api.security.principal.PrincipalManager;
@@ -39,7 +40,6 @@ import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.api.resource.SyntheticResource;
 import org.apache.sling.commons.osgi.OsgiUtil;
 import org.apache.sling.jackrabbit.usermanager.resource.SystemUserManagerPaths;
-import org.apache.sling.jcr.base.util.AccessControlUtil;
 import org.apache.sling.spi.resource.provider.ResolveContext;
 import org.apache.sling.spi.resource.provider.ResourceContext;
 import org.apache.sling.spi.resource.provider.ResourceProvider;
@@ -253,7 +253,7 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
             Session session = ctx.getResourceResolver().adaptTo(Session.class);
             if (session != null) {
                 try {
-                    UserManager userManager = AccessControlUtil.getUserManager(session);
+                    UserManager userManager = ((JackrabbitSession)session).getUserManager();
                     if (userManager != null) {
                         Authorizable authorizable = userManager.getAuthorizable(pid);
                         if (authorizable != null) {
@@ -262,7 +262,7 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
                             }
                         } else if (principalWorker != null && relPath == null){
                             // SLING-11098 check for a principal that is not an authorizable like the everyone group
-                            PrincipalManager principalManager = AccessControlUtil.getPrincipalManager(session);
+                            PrincipalManager principalManager = ((JackrabbitSession)session).getPrincipalManager();
                             if (principalManager != null) {
                                 @Nullable
                                 Principal principal = principalManager.getPrincipal(pid);
@@ -324,7 +324,7 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
                 ResourceResolver resourceResolver = parent.getResourceResolver();
                 Session session = resourceResolver.adaptTo(Session.class);
                 if (session != null) {
-                    PrincipalManager principalManager = AccessControlUtil.getPrincipalManager(session);
+                    PrincipalManager principalManager = ((JackrabbitSession)session).getPrincipalManager();
                     principals = principalManager.getPrincipals(searchType);
                 }
 
@@ -428,7 +428,7 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
         protected @Nullable Resource createNext(Object child, String principalName,
                 ResourceResolver resourceResolver, Session session) throws RepositoryException {
             Resource next = null;
-            UserManager userManager = AccessControlUtil.getUserManager(session);
+            UserManager userManager = ((JackrabbitSession)session).getUserManager();
             if (userManager != null) {
                 Authorizable authorizable = userManager.getAuthorizable(principalName);
                 if (authorizable != null) {
@@ -512,7 +512,7 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
             Resource next = super.createNext(child, principalName, resourceResolver, session);
             if (next == null) {
                 // SLING-11098 check for principal that is not authorizable
-                PrincipalManager principalManager = AccessControlUtil.getPrincipalManager(session);
+                PrincipalManager principalManager = ((JackrabbitSession)session).getPrincipalManager();
                 if (principalManager != null) {
                     @Nullable
                     Principal principal = principalManager.getPrincipal(principalName);
