@@ -395,15 +395,19 @@ public class AuthorizablePrivilegesInfoImpl implements AuthorizablePrivilegesInf
             // can't change your own password without the old password
             if (!jcrSession.getUserID().equals(userId)) {
                 UserManager um = AccessControlUtil.getUserManager(jcrSession);
-                User currentUser = um.getAuthorizable(jcrSession.getUserID(), User.class);
-                User targetUser = um.getAuthorizable(userId, User.class);
-                //system users and anonymous have no passwords
-                if (!targetUser.isSystemUser() && !"anonymous".equals(targetUser.getID())) {
-                    if (currentUser.isAdmin()) {
-                        can = true;
-                    } else if (userAdminGroupName != null) {
-                        Group group = um.getAuthorizable(userAdminGroupName, Group.class);
-                        can = group.isMember(currentUser);
+                Authorizable currentUser = um.getAuthorizable(jcrSession.getUserID());
+                if (currentUser instanceof User) {
+                    Authorizable targetUser = um.getAuthorizable(userId);
+                    //system users and anonymous have no passwords
+                    if (targetUser instanceof User && !((User)targetUser).isSystemUser() && !"anonymous".equals(targetUser.getID())) {
+                        if (((User)currentUser).isAdmin()) {
+                            can = true;
+                        } else if (userAdminGroupName != null) {
+                            Authorizable group = um.getAuthorizable(userAdminGroupName);
+                            if (group instanceof Group) {
+                                can = ((Group)group).isMember(currentUser);
+                            }
+                        }
                     }
                 }
             }
