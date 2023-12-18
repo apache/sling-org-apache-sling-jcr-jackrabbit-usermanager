@@ -18,6 +18,8 @@ package org.apache.sling.jackrabbit.usermanager;
 
 import static org.junit.Assert.*;
 
+import javax.jcr.Session;
+
 import org.apache.sling.jackrabbit.usermanager.AuthorizablePrivilegesInfo.PropertyUpdateTypes;
 import org.junit.Test;
 
@@ -25,6 +27,38 @@ import org.junit.Test;
  * Test coverage for AuthorizablePrivilegesInfo / PropertyUpdateTypes
  */
 public class AuthorizablePrivilegesInfoTest {
+
+    /**
+     * An implementation to facilitate testing of default methods in the interface
+     */
+    public static class TestDefaultMethodsAuthorizablePrivlegesInfo implements AuthorizablePrivilegesInfo {
+
+        @Override
+        public boolean canAddUser(Session jcrSession) {
+            return false;
+        }
+
+        @Override
+        public boolean canAddGroup(Session jcrSession) {
+            return false;
+        }
+
+        @Override
+        public boolean canUpdateProperties(Session jcrSession, String principalId) {
+            return false;
+        }
+
+        @Override
+        public boolean canRemove(Session jcrSession, String principalId) {
+            return false;
+        }
+
+        @Override
+        public boolean canUpdateGroupMembers(Session jcrSession, String groupId) {
+            return false;
+        }
+
+    }
 
     @SuppressWarnings("deprecation")
     @Test
@@ -36,6 +70,47 @@ public class AuthorizablePrivilegesInfoTest {
 
         //and one that doesn't require conversion
         assertEquals(PropertyUpdateTypes.REMOVE_PROPERTY, PropertyUpdateTypes.convertDeprecated(PropertyUpdateTypes.REMOVE_PROPERTY));
+    }
+
+
+    /**
+     * Test method for {@link org.apache.sling.jackrabbit.usermanager.AuthorizablePrivilegesInfo#canUpdateProperties(javax.jcr.Session, java.lang.String, org.apache.sling.jackrabbit.usermanager.AuthorizablePrivilegesInfo.PropertyUpdateTypes[])}.
+     */
+    @Test(expected = UnsupportedOperationException.class)
+    public void testCanUpdatePropertiesSessionStringPropertyUpdateTypesArray() {
+        AuthorizablePrivilegesInfo api = new TestDefaultMethodsAuthorizablePrivlegesInfo();
+        Session jcrSession = null;
+        api.canUpdateProperties(jcrSession, "testuser1", PropertyUpdateTypes.ALTER_PROPERTY);
+    }
+
+    /**
+     * Test method for {@link org.apache.sling.jackrabbit.usermanager.AuthorizablePrivilegesInfo#canDisable(javax.jcr.Session, java.lang.String)}.
+     */
+    @Test(expected = UnsupportedOperationException.class)
+    public void testCanDisable() {
+        AuthorizablePrivilegesInfo api = new TestDefaultMethodsAuthorizablePrivlegesInfo();
+        Session jcrSession = null;
+        api.canDisable(jcrSession, "testuser1");
+    }
+
+    /**
+     * Test method for {@link org.apache.sling.jackrabbit.usermanager.AuthorizablePrivilegesInfo#canChangePassword(javax.jcr.Session, java.lang.String)}.
+     */
+    @Test(expected = UnsupportedOperationException.class)
+    public void testCanChangePassword() {
+        AuthorizablePrivilegesInfo api = new TestDefaultMethodsAuthorizablePrivlegesInfo();
+        Session jcrSession = null;
+        api.canChangePassword(jcrSession, "testuser1");
+    }
+
+    /**
+     * Test method for {@link org.apache.sling.jackrabbit.usermanager.AuthorizablePrivilegesInfo#canChangePasswordWithoutOldPassword(javax.jcr.Session, java.lang.String)}.
+     */
+    @Test(expected = UnsupportedOperationException.class)
+    public void testCanChangePasswordWithoutOldPassword() {
+        AuthorizablePrivilegesInfo api = new TestDefaultMethodsAuthorizablePrivlegesInfo();
+        Session jcrSession = null;
+        api.canChangePasswordWithoutOldPassword(jcrSession, "testuser1");
     }
 
 }
