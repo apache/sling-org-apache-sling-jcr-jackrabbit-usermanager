@@ -25,6 +25,7 @@ import javax.jcr.RepositoryException;
 import javax.jcr.Session;
 import javax.servlet.Servlet;
 
+import org.apache.jackrabbit.api.JackrabbitSession;
 import org.apache.jackrabbit.api.security.user.Authorizable;
 import org.apache.jackrabbit.api.security.user.Group;
 import org.apache.jackrabbit.api.security.user.UserManager;
@@ -36,7 +37,6 @@ import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.api.resource.ResourceResolverFactory;
 import org.apache.sling.jackrabbit.usermanager.UpdateGroup;
 import org.apache.sling.jackrabbit.usermanager.resource.SystemUserManagerPaths;
-import org.apache.sling.jcr.base.util.AccessControlUtil;
 import org.apache.sling.jcr.resource.api.JcrResourceConstants;
 import org.apache.sling.servlets.post.Modification;
 import org.apache.sling.servlets.post.PostResponse;
@@ -180,7 +180,7 @@ public class UpdateGroupServlet extends AbstractGroupPostServlet
             throws RepositoryException {
 
         Group group = null;
-        UserManager userManager = AccessControlUtil.getUserManager(jcrSession);
+        UserManager userManager = ((JackrabbitSession)jcrSession).getUserManager();
         Authorizable authorizable = userManager.getAuthorizable(name);
         if (authorizable instanceof Group) {
             group = (Group)authorizable;

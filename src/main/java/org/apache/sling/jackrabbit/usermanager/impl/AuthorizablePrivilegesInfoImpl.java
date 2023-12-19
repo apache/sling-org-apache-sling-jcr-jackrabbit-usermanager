@@ -25,6 +25,7 @@ import javax.jcr.Session;
 import javax.jcr.security.AccessControlManager;
 import javax.jcr.security.Privilege;
 
+import org.apache.jackrabbit.api.JackrabbitSession;
 import org.apache.jackrabbit.api.security.user.Authorizable;
 import org.apache.jackrabbit.api.security.user.Group;
 import org.apache.jackrabbit.api.security.user.User;
@@ -36,7 +37,6 @@ import org.apache.sling.commons.osgi.OsgiUtil;
 import org.apache.sling.jackrabbit.usermanager.AuthorizablePrivilegesInfo;
 import org.apache.sling.jackrabbit.usermanager.ChangeUserPassword;
 import org.apache.sling.jackrabbit.usermanager.CreateUser;
-import org.apache.sling.jcr.base.util.AccessControlUtil;
 import org.jetbrains.annotations.NotNull;
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.Activate;
@@ -144,7 +144,7 @@ public class AuthorizablePrivilegesInfoImpl implements AuthorizablePrivilegesInf
     public boolean canAddGroup(Session jcrSession) {
         boolean hasRights = false;
         try {
-            UserManager userManager = AccessControlUtil.getUserManager(jcrSession);
+            UserManager userManager = ((JackrabbitSession)jcrSession).getUserManager();
             Authorizable currentUser = userManager.getAuthorizable(jcrSession.getUserID());
 
             if (currentUser instanceof User && ((User)currentUser).isAdmin()) {
@@ -178,7 +178,7 @@ public class AuthorizablePrivilegesInfoImpl implements AuthorizablePrivilegesInf
             if (selfRegistrationEnabled) {
                 hasRights = true;
             } else {
-                UserManager userManager = AccessControlUtil.getUserManager(jcrSession);
+                UserManager userManager = ((JackrabbitSession)jcrSession).getUserManager();
                 Authorizable currentUser = userManager.getAuthorizable(jcrSession.getUserID());
                 if (currentUser instanceof User && ((User)currentUser).isAdmin()) {
                     hasRights = true;  //admin user has full control
@@ -205,7 +205,7 @@ public class AuthorizablePrivilegesInfoImpl implements AuthorizablePrivilegesInf
     protected boolean checkAuthorizablePath(Session jcrSession, String principalId,
             AuthorizableChecker authorizableChecker, AccessChecker accessChecker) throws RepositoryException {
         boolean hasRights = false;
-        UserManager userManager = AccessControlUtil.getUserManager(jcrSession);
+        UserManager userManager = ((JackrabbitSession)jcrSession).getUserManager();
         Authorizable currentUser = userManager.getAuthorizable(jcrSession.getUserID());
 
         Authorizable authorizable = userManager.getAuthorizable(principalId);
@@ -394,7 +394,7 @@ public class AuthorizablePrivilegesInfoImpl implements AuthorizablePrivilegesInf
         try {
             // can't change your own password without the old password
             if (!jcrSession.getUserID().equals(userId)) {
-                UserManager um = AccessControlUtil.getUserManager(jcrSession);
+                UserManager um = ((JackrabbitSession)jcrSession).getUserManager();
                 Authorizable currentUser = um.getAuthorizable(jcrSession.getUserID());
                 if (currentUser instanceof User) {
                     Authorizable targetUser = um.getAuthorizable(userId);

@@ -55,7 +55,6 @@ import org.apache.sling.jackrabbit.usermanager.DeleteUser;
 import org.apache.sling.jackrabbit.usermanager.UpdateGroup;
 import org.apache.sling.jackrabbit.usermanager.UpdateUser;
 import org.apache.sling.jcr.api.SlingRepository;
-import org.apache.sling.jcr.base.util.AccessControlUtil;
 import org.apache.sling.jcr.jackrabbit.accessmanager.DeleteAces;
 import org.apache.sling.jcr.jackrabbit.accessmanager.ModifyAce;
 import org.junit.After;
@@ -786,7 +785,7 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
             deleteUser.deleteUser(user1Session, user2Id, new ArrayList<>());
             user2 = null;
             // verify the user is no longer there
-            UserManager um = AccessControlUtil.getUserManager(user1Session);
+            UserManager um = ((JackrabbitSession)user1Session).getUserManager();
             assertNull("Expected user to be gone: " + user2Id, um.getAuthorizable(user2Id));
 
             // verify that the user can actually delete the group

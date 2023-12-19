@@ -25,6 +25,7 @@ import javax.jcr.security.AccessControlManager;
 import javax.jcr.security.Privilege;
 import javax.servlet.Servlet;
 
+import org.apache.jackrabbit.api.JackrabbitSession;
 import org.apache.jackrabbit.api.security.user.Authorizable;
 import org.apache.jackrabbit.api.security.user.Group;
 import org.apache.jackrabbit.api.security.user.User;
@@ -37,7 +38,6 @@ import org.apache.sling.commons.osgi.OsgiUtil;
 import org.apache.sling.jackrabbit.usermanager.ChangeUserPassword;
 import org.apache.sling.jackrabbit.usermanager.resource.SystemUserManagerPaths;
 import org.apache.sling.jcr.api.SlingRepository;
-import org.apache.sling.jcr.base.util.AccessControlUtil;
 import org.apache.sling.serviceusermapping.ServiceUserMapped;
 import org.apache.sling.servlets.post.Modification;
 import org.apache.sling.servlets.post.PostResponse;
@@ -258,7 +258,7 @@ public class ChangeUserPasswordServlet extends AbstractAuthorizablePostServlet i
         }
 
         User user;
-        UserManager userManager = AccessControlUtil.getUserManager(jcrSession);
+        UserManager userManager = ((JackrabbitSession)jcrSession).getUserManager();
         Authorizable authorizable = userManager.getAuthorizable(name);
         if (authorizable instanceof User) {
             user = (User)authorizable;
@@ -274,7 +274,7 @@ public class ChangeUserPasswordServlet extends AbstractAuthorizablePostServlet i
         // check that the submitted parameter values have valid values.
         if (oldPassword == null || oldPassword.length() == 0) {
             try {
-                UserManager um = AccessControlUtil.getUserManager(jcrSession);
+                UserManager um = ((JackrabbitSession)jcrSession).getUserManager();
                 User currentUser = (User) um.getAuthorizable(jcrSession.getUserID());
                 administrator = currentUser.isAdmin();
 
@@ -324,7 +324,7 @@ public class ChangeUserPasswordServlet extends AbstractAuthorizablePostServlet i
                     Session svcSession = null;
                     try {
                         svcSession = repository.loginService(null, null);
-                        UserManager um = AccessControlUtil.getUserManager(svcSession);
+                        UserManager um = ((JackrabbitSession)svcSession).getUserManager();
                         User user2 = (User) um.getAuthorizable(name);
                         user2.changePassword(newPassword, oldPassword);
                         if (svcSession.hasPendingChanges()) {

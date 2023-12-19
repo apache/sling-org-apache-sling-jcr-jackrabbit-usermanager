@@ -25,6 +25,7 @@ import javax.jcr.RepositoryException;
 import javax.jcr.Session;
 import javax.servlet.Servlet;
 
+import org.apache.jackrabbit.api.JackrabbitSession;
 import org.apache.jackrabbit.api.security.user.Authorizable;
 import org.apache.jackrabbit.api.security.user.Group;
 import org.apache.jackrabbit.api.security.user.UserManager;
@@ -38,7 +39,6 @@ import org.apache.sling.jackrabbit.usermanager.CreateGroup;
 import org.apache.sling.jackrabbit.usermanager.PrincipalNameFilter;
 import org.apache.sling.jackrabbit.usermanager.PrincipalNameGenerator;
 import org.apache.sling.jackrabbit.usermanager.resource.SystemUserManagerPaths;
-import org.apache.sling.jcr.base.util.AccessControlUtil;
 import org.apache.sling.servlets.post.Modification;
 import org.apache.sling.servlets.post.PostResponse;
 import org.apache.sling.servlets.post.PostResponseCreator;
@@ -235,7 +235,7 @@ public class CreateGroupServlet extends AbstractGroupPostServlet implements Crea
             throw new IllegalArgumentException("Group name was not supplied");
         }
 
-        UserManager userManager = AccessControlUtil.getUserManager(jcrSession);
+        UserManager userManager = ((JackrabbitSession)jcrSession).getUserManager();
         Authorizable authorizable = userManager.getAuthorizable(principalName);
 
         Group group = null;

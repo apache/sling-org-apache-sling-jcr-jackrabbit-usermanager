@@ -22,12 +22,12 @@ import java.util.Map;
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
 
+import org.apache.jackrabbit.api.JackrabbitSession;
 import org.apache.jackrabbit.api.security.user.Authorizable;
 import org.apache.jackrabbit.api.security.user.Group;
 import org.apache.jackrabbit.api.security.user.UserManager;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ResourceResolver;
-import org.apache.sling.jcr.base.util.AccessControlUtil;
 import org.apache.sling.servlets.post.Modification;
 import org.apache.sling.servlets.post.SlingPostConstants;
 
@@ -62,7 +62,7 @@ public abstract class AbstractGroupPostServlet extends
             ResourceResolver resolver = baseResource.getResourceResolver();
             boolean changed = false;
             
-            UserManager userManager = AccessControlUtil.getUserManager(resolver.adaptTo(Session.class));
+            UserManager userManager = ((JackrabbitSession)resolver.adaptTo(Session.class)).getUserManager();
 
             // first remove any members posted as ":member@Delete"
             String[] membersToDelete = convertToStringArray(properties.get(SlingPostConstants.RP_PREFIX
