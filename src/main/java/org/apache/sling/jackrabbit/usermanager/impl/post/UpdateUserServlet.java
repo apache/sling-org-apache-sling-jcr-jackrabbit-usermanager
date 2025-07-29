@@ -169,8 +169,8 @@ public class UpdateUserServlet extends AbstractAuthorizablePostServlet
         User user;
         UserManager userManager = ((JackrabbitSession)jcrSession).getUserManager();
         Authorizable authorizable = userManager.getAuthorizable(name);
-        if (authorizable instanceof User) {
-            user = (User)authorizable;
+        if (authorizable instanceof User u) {
+            user = u;
         } else {
             throw new ResourceNotFoundException(
                 "User to update could not be determined");

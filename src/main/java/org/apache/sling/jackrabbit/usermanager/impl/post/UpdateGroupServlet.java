@@ -179,14 +179,13 @@ public class UpdateGroupServlet extends AbstractGroupPostServlet
         Group group = null;
         UserManager userManager = ((JackrabbitSession)jcrSession).getUserManager();
         Authorizable authorizable = userManager.getAuthorizable(name);
-        if (authorizable instanceof Group) {
-            group = (Group)authorizable;
+        if (authorizable instanceof Group g) {
+            group = g;
         } else {
             throw new ResourceNotFoundException(
                 "Group to update could not be determined");
         }
-        
-        
+
         String groupPath = systemUserManagerPaths.getGroupPrefix()
             + group.getID();
 

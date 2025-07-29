@@ -437,8 +437,7 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
         protected Resource createNext(Object child, ResourceResolver resourceResolver, Authorizable authorizable,
                 String path) throws RepositoryException {
             Resource next = null;
-            if (child instanceof Resource) {
-                Resource childResource = (Resource)child;
+            if (child instanceof Resource childResource) {
                 //calculate the path relative to the home folder root
                 String relPath = childResource.getPath().substring(authorizable.getPath().length() + 1);
 
@@ -465,8 +464,8 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
         @Override
         protected String toPrincipalName(Object child) {
             String principalName = null;
-            if (child instanceof Principal) {
-                principalName = ((Principal)child).getName();
+            if (child instanceof Principal principal) {
+                principalName = principal.getName();
             }
             return principalName;
         }

@@ -24,7 +24,6 @@ import java.util.Set;
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
 import javax.jcr.security.AccessControlEntry;
-import javax.jcr.security.AccessControlException;
 import javax.jcr.security.AccessControlList;
 import javax.jcr.security.AccessControlManager;
 import javax.jcr.security.AccessControlPolicy;
@@ -69,14 +68,13 @@ public class AceTools {
     }
 
     private static Privilege[] toPrivilegesArray(Set<String> grantedPrivileges,
-            AccessControlManager accessControlManager) throws AccessControlException, RepositoryException {
+            AccessControlManager accessControlManager) throws RepositoryException {
         List<Privilege> privilegesList = new ArrayList<>();
         for (String name : grantedPrivileges) {
             Privilege privilege = accessControlManager.privilegeFromName(name);
             privilegesList.add(privilege);
         }
-        Privilege[] privileges = privilegesList.toArray(Privilege[]::new);
-        return privileges;
+        return privilegesList.toArray(Privilege[]::new);
     }
 
     public static void deleteAces(Session jcrSession, String resourcePath, Authorizable authorizable) throws RepositoryException {

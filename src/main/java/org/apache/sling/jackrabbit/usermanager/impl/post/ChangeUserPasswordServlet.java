@@ -257,8 +257,8 @@ public class ChangeUserPasswordServlet extends AbstractAuthorizablePostServlet i
         User user;
         UserManager userManager = ((JackrabbitSession)jcrSession).getUserManager();
         Authorizable authorizable = userManager.getAuthorizable(name);
-        if (authorizable instanceof User) {
-            user = (User)authorizable;
+        if (authorizable instanceof User u) {
+            user = u;
         } else {
             throw new ResourceNotFoundException(
                 "User to update could not be determined");
@@ -278,8 +278,8 @@ public class ChangeUserPasswordServlet extends AbstractAuthorizablePostServlet i
                 if (!administrator) {
                     //check if the user is a member of the 'User administrator' group
                     Authorizable userAdmin = um.getAuthorizable(this.userAdminGroupName);
-                    if (userAdmin instanceof Group) {
-                        boolean isMember = ((Group)userAdmin).isMember(currentUser);
+                    if (userAdmin instanceof Group userAdminGroup) {
+                        boolean isMember = userAdminGroup.isMember(currentUser);
                         if (isMember) {
                             administrator = true;
                         }

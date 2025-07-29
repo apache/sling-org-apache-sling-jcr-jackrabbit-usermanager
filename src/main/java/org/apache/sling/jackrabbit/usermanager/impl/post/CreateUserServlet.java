@@ -401,8 +401,8 @@ public class CreateUserServlet extends AbstractAuthorizablePostServlet implement
                     //lookup the user from the user session so we can return a live object
                     UserManager userManager2 = ((JackrabbitSession)jcrSession).getUserManager();
                     Authorizable authorizable2 = userManager2.getAuthorizable(user.getID());
-                    if (authorizable2 instanceof User) {
-                        user = (User)authorizable2;
+                    if (authorizable2 instanceof User u) {
+                        user = u;
                     } else {
                         user = null;
                     }

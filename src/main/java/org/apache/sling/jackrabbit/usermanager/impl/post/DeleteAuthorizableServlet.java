@@ -166,8 +166,8 @@ public class DeleteAuthorizableServlet extends AbstractPostServlet
         User user;
         UserManager userManager = ((JackrabbitSession)jcrSession).getUserManager();
         Authorizable authorizable = userManager.getAuthorizable(name);
-        if (authorizable instanceof User) {
-            user = (User)authorizable;
+        if (authorizable instanceof User u) {
+            user = u;
         } else {
             throw new ResourceNotFoundException(
                 "User to delete could not be determined");
@@ -189,8 +189,8 @@ public class DeleteAuthorizableServlet extends AbstractPostServlet
         Group group;
         UserManager userManager = ((JackrabbitSession)jcrSession).getUserManager();
         Authorizable authorizable = userManager.getAuthorizable(name);
-        if (authorizable instanceof Group) {
-            group = (Group)authorizable;
+        if (authorizable instanceof Group g) {
+            group = g;
         } else {
             throw new ResourceNotFoundException(
                 "Group to delete could not be determined");

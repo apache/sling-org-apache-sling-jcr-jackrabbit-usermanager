@@ -171,11 +171,14 @@ public abstract class UserManagerTestSupport extends TestSupport {
             // SLING-9809 - add server user for the o.a.s.jcr.jackrabbit.usermanager bundle
             factoryConfiguration("org.apache.sling.jcr.repoinit.RepositoryInitializer")
                 .put("scripts", new String[] {
-                        "create service user sling-jcr-usermanager with path system/sling\n" +
-                        "\n" +
-                        "set ACL for sling-jcr-usermanager\n" +
-                        "    allow jcr:read,jcr:readAccessControl,jcr:modifyAccessControl,rep:write,rep:userManagement on /home\n" +
-                        "end"})
+                        """
+                        create service user sling-jcr-usermanager with path system/sling
+
+                        set ACL for sling-jcr-usermanager
+                            allow jcr:read,jcr:readAccessControl,jcr:modifyAccessControl,rep:write,rep:userManagement on /home
+                        end
+                        """
+                    })
                 .asOption(),
             factoryConfiguration("org.apache.sling.serviceusermapping.impl.ServiceUserMapperImpl.amended")
                 .put("user.mapping", new String[]{"org.apache.sling.jcr.jackrabbit.usermanager=sling-jcr-usermanager"})
