@@ -320,6 +320,7 @@
                         <configuration>
                             <excludes>
                                 <exclude>org/apache/sling/servlets/post/impl/helper/*</exclude>
+                                <exclude>org/apache/sling/servlets/post/impl/jackrabbit/*</exclude>
                             </excludes>
                         </configuration>
                     </plugin>
