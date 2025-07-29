@@ -1,6 +1,7 @@
 
 -includeresource:\
-  @org.apache.sling.servlets.post-*.jar!/org/apache/sling/servlets/post/impl/helper/(RequestProperty*|DateParser*)
+  @org.apache.sling.servlets.post-*.jar!/org/apache/sling/servlets/post/impl/helper/(RequestProperty*|DateParser*),\
+  @org.apache.sling.servlets.post-*.jar!/org/apache/sling/servlets/post/impl/jackrabbit/ISO8601*
 
 -removeheaders:\
   Include-Resource,\

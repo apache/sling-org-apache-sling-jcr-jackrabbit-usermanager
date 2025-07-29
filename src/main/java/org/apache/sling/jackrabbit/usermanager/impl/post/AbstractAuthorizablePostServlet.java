@@ -227,18 +227,6 @@ public abstract class AbstractAuthorizablePostServlet extends
      * repository.
      * @param properties the properties out of which to generate the {@link RequestProperty}s
      * @return the list of {@link RequestProperty}s
-     * @deprecated use {@link #collectContentMap(Map)} instead since 2.2.18
-     */
-    @Deprecated
-    protected Collection<RequestProperty> collectContent(
-            Map<String, ?> properties) {
-        return collectContentMap(properties).values();
-    }
-    /**
-     * Collects the properties that form the content to be written back to the
-     * repository.
-     * @param properties the properties out of which to generate the {@link RequestProperty}s
-     * @return the list of {@link RequestProperty}s
      */
     protected Map<String, RequestProperty> collectContentMap(
             Map<String, ?> properties) {

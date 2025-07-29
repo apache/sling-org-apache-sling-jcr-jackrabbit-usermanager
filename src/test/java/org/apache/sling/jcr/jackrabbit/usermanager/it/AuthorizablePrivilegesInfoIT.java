@@ -30,6 +30,7 @@ import java.util.Collections;
 import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
 import javax.inject.Inject;
@@ -55,8 +56,6 @@ import org.apache.sling.jackrabbit.usermanager.DeleteUser;
 import org.apache.sling.jackrabbit.usermanager.UpdateGroup;
 import org.apache.sling.jackrabbit.usermanager.UpdateUser;
 import org.apache.sling.jcr.api.SlingRepository;
-import org.apache.sling.jcr.jackrabbit.accessmanager.DeleteAces;
-import org.apache.sling.jcr.jackrabbit.accessmanager.ModifyAce;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -113,12 +112,6 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
 
     @Inject
     private DeleteGroup deleteGroup;
-
-    @Inject
-    private ModifyAce modifyAce;
-
-    @Inject
-    private DeleteAces deleteAces;
 
     @Inject
     private ChangeUserPassword changeUserPassword;
@@ -190,15 +183,13 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
                     adminSession.itemExists(usersPath));
 
             // grant user1 rights
-            Map<String, String> privileges = new HashMap<>();
-            privileges.put(String.format("privilege@%s", Privilege.JCR_READ), "granted");
-            privileges.put(String.format("privilege@%s", Privilege.JCR_READ_ACCESS_CONTROL), "granted");
-            privileges.put(String.format("privilege@%s", Privilege.JCR_MODIFY_ACCESS_CONTROL), "granted");
-            privileges.put(String.format("privilege@%s", PrivilegeConstants.REP_WRITE), "granted");
-            privileges.put(String.format("privilege@%s", PrivilegeConstants.REP_USER_MANAGEMENT), "granted");
-            modifyAce.modifyAce(adminSession, usersPath, user1.getID(),
-                    privileges,
-                    "first");
+            AceTools.modifyAce(adminSession, usersPath, user1, Set.of(
+                        Privilege.JCR_READ,
+                        Privilege.JCR_READ_ACCESS_CONTROL,
+                        Privilege.JCR_MODIFY_ACCESS_CONTROL,
+                        PrivilegeConstants.REP_WRITE,
+                        PrivilegeConstants.REP_USER_MANAGEMENT
+                    ), null);
             assertTrue("Should be allowed to add user",
                     privilegesInfo.canAddUser(user1Session));
 
@@ -243,15 +234,13 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
                     adminSession.itemExists(groupsPath));
 
             // grant user1 rights
-            Map<String, String> privileges = new HashMap<>();
-            privileges.put(String.format("privilege@%s", Privilege.JCR_READ), "granted");
-            privileges.put(String.format("privilege@%s", Privilege.JCR_READ_ACCESS_CONTROL), "granted");
-            privileges.put(String.format("privilege@%s", Privilege.JCR_MODIFY_ACCESS_CONTROL), "granted");
-            privileges.put(String.format("privilege@%s", PrivilegeConstants.REP_WRITE), "granted");
-            privileges.put(String.format("privilege@%s", PrivilegeConstants.REP_USER_MANAGEMENT), "granted");
-            modifyAce.modifyAce(adminSession, groupsPath, user1.getID(),
-                    privileges,
-                    "first");
+            AceTools.modifyAce(adminSession, groupsPath, user1, Set.of(
+                        Privilege.JCR_READ,
+                        Privilege.JCR_READ_ACCESS_CONTROL,
+                        Privilege.JCR_MODIFY_ACCESS_CONTROL,
+                        PrivilegeConstants.REP_WRITE,
+                        PrivilegeConstants.REP_USER_MANAGEMENT
+                    ), null);
             assertTrue("Should be allowed to add group",
                     privilegesInfo.canAddGroup(user1Session));
 
@@ -325,14 +314,8 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
             }
 
             // start with only read rights
-            Map<String, String> privileges = new HashMap<>();
-            privileges.put(String.format("privilege@%s", Privilege.JCR_READ), "granted");
-            modifyAce.modifyAce(adminSession, user2.getPath(), user1.getID(),
-                    privileges,
-                    "first");
-            modifyAce.modifyAce(adminSession, group1.getPath(), user1.getID(),
-                    privileges,
-                    "first");
+            AceTools.modifyAce(adminSession, user2.getPath(), user1, Set.of(Privilege.JCR_READ), null);
+            AceTools.modifyAce(adminSession, group1.getPath(), user1, Set.of(Privilege.JCR_READ), null);
             for (String pid : principalIds) {
                 assertFalse("Should not be allowed to update properties for: " + pid,
                         privilegesInfo.canUpdateProperties(user1Session, pid));
@@ -393,16 +376,13 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
             }
 
             // start with only read rights
-            Map<String, String> privileges = new HashMap<>();
-            privileges.put(String.format("privilege@%s", Privilege.JCR_READ), "granted");
-            // + grant rights to only remove properties
-            privileges.put(String.format("privilege@%s", PrivilegeConstants.REP_REMOVE_PROPERTIES), "granted");
-            modifyAce.modifyAce(adminSession, user2.getPath(), user1.getID(),
-                    privileges,
-                    "first");
-            modifyAce.modifyAce(adminSession, group1.getPath(), user1.getID(),
-                    privileges,
-                    "first");
+            Set<String> grantedPrivilegeNames = Set.of(
+                        Privilege.JCR_READ,
+                        // + grant rights to only remove properties
+                        PrivilegeConstants.REP_REMOVE_PROPERTIES
+                    );
+            AceTools.modifyAce(adminSession, user2.getPath(), user1, grantedPrivilegeNames, null);
+            AceTools.modifyAce(adminSession, group1.getPath(), user1, grantedPrivilegeNames, null);
             for (String pid : principalIds) {
                 assertFalse("Should not be allowed to update properties for: " + pid,
                         privilegesInfo.canUpdateProperties(user1Session, pid));
@@ -489,16 +469,13 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
             }
 
             // start with only read rights
-            Map<String, String> privileges = new HashMap<>();
-            privileges.put(String.format("privilege@%s", Privilege.JCR_READ), "granted");
-            // + grant rights to only alter (non-nested) properties
-            privileges.put(String.format("privilege@%s", PrivilegeConstants.REP_ADD_PROPERTIES), "granted");
-            modifyAce.modifyAce(adminSession, user2.getPath(), user1.getID(),
-                    privileges,
-                    "first");
-            modifyAce.modifyAce(adminSession, group1.getPath(), user1.getID(),
-                    privileges,
-                    "first");
+            Set<String> grantedPrivilegeNames = Set.of(
+                        Privilege.JCR_READ,
+                        // + grant rights to only alter (non-nested) properties
+                        PrivilegeConstants.REP_ADD_PROPERTIES
+                    );
+            AceTools.modifyAce(adminSession, user2.getPath(), user1, grantedPrivilegeNames, null);
+            AceTools.modifyAce(adminSession, group1.getPath(), user1, grantedPrivilegeNames, null);
             for (String pid : principalIds) {
                 assertFalse("Should not be allowed to update properties for: " + pid,
                         privilegesInfo.canUpdateProperties(user1Session, pid));
@@ -584,18 +561,15 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
             }
 
             // start with only read rights
-            Map<String, String> privileges = new HashMap<>();
-            privileges.put(String.format("privilege@%s", Privilege.JCR_READ), "granted");
-            // + grant rights to alter (non-nested or nested) properties
-            privileges.put(String.format("privilege@%s", PrivilegeConstants.REP_ADD_PROPERTIES), "granted");
-            privileges.put(String.format("privilege@%s", PrivilegeConstants.REP_ALTER_PROPERTIES), "granted");
-            privileges.put(String.format("privilege@%s", Privilege.JCR_ADD_CHILD_NODES), "granted");
-            modifyAce.modifyAce(adminSession, user2.getPath(), user1.getID(),
-                    privileges,
-                    "first");
-            modifyAce.modifyAce(adminSession, group1.getPath(), user1.getID(),
-                    privileges,
-                    "first");
+            Set<String> grantedPrivilegeNames = Set.of(
+                        Privilege.JCR_READ,
+                        // + grant rights to alter (non-nested or nested) properties
+                        PrivilegeConstants.REP_ADD_PROPERTIES,
+                        PrivilegeConstants.REP_ALTER_PROPERTIES,
+                        Privilege.JCR_ADD_CHILD_NODES
+                    );
+            AceTools.modifyAce(adminSession, user2.getPath(), user1, grantedPrivilegeNames, null);
+            AceTools.modifyAce(adminSession, group1.getPath(), user1, grantedPrivilegeNames, null);
             for (String pid : principalIds) {
                 assertFalse("Should not be allowed to update properties for: " + pid,
                         privilegesInfo.canUpdateProperties(user1Session, pid));
@@ -670,19 +644,16 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
             }
 
             // start with only read rights
-            Map<String, String> privileges = new HashMap<>();
-            privileges.put(String.format("privilege@%s", Privilege.JCR_READ), "granted");
-            // + grant rights to alter (non-nested or nested) properties and remove properties
-            privileges.put(String.format("privilege@%s", PrivilegeConstants.REP_ADD_PROPERTIES), "granted");
-            privileges.put(String.format("privilege@%s", PrivilegeConstants.REP_ALTER_PROPERTIES), "granted");
-            privileges.put(String.format("privilege@%s", Privilege.JCR_ADD_CHILD_NODES), "granted");
-            privileges.put(String.format("privilege@%s", PrivilegeConstants.REP_REMOVE_PROPERTIES), "granted");
-            modifyAce.modifyAce(adminSession, user2.getPath(), user1.getID(),
-                    privileges,
-                    "first");
-            modifyAce.modifyAce(adminSession, group1.getPath(), user1.getID(),
-                    privileges,
-                    "first");
+            Set<String> grantedPrivilegeNames = Set.of(
+                        Privilege.JCR_READ,
+                        // + grant rights to alter (non-nested or nested) properties and remove properties
+                        PrivilegeConstants.REP_ADD_PROPERTIES,
+                        PrivilegeConstants.REP_ALTER_PROPERTIES,
+                        Privilege.JCR_ADD_CHILD_NODES,
+                        PrivilegeConstants.REP_REMOVE_PROPERTIES
+                    );
+            AceTools.modifyAce(adminSession, user2.getPath(), user1, grantedPrivilegeNames, null);
+            AceTools.modifyAce(adminSession, group1.getPath(), user1, grantedPrivilegeNames, null);
             for (String pid : principalIds) {
                 assertTrue("Should be allowed to update properties for: " + pid,
                         privilegesInfo.canUpdateProperties(user1Session, pid));
@@ -755,26 +726,22 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
                     privilegesInfo.canRemove(user1Session, group1.getID()));
 
             // grant user1 rights to user2 profile
-            Map<String, String> privileges = new HashMap<>();
-            privileges.put(String.format("privilege@%s", Privilege.JCR_READ), "granted");
-            modifyAce.modifyAce(adminSession, user2.getPath(), user1.getID(),
-                    privileges,
-                    "first");
-            modifyAce.modifyAce(adminSession, group1.getPath(), user1.getID(),
-                    privileges,
-                    "first");
+            AceTools.modifyAce(adminSession, user2.getPath(), user1, Set.of(Privilege.JCR_READ), null);
+            AceTools.modifyAce(adminSession, group1.getPath(), user1, Set.of(Privilege.JCR_READ), null);
             assertFalse("Should not be allowed to remove user",
                     privilegesInfo.canRemove(user1Session, user2.getID()));
             assertFalse("Should not be allowed to remove group",
                     privilegesInfo.canRemove(user1Session, group1.getID()));
 
-            privileges.put(String.format("privilege@%s", PrivilegeConstants.REP_USER_MANAGEMENT), "granted");
-            modifyAce.modifyAce(adminSession, user2.getPath(), user1.getID(),
-                    privileges,
-                    "first");
-            modifyAce.modifyAce(adminSession, group1.getPath(), user1.getID(),
-                    privileges,
-                    "first");
+            AceTools.modifyAce(adminSession, user2.getPath(), user1, Set.of(
+                    Privilege.JCR_READ,
+                    PrivilegeConstants.REP_USER_MANAGEMENT
+                    ), null);
+            AceTools.modifyAce(adminSession, group1.getPath(), user1, Set.of(
+                    Privilege.JCR_READ,
+                    PrivilegeConstants.REP_USER_MANAGEMENT
+                    ), null);
+            AceTools.modifyAce(adminSession, group1.getPath(), user1, Set.of(Privilege.JCR_READ), null);
             assertTrue("Should be allowed to remove user",
                     privilegesInfo.canRemove(user1Session, user2.getID()));
             assertTrue("Should be allowed to remove group",
@@ -824,18 +791,14 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
                     privilegesInfo.canUpdateGroupMembers(user1Session, group1.getID()));
 
             // grant user1 rights to group1 profile
-            Map<String, String> privileges = new HashMap<>();
-            privileges.put(String.format("privilege@%s", Privilege.JCR_READ), "granted");
-            modifyAce.modifyAce(adminSession, group1.getPath(), user1.getID(),
-                    privileges,
-                    "first");
+            AceTools.modifyAce(adminSession, group1.getPath(), user1, Set.of(Privilege.JCR_READ), null);
             assertFalse("Should not be allowed to update group members",
                     privilegesInfo.canUpdateGroupMembers(user1Session, group1.getID()));
 
-            privileges.put(String.format("privilege@%s", PrivilegeConstants.REP_USER_MANAGEMENT), "granted");
-            modifyAce.modifyAce(adminSession, group1.getPath(), user1.getID(),
-                    privileges,
-                    "first");
+            AceTools.modifyAce(adminSession, group1.getPath(), user1, Set.of(
+                    Privilege.JCR_READ,
+                    PrivilegeConstants.REP_USER_MANAGEMENT
+                    ), null);
             assertTrue("Should be allowed to update group members",
                     privilegesInfo.canUpdateGroupMembers(user1Session, group1.getID()));
 
@@ -860,16 +823,11 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
     protected void configMinimumUserPrivileges(User user) throws RepositoryException {
         //change the ACE for the user home folder to the minimum privileges
         // and without rep:userManagement
-        deleteAces.deleteAces(adminSession, user.getPath(), new String[] {user.getID()});
-        Map<String, String> privileges = new HashMap<>();
-        privileges.put(String.format("privilege@%s", Privilege.JCR_READ), "granted");
-        privileges.put(String.format("privilege@%s", PrivilegeConstants.REP_ALTER_PROPERTIES), "granted");
-        modifyAce.modifyAce(adminSession, user.getPath(), user.getID(),
-                privileges,
-                "first");
-        if (adminSession.hasPendingChanges()) {
-            adminSession.save();
-        }
+        AceTools.deleteAces(adminSession, user.getPath(), user);
+        AceTools.modifyAce(adminSession, user.getPath(), user, Set.of(
+                    Privilege.JCR_READ,
+                    PrivilegeConstants.REP_ALTER_PROPERTIES
+                ), null);
     }
 
     /**
@@ -899,12 +857,10 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
                     privilegesInfo.canDisable(user1Session, user2.getID()));
 
             // grant user1 rights to user2 profile
-            Map<String, String> privileges = new HashMap<>();
-            privileges.put(String.format("privilege@%s", Privilege.JCR_READ), "granted");
-            privileges.put(String.format("privilege@%s", PrivilegeConstants.REP_USER_MANAGEMENT), "granted");
-            modifyAce.modifyAce(adminSession, user2.getPath(), user1.getID(),
-                    privileges,
-                    "first");
+            AceTools.modifyAce(adminSession, user2.getPath(), user1, Set.of(
+                        Privilege.JCR_READ,
+                        PrivilegeConstants.REP_USER_MANAGEMENT
+                    ), null);
             assertTrue("Should be allowed to disable user",
                     privilegesInfo.canDisable(user1Session, user2.getID()));
 
@@ -947,12 +903,10 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
                     privilegesInfo.canChangePassword(user1Session, user2.getID()));
 
             // grant user1 rights to user2 profile
-            Map<String, String> privileges = new HashMap<>();
-            privileges.put(String.format("privilege@%s", Privilege.JCR_READ), "granted");
-            privileges.put(String.format("privilege@%s", PrivilegeConstants.REP_USER_MANAGEMENT), "granted");
-            modifyAce.modifyAce(adminSession, user2.getPath(), user1.getID(),
-                    privileges,
-                    "first");
+            AceTools.modifyAce(adminSession, user2.getPath(), user1, Set.of(
+                        Privilege.JCR_READ,
+                        PrivilegeConstants.REP_USER_MANAGEMENT
+                    ), null);
             assertTrue("Should be allowed to change the user password user",
                     privilegesInfo.canChangePassword(user1Session, user2.getID()));
 
@@ -989,11 +943,7 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
     @Test
     public void canChangePasswordForSelfWithObsoleteConfigurationKey() throws RepositoryException, IOException {
         // deny user1 rights to their own profile
-        Map<String, String> privileges = new HashMap<>();
-        privileges.put(String.format("privilege@%s", PrivilegeConstants.REP_USER_MANAGEMENT), "denied");
-        modifyAce.modifyAce(adminSession, user1.getPath(), user1.getID(),
-                privileges,
-                "first");
+        AceTools.modifyAce(adminSession, user1.getPath(), user1, null, Set.of(PrivilegeConstants.REP_USER_MANAGEMENT));
 
         // first try with the allowSelfChangePassword set to false
         org.osgi.service.cm.Configuration configuration = configAdmin.getConfiguration("org.apache.sling.jackrabbit.usermanager.impl.post.ChangeUserPasswordServlet", null);
@@ -1105,14 +1055,8 @@ public class AuthorizablePrivilegesInfoIT extends UserManagerTestSupport {
         User testuser2 = ((JackrabbitSession)adminSession).getUserManager().createUser("testuser2", "testPwd");
         Group userAdmin = createGroup.createGroup(adminSession, "UserAdmin", new HashMap<>(), new ArrayList<>());
         // grant user1 rights to user2 profile
-        Map<String, String> privileges = new HashMap<>();
-        privileges.put(String.format("privilege@%s", Privilege.JCR_READ), "granted");
-        modifyAce.modifyAce(adminSession, userAdmin.getPath(), user1.getID(),
-                privileges,
-                "first");
-        modifyAce.modifyAce(adminSession, testuser2.getPath(), user1.getID(),
-                privileges,
-                "first");
+        AceTools.modifyAce(adminSession, userAdmin.getPath(), user1, Set.of(Privilege.JCR_READ), null);
+        AceTools.modifyAce(adminSession, testuser2.getPath(), user1, Set.of(Privilege.JCR_READ), null);
         adminSession.save();
         user1Session.refresh(true);
         assertFalse(privilegesInfo.canChangePasswordWithoutOldPassword(user1Session, testuser2.getID()));

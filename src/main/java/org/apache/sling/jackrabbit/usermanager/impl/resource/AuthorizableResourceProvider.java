@@ -91,40 +91,6 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
 
     public static final String DEFAULT_SYSTEM_USER_MANAGER_PATH = "/system/userManager"; //NOSONAR
 
-    /**
-     * @deprecated no longer used.  Use {@link SystemUserManagerPaths} service instead.
-     */
-    @Deprecated
-    public static final String SYSTEM_USER_MANAGER_PATH = "/system/userManager";  //NOSONAR
-
-    /**
-     * @deprecated no longer used.  Use {@link SystemUserManagerPaths} service instead.
-     */
-    @Deprecated
-    public static final String SYSTEM_USER_MANAGER_USER_PATH = SYSTEM_USER_MANAGER_PATH //NOSONAR
-        + "/user";
-
-    /**
-     * @deprecated no longer used.  Use {@link SystemUserManagerPaths} service instead.
-     */
-    @Deprecated
-    public static final String SYSTEM_USER_MANAGER_GROUP_PATH = SYSTEM_USER_MANAGER_PATH //NOSONAR
-        + "/group";
-
-    /**
-     * @deprecated no longer used.  Use {@link SystemUserManagerPaths} service instead.
-     */
-    @Deprecated
-    public static final String SYSTEM_USER_MANAGER_USER_PREFIX = SYSTEM_USER_MANAGER_USER_PATH //NOSONAR
-        + "/";
-
-    /**
-     * @deprecated no longer used.  Use {@link SystemUserManagerPaths} service instead.
-     */
-    @Deprecated
-    public static final String SYSTEM_USER_MANAGER_GROUP_PREFIX = SYSTEM_USER_MANAGER_GROUP_PATH //NOSONAR
-        + "/";
-
     private boolean resourcesForNestedProperties = true;
 
     @Activate
