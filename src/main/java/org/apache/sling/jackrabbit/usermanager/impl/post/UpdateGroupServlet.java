@@ -102,6 +102,11 @@ property = {
            AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=yyyy-MM-dd",
            AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=dd.MM.yyyy HH:mm:ss",
            AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=dd.MM.yyyy"
+},
+reference = {
+        @Reference(name="SystemUserManagerPaths",
+                bind = "bindSystemUserManagerPaths",
+                service = SystemUserManagerPaths.class)
 })
 public class UpdateGroupServlet extends AbstractGroupPostServlet 
         implements UpdateGroup {
@@ -109,7 +114,7 @@ public class UpdateGroupServlet extends AbstractGroupPostServlet
 
     @Reference
     private transient ResourceResolverFactory resourceResolverFactory;
-    
+
     @Override
     @Activate
     protected void activate(final Map<String, Object> props) {
@@ -120,15 +125,6 @@ public class UpdateGroupServlet extends AbstractGroupPostServlet
     @Deactivate
     protected void deactivate() {
         super.deactivate();
-    }
-
-    /* (non-Javadoc)
-     * @see org.apache.sling.jackrabbit.usermanager.impl.post.AbstractAuthorizablePostServlet#bindSystemUserManagerPaths(org.apache.sling.jackrabbit.usermanager.impl.resource.SystemUserManagerPaths)
-     */
-    @Reference
-    @Override
-    protected void bindSystemUserManagerPaths(SystemUserManagerPaths sump) {
-        super.bindSystemUserManagerPaths(sump);
     }
 
     /**
@@ -151,7 +147,7 @@ public class UpdateGroupServlet extends AbstractGroupPostServlet
     protected void unbindPostResponseCreator(JakartaPostResponseCreator creator, Map<String, Object> properties) { //NOSONAR
         super.unbindPostResponseCreator(creator, properties);
     }
-    
+
     /*
      * (non-Javadoc)
      * @see

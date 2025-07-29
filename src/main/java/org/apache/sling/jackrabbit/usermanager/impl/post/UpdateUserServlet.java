@@ -22,7 +22,6 @@ import java.util.Map;
 
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
-import jakarta.servlet.Servlet;
 
 import org.apache.jackrabbit.api.JackrabbitSession;
 import org.apache.jackrabbit.api.security.user.Authorizable;
@@ -43,6 +42,8 @@ import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.annotations.ReferencePolicy;
+
+import jakarta.servlet.Servlet;
 
 /**
  * <p>
@@ -95,6 +96,11 @@ property = {
            AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=yyyy-MM-dd",
            AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=dd.MM.yyyy HH:mm:ss",
            AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=dd.MM.yyyy"
+},
+reference = {
+        @Reference(name="SystemUserManagerPaths",
+                bind = "bindSystemUserManagerPaths",
+                service = SystemUserManagerPaths.class)
 })
 public class UpdateUserServlet extends AbstractAuthorizablePostServlet
         implements UpdateUser {
@@ -113,15 +119,6 @@ public class UpdateUserServlet extends AbstractAuthorizablePostServlet
         super.deactivate();
     }
 
-    /* (non-Javadoc)
-     * @see org.apache.sling.jackrabbit.usermanager.impl.post.AbstractAuthorizablePostServlet#bindSystemUserManagerPaths(org.apache.sling.jackrabbit.usermanager.impl.resource.SystemUserManagerPaths)
-     */
-    @Reference
-    @Override
-    protected void bindSystemUserManagerPaths(SystemUserManagerPaths sump) {
-        super.bindSystemUserManagerPaths(sump);
-    }
-    
     /**
      * Overridden since the @Reference annotation is not inherited from the super method
      *  

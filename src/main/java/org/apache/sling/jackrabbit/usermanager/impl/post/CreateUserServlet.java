@@ -120,6 +120,11 @@ import jakarta.servlet.Servlet;
            AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=yyyy-MM-dd",
            AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=dd.MM.yyyy HH:mm:ss",
            AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=dd.MM.yyyy"
+},
+reference = {
+        @Reference(name="SystemUserManagerPaths",
+                bind = "bindSystemUserManagerPaths",
+                service = SystemUserManagerPaths.class)
 })
 @Designate(ocd = CreateUserServlet.Config.class)
 public class CreateUserServlet extends AbstractAuthorizablePostServlet implements CreateUser {
@@ -152,9 +157,9 @@ public class CreateUserServlet extends AbstractAuthorizablePostServlet implement
      */
     @Reference
     private transient ServiceUserMapped serviceUserMapped;
-    
+
     private String usersPath;
-    
+
     @Reference(cardinality=ReferenceCardinality.OPTIONAL, policy = ReferencePolicy.DYNAMIC)
     private void bindUserConfiguration(UserConfiguration userConfig, Map<String, Object> properties) {
         usersPath = (String)properties.get(UserConstants.PARAM_USER_PATH);
@@ -163,7 +168,7 @@ public class CreateUserServlet extends AbstractAuthorizablePostServlet implement
     private void unbindUserConfiguration(UserConfiguration userConfig, Map<String, Object> properties) {
         usersPath = null;
     }
-    
+
     /**
      * Returns an administrative session to the default workspace.
      */
@@ -222,15 +227,6 @@ public class CreateUserServlet extends AbstractAuthorizablePostServlet implement
     @Override
     protected void unbindPrincipalNameFilter(PrincipalNameFilter filter) { // NOSONAR
         super.unbindPrincipalNameFilter(filter);
-    }
-
-    /* (non-Javadoc)
-     * @see org.apache.sling.jackrabbit.usermanager.impl.post.AbstractAuthorizablePostServlet#bindSystemUserManagerPaths(org.apache.sling.jackrabbit.usermanager.impl.resource.SystemUserManagerPaths)
-     */
-    @Reference
-    @Override
-    protected void bindSystemUserManagerPaths(SystemUserManagerPaths sump) {
-        super.bindSystemUserManagerPaths(sump);
     }
 
     /**

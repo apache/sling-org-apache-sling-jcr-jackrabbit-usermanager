@@ -108,6 +108,11 @@ import jakarta.servlet.Servlet;
                    AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=yyyy-MM-dd",
                    AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=dd.MM.yyyy HH:mm:ss",
                    AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=dd.MM.yyyy"
+           },
+           reference = {
+                   @Reference(name="SystemUserManagerPaths",
+                           bind = "bindSystemUserManagerPaths",
+                           service = SystemUserManagerPaths.class)
            })
 @Designate(ocd=ChangeUserPasswordServlet.Config.class)
 public class ChangeUserPasswordServlet extends AbstractAuthorizablePostServlet implements ChangeUserPassword {
@@ -190,15 +195,6 @@ public class ChangeUserPasswordServlet extends AbstractAuthorizablePostServlet i
         super.deactivate();
     }
 
-    /* (non-Javadoc)
-     * @see org.apache.sling.jackrabbit.usermanager.impl.post.AbstractAuthorizablePostServlet#bindSystemUserManagerPaths(org.apache.sling.jackrabbit.usermanager.impl.resource.SystemUserManagerPaths)
-     */
-    @Reference
-    @Override
-    protected void bindSystemUserManagerPaths(SystemUserManagerPaths sump) {
-        super.bindSystemUserManagerPaths(sump);
-    }
-    
     /**
      * Overridden since the @Reference annotation is not inherited from the super method
      *  

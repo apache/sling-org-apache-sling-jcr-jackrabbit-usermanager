@@ -112,6 +112,11 @@ property = {
            AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=yyyy-MM-dd",
            AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=dd.MM.yyyy HH:mm:ss",
            AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=dd.MM.yyyy"
+},
+reference = {
+        @Reference(name="SystemUserManagerPaths",
+                bind = "bindSystemUserManagerPaths",
+                service = SystemUserManagerPaths.class)
 })
 public class CreateGroupServlet extends AbstractGroupPostServlet implements CreateGroup {
     private static final long serialVersionUID = -1084915263933901466L;
@@ -154,15 +159,6 @@ public class CreateGroupServlet extends AbstractGroupPostServlet implements Crea
     @Override
     protected void unbindPrincipalNameFilter(PrincipalNameFilter filter) { // NOSONAR
         super.unbindPrincipalNameFilter(filter);
-    }
-
-    /* (non-Javadoc)
-     * @see org.apache.sling.jackrabbit.usermanager.impl.post.AbstractAuthorizablePostServlet#bindSystemUserManagerPaths(org.apache.sling.jackrabbit.usermanager.impl.resource.SystemUserManagerPaths)
-     */
-    @Reference
-    @Override
-    protected void bindSystemUserManagerPaths(SystemUserManagerPaths sump) {
-        super.bindSystemUserManagerPaths(sump);
     }
 
     /**
