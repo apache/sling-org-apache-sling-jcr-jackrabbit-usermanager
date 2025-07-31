@@ -208,6 +208,12 @@
           <version>4.1.2</version>
           <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.apache.sling</groupId>
+            <artifactId>org.apache.sling.testing.sling-mock.junit4</artifactId>
+            <version>3.5.4</version>
+            <scope>test</scope>
+        </dependency>
 
         <!-- an OSGi framework -->
         <dependency>
@@ -222,6 +228,12 @@
           <groupId>junit</groupId>
           <artifactId>junit</artifactId>
           <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>5.11.0</version>
+            <scope>test</scope>
         </dependency>
 
         <!-- Pax Exam -->
@@ -306,6 +318,13 @@
             <groupId>jakarta.json</groupId>
             <artifactId>jakarta.json-api</artifactId>
             <version>2.1.1</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.felix</groupId>
+            <artifactId>org.apache.felix.http.wrappers</artifactId>
+            <version>1.1.10</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

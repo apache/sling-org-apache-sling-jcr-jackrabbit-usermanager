@@ -25,6 +25,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 import javax.jcr.AccessDeniedException;
@@ -132,7 +133,7 @@ public abstract class AbstractAuthorizablePostServlet extends
         this.principalNameFilter = filter;
     }
     protected void unbindPrincipalNameFilter(final PrincipalNameFilter filter) {
-        if (filter != null && filter.equals(this.principalNameFilter)) {
+        if (Objects.equals(filter, this.principalNameFilter)) {
             this.principalNameFilter = null;
         }
     }
@@ -472,14 +473,14 @@ public abstract class AbstractAuthorizablePostServlet extends
                                 // don't allow changing the primaryType of the user home root
                                 throw new AccessDeniedException("Access denied.");
                             } else {
-                                final String nodeType = prop == null ? null : prop.getStringValues()[0];
+                                final String nodeType = prop.getStringValues()[0];
                                 if (nodeType != null && !node.isNodeType(nodeType)) {
                                     node.setPrimaryType(nodeType);
                                     changes.add(Modification.onModified(concatPath(node.getPath(), propName)));
                                 }
                             }
                         } else if (JcrConstants.JCR_MIXINTYPES.equals(propName)) {
-                            String[] mixins = (prop == null) || !prop.hasValues() ? null : prop.getStringValues();
+                            String[] mixins = !prop.hasValues() ? null : prop.getStringValues();
                             if (mixins != null) {
                                 for (final String mixin : mixins) {
                                     if (!node.isNodeType(mixin)) {
