@@ -165,11 +165,11 @@ public abstract class BaseAuthorizableValueMap implements ValueMap {
                 return value.getDouble();
             case PropertyType.LONG:
                 return value.getLong();
-            case PropertyType.NAME: // fall through
-            case PropertyType.PATH: // fall through
-            case PropertyType.REFERENCE: // fall through
-            case PropertyType.STRING: // fall through
-            case PropertyType.UNDEFINED: // not actually expected
+            case PropertyType.NAME, // fall through
+                PropertyType.PATH, // fall through
+                PropertyType.REFERENCE, // fall through
+                PropertyType.STRING, // fall through
+                PropertyType.UNDEFINED: // not actually expected
             default: // not actually expected
                 return value.getString();
         }

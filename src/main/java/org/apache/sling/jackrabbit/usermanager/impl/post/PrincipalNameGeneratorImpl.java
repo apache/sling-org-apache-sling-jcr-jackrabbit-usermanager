@@ -110,13 +110,13 @@ public class PrincipalNameGeneratorImpl implements PrincipalNameGenerator {
      */
     protected @NotNull List<String> valueToList(Object value) {
         final List<String> valuesList;
-        if (value instanceof String[]) {
-            valuesList = Arrays.asList((String[])value);
-        } else if (value instanceof String) {
-            valuesList = Collections.singletonList((String)value);
-        } else if (value instanceof RequestParameter[]) {
+        if (value instanceof String[] strValues) {
+            valuesList = Arrays.asList(strValues);
+        } else if (value instanceof String strValue) {
+            valuesList = Collections.singletonList(strValue);
+        } else if (value instanceof RequestParameter[] rpValues) {
             valuesList = new ArrayList<>();
-            for (RequestParameter rp : (RequestParameter[])value) {
+            for (RequestParameter rp : rpValues) {
                 valuesList.add(rp.getString());
             }
         } else {

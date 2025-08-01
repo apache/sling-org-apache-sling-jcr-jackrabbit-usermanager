@@ -24,6 +24,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.jackrabbit.oak.spi.security.user.AuthorizableType;
@@ -247,4 +248,15 @@ public class PrincipalNameGeneratorImplTest {
         NameInfo nameInfo = generator.getPrincipalName(parameters, type, filter, defaultGenerator);
         assertNull(nameInfo);
     }
+
+    @Test
+    public void testValueToList() {
+        PrincipalNameGeneratorImpl generator = new PrincipalNameGeneratorImpl();
+        assertEquals(List.of("value"), generator.valueToList("value"));
+        assertEquals(List.of("value1", "value2"), generator.valueToList(new String[] {"value1", "value2"}));
+        assertEquals(List.of("value1", "value2"), generator.valueToList(new RequestParameter[] {
+                Builders.newRequestParameter("key1", "value1"), Builders.newRequestParameter("key1", "value2")}));
+        assertEquals(List.of(), generator.valueToList(new Object()));
+    }
+
 }
