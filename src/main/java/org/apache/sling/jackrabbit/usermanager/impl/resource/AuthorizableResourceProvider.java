@@ -1,20 +1,25 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 package org.apache.sling.jackrabbit.usermanager.impl.resource;
+
+import javax.jcr.RepositoryException;
+import javax.jcr.Session;
 
 import java.security.Principal;
 import java.util.ArrayList;
@@ -22,9 +27,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
-
-import javax.jcr.RepositoryException;
-import javax.jcr.Session;
 
 import org.apache.jackrabbit.api.JackrabbitSession;
 import org.apache.jackrabbit.api.security.principal.GroupPrincipal;
@@ -56,26 +58,30 @@ import org.slf4j.LoggerFactory;
 /**
  * Resource Provider implementation for jackrabbit UserManager resources.
  */
-@Component(service = { ResourceProvider.class, SystemUserManagerPaths.class },
-    property={
+@Component(
+        service = {ResourceProvider.class, SystemUserManagerPaths.class},
+        property = {
             "service.description=Resource provider implementation for UserManager resources",
             "service.vendor=The Apache Software Foundation",
             ResourceProvider.PROPERTY_ROOT + "=" + AuthorizableResourceProvider.DEFAULT_SYSTEM_USER_MANAGER_PATH
-    })
-@Designate(ocd=AuthorizableResourceProvider.Config.class)
+        })
+@Designate(ocd = AuthorizableResourceProvider.Config.class)
 public class AuthorizableResourceProvider extends ResourceProvider<Object> implements SystemUserManagerPaths {
 
-    @ObjectClassDefinition(name ="Apache Sling UserManager Resource Provider")
+    @ObjectClassDefinition(name = "Apache Sling UserManager Resource Provider")
     public @interface Config {
 
-        @AttributeDefinition(name = "Provider Root",
+        @AttributeDefinition(
+                name = "Provider Root",
                 description = "Specifies the root path for the UserManager resources.")
-        String provider_root() default DEFAULT_SYSTEM_USER_MANAGER_PATH; //NOSONAR
+        String provider_root() default DEFAULT_SYSTEM_USER_MANAGER_PATH; // NOSONAR
 
-        @AttributeDefinition(name = "Provide Resources For Nested Properties",
-                description = "Specifies whether container resources are provided for any nested authorizable properties. "
-                        + "The resourceType for these ancestor resources would be 'sling/[user|group]/properties'")
-        boolean resources_for_nested_properties() default false; //NOSONAR
+        @AttributeDefinition(
+                name = "Provide Resources For Nested Properties",
+                description =
+                        "Specifies whether container resources are provided for any nested authorizable properties. "
+                                + "The resourceType for these ancestor resources would be 'sling/[user|group]/properties'")
+        boolean resources_for_nested_properties() default false; // NOSONAR
     }
 
     /**
@@ -89,7 +95,7 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
     private String systemUserManagerGroupPath;
     private String systemUserManagerGroupPrefix;
 
-    public static final String DEFAULT_SYSTEM_USER_MANAGER_PATH = "/system/userManager"; //NOSONAR
+    public static final String DEFAULT_SYSTEM_USER_MANAGER_PATH = "/system/userManager"; // NOSONAR
 
     private boolean resourcesForNestedProperties = true;
 
@@ -102,7 +108,7 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
         systemUserManagerGroupPrefix = String.format("%s/", systemUserManagerGroupPath);
         resourcesForNestedProperties = config.resources_for_nested_properties();
     }
-    
+
     /* (non-Javadoc)
      * @see org.apache.sling.jackrabbit.usermanager.impl.resource.SystemUserManagerPaths#getPath()
      */
@@ -144,15 +150,12 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
     }
 
     @Override
-    public Resource getResource(ResolveContext<Object> ctx,
-            String path,
-            ResourceContext resourceContext,
-            Resource parent) {
+    public Resource getResource(
+            ResolveContext<Object> ctx, String path, ResourceContext resourceContext, Resource parent) {
 
         // handle resources for the virtual container resources
         if (path.equals(systemUserManagerPath)) {
-            return new SyntheticResource(ctx.getResourceResolver(), path,
-                "sling/userManager");
+            return new SyntheticResource(ctx.getResourceResolver(), path, "sling/userManager");
         } else if (path.equals(systemUserManagerUserPath)) {
             return new SyntheticResource(ctx.getResourceResolver(), path, "sling/users");
         } else if (path.equals(systemUserManagerGroupPath)) {
@@ -164,26 +167,23 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
             // found the Authorizable, so return the resource
             // that wraps it.
             if (relPath == null) {
-                result = new AuthorizableResource(authorizable,
-                                    ctx.getResourceResolver(), path,
-                                    AuthorizableResourceProvider.this);
+                result = new AuthorizableResource(
+                        authorizable, ctx.getResourceResolver(), path, AuthorizableResourceProvider.this);
             } else if (resourcesForNestedProperties) {
                 // check if the relPath resolves valid property names
                 Iterator<String> propertyNames = getPropertyNames(relPath, authorizable);
                 if (propertyNames.hasNext()) {
                     // provide a resource that wraps for the specific nested properties
-                    result = new NestedAuthorizableResource(authorizable,
-                                        ctx.getResourceResolver(), path,
-                                        AuthorizableResourceProvider.this,
-                                        relPath);
+                    result = new NestedAuthorizableResource(
+                            authorizable, ctx.getResourceResolver(), path, AuthorizableResourceProvider.this, relPath);
                 }
             }
             return result;
         };
         // found the Principal, so return the resource
         // that wraps it.
-        PrincipalWorker<Resource> principalWorker = principal -> new PrincipalResource(principal,
-                ctx.getResourceResolver(), path);
+        PrincipalWorker<Resource> principalWorker =
+                principal -> new PrincipalResource(principal, ctx.getResourceResolver(), path);
         return maybeDoAuthorizableWork(ctx, path, authorizableWorker, principalWorker);
     }
 
@@ -191,8 +191,11 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
      * If the path resolves to a user or group (with optional relPath suffix)
      * then invoke the worker to do some work.
      */
-    protected <T> T maybeDoAuthorizableWork(@NotNull ResolveContext<Object> ctx, @NotNull String path, 
-            @NotNull AuthorizableWorker<T> authorizableWorker, @Nullable PrincipalWorker<T> principalWorker) {
+    protected <T> T maybeDoAuthorizableWork(
+            @NotNull ResolveContext<Object> ctx,
+            @NotNull String path,
+            @NotNull AuthorizableWorker<T> authorizableWorker,
+            @Nullable PrincipalWorker<T> principalWorker) {
         T result = null;
         // the principalId should be the first segment after the prefix
         String suffix = null;
@@ -219,19 +222,18 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
             Session session = ctx.getResourceResolver().adaptTo(Session.class);
             if (session != null) {
                 try {
-                    UserManager userManager = ((JackrabbitSession)session).getUserManager();
+                    UserManager userManager = ((JackrabbitSession) session).getUserManager();
                     if (userManager != null) {
                         Authorizable authorizable = userManager.getAuthorizable(pid);
                         if (authorizable != null) {
                             if (expectedAuthorizableClass.isInstance(authorizable)) { // SLING-12185
                                 result = authorizableWorker.doWork(authorizable, relPath);
                             }
-                        } else if (principalWorker != null && relPath == null){
+                        } else if (principalWorker != null && relPath == null) {
                             // SLING-11098 check for a principal that is not an authorizable like the everyone group
-                            PrincipalManager principalManager = ((JackrabbitSession)session).getPrincipalManager();
+                            PrincipalManager principalManager = ((JackrabbitSession) session).getPrincipalManager();
                             if (principalManager != null) {
-                                @Nullable
-                                Principal principal = principalManager.getPrincipal(pid);
+                                @Nullable Principal principal = principalManager.getPrincipal(pid);
                                 if (principal != null) {
                                     result = principalWorker.doWork(principal);
                                 }
@@ -239,8 +241,7 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
                         }
                     }
                 } catch (RepositoryException re) {
-                    throw new SlingException(
-                        "Error looking up Authorizable for principal: " + pid, re);
+                    throw new SlingException("Error looking up Authorizable for principal: " + pid, re);
                 }
             }
         }
@@ -272,10 +273,8 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
             // handle children of /system/userManager
             if (systemUserManagerPath.equals(path)) {
                 List<Resource> resources = new ArrayList<>();
-                resources.add(getResource(ctx,
-                        systemUserManagerUserPath, null, null));
-                    resources.add(getResource(ctx,
-                        systemUserManagerGroupPath, null, null));
+                resources.add(getResource(ctx, systemUserManagerUserPath, null, null));
+                resources.add(getResource(ctx, systemUserManagerGroupPath, null, null));
                 return resources.iterator();
             }
 
@@ -290,7 +289,7 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
                 ResourceResolver resourceResolver = parent.getResourceResolver();
                 Session session = resourceResolver.adaptTo(Session.class);
                 if (session != null) {
-                    PrincipalManager principalManager = ((JackrabbitSession)session).getPrincipalManager();
+                    PrincipalManager principalManager = ((JackrabbitSession) session).getPrincipalManager();
                     principals = principalManager.getPrincipals(searchType);
                 }
 
@@ -310,7 +309,10 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
                         // only include the children that are nested property containers
                         List<Resource> propContainers = filterPropertyContainers(relPath, authorizable, r);
                         if (!propContainers.isEmpty()) {
-                            result = new NestedChildrenIterator(parent, authorizable.getID(), r.getChildren().iterator());
+                            result = new NestedChildrenIterator(
+                                    parent,
+                                    authorizable.getID(),
+                                    r.getChildren().iterator());
                         }
                     }
                     return result;
@@ -318,8 +320,7 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
                 return maybeDoAuthorizableWork(ctx, path, authorizableWorker, null);
             }
         } catch (RepositoryException re) {
-            throw new SlingException("Error listing children of resource: "
-                + parent.getPath(), re);
+            throw new SlingException("Error listing children of resource: " + parent.getPath(), re);
         }
 
         return null;
@@ -328,7 +329,7 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
     /**
      * Filter the resource children to return only the resources that are
      * nested property containers
-     * 
+     *
      * @param relPath the relative path to start from
      * @param authorizable the user or group
      * @param r the resource to filter the children of
@@ -385,26 +386,24 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
                     next = createNext(child, principalName, resourceResolver, session);
                 }
             } catch (RepositoryException re) {
-                log.error("Exception while looking up authorizable resource.",
-                    re);
+                log.error("Exception while looking up authorizable resource.", re);
             }
             return next;
         }
 
-        protected @Nullable Resource createNext(Object child, String principalName,
-                ResourceResolver resourceResolver, Session session) throws RepositoryException {
+        protected @Nullable Resource createNext(
+                Object child, String principalName, ResourceResolver resourceResolver, Session session)
+                throws RepositoryException {
             Resource next = null;
-            UserManager userManager = ((JackrabbitSession)session).getUserManager();
+            UserManager userManager = ((JackrabbitSession) session).getUserManager();
             if (userManager != null) {
                 Authorizable authorizable = userManager.getAuthorizable(principalName);
                 if (authorizable != null) {
                     String path;
                     if (authorizable.isGroup()) {
-                        path = systemUserManagerGroupPrefix
-                            + principalName;
+                        path = systemUserManagerGroupPrefix + principalName;
                     } else {
-                        path = systemUserManagerUserPrefix
-                            + principalName;
+                        path = systemUserManagerUserPrefix + principalName;
                     }
                     next = createNext(child, resourceResolver, authorizable, path);
                 }
@@ -414,9 +413,9 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
 
         protected abstract String toPrincipalName(Object child);
 
-        protected abstract Resource createNext(Object child, ResourceResolver resourceResolver,
-                Authorizable authorizable, String path) throws RepositoryException; 
-
+        protected abstract Resource createNext(
+                Object child, ResourceResolver resourceResolver, Authorizable authorizable, String path)
+                throws RepositoryException;
     }
 
     private final class NestedChildrenIterator extends BaseChildrenIterator {
@@ -434,25 +433,28 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
         }
 
         @Override
-        protected Resource createNext(Object child, ResourceResolver resourceResolver, Authorizable authorizable,
-                String path) throws RepositoryException {
+        protected Resource createNext(
+                Object child, ResourceResolver resourceResolver, Authorizable authorizable, String path)
+                throws RepositoryException {
             Resource next = null;
             if (child instanceof Resource childResource) {
-                //calculate the path relative to the home folder root
-                String relPath = childResource.getPath().substring(authorizable.getPath().length() + 1);
+                // calculate the path relative to the home folder root
+                String relPath =
+                        childResource.getPath().substring(authorizable.getPath().length() + 1);
 
                 // check if the relPath resolves any valid property names
                 Iterator<String> propertyNames = getPropertyNames(relPath, authorizable);
                 if (propertyNames.hasNext()) {
-                    next = new NestedAuthorizableResource(authorizable,
-                            resourceResolver, String.format("%s/%s", path, relPath),
+                    next = new NestedAuthorizableResource(
+                            authorizable,
+                            resourceResolver,
+                            String.format("%s/%s", path, relPath),
                             AuthorizableResourceProvider.this,
                             relPath);
                 }
             }
             return next;
         }
-
     }
 
     private final class ChildrenIterator extends BaseChildrenIterator {
@@ -471,27 +473,23 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
         }
 
         @Override
-        protected @Nullable Resource createNext(Object child, String principalName, ResourceResolver resourceResolver,
-                Session session) throws RepositoryException {
-            @Nullable
-            Resource next = super.createNext(child, principalName, resourceResolver, session);
+        protected @Nullable Resource createNext(
+                Object child, String principalName, ResourceResolver resourceResolver, Session session)
+                throws RepositoryException {
+            @Nullable Resource next = super.createNext(child, principalName, resourceResolver, session);
             if (next == null) {
                 // SLING-11098 check for principal that is not authorizable
-                PrincipalManager principalManager = ((JackrabbitSession)session).getPrincipalManager();
+                PrincipalManager principalManager = ((JackrabbitSession) session).getPrincipalManager();
                 if (principalManager != null) {
-                    @Nullable
-                    Principal principal = principalManager.getPrincipal(principalName);
+                    @Nullable Principal principal = principalManager.getPrincipal(principalName);
                     if (principal != null) {
                         String path;
                         if (principal instanceof GroupPrincipal) {
-                            path = systemUserManagerGroupPrefix
-                                + principalName;
+                            path = systemUserManagerGroupPrefix + principalName;
                         } else {
-                            path = systemUserManagerUserPrefix
-                                + principalName;
+                            path = systemUserManagerUserPrefix + principalName;
                         }
-                        return new PrincipalResource(principal,
-                                resourceResolver, path);
+                        return new PrincipalResource(principal, resourceResolver, path);
                     }
                 }
             }
@@ -499,13 +497,11 @@ public class AuthorizableResourceProvider extends ResourceProvider<Object> imple
         }
 
         @Override
-        protected Resource createNext(Object child, ResourceResolver resourceResolver, Authorizable authorizable,
-                String path) throws RepositoryException {
-            return new AuthorizableResource(authorizable,
-                    resourceResolver, path,
-                    AuthorizableResourceProvider.this);
+        protected Resource createNext(
+                Object child, ResourceResolver resourceResolver, Authorizable authorizable, String path)
+                throws RepositoryException {
+            return new AuthorizableResource(authorizable, resourceResolver, path, AuthorizableResourceProvider.this);
         }
-
     }
 
     /**

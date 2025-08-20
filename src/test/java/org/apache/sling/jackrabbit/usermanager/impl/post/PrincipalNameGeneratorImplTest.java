@@ -1,26 +1,22 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 package org.apache.sling.jackrabbit.usermanager.impl.post;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -40,6 +36,12 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+
 @RunWith(Parameterized.class)
 public class PrincipalNameGeneratorImplTest {
 
@@ -57,16 +59,15 @@ public class PrincipalNameGeneratorImplTest {
 
     /**
      * Helper to reduce code duplication
-     * 
+     *
      * @param map the map to add to
      * @param paramName the parameter name
      * @param paramValue the parameter value
      * @return
      */
-    private static RequestParameter[] addParam(Map<String, RequestParameter[]> map, String paramName, String paramValue) {
-        return map.put(paramName, new RequestParameter[] {
-                Builders.newRequestParameter(paramName, paramValue)
-        });
+    private static RequestParameter[] addParam(
+            Map<String, RequestParameter[]> map, String paramName, String paramValue) {
+        return map.put(paramName, new RequestParameter[] {Builders.newRequestParameter(paramName, paramValue)});
     }
 
     @Test
@@ -123,7 +124,10 @@ public class PrincipalNameGeneratorImplTest {
         PrincipalNameFilter filter = null;
         Map<String, RequestParameter[]> parameters = new HashMap<>();
         addParam(parameters, "displayName", "name1");
-        addParam(parameters, String.format("%s%s", SlingPostConstants.RP_NODE_NAME, SlingPostConstants.VALUE_FROM_SUFFIX), "displayName");
+        addParam(
+                parameters,
+                String.format("%s%s", SlingPostConstants.RP_NODE_NAME, SlingPostConstants.VALUE_FROM_SUFFIX),
+                "displayName");
         NameInfo nameInfo = generator.getPrincipalName(parameters, type, filter, defaultGenerator);
         assertNotNull(nameInfo);
         assertEquals("name1", nameInfo.getPrincipalName());
@@ -136,7 +140,10 @@ public class PrincipalNameGeneratorImplTest {
         PrincipalNameFilter filter = null;
         Map<String, RequestParameter[]> parameters = new HashMap<>();
         addParam(parameters, "displayName", "namethatistoolong123456789");
-        addParam(parameters, String.format("%s%s", SlingPostConstants.RP_NODE_NAME, SlingPostConstants.VALUE_FROM_SUFFIX), "displayName");
+        addParam(
+                parameters,
+                String.format("%s%s", SlingPostConstants.RP_NODE_NAME, SlingPostConstants.VALUE_FROM_SUFFIX),
+                "displayName");
         NameInfo nameInfo = generator.getPrincipalName(parameters, type, filter, defaultGenerator);
         assertNotNull(nameInfo);
         assertEquals("namethatistoolong123456789", nameInfo.getPrincipalName());
@@ -149,7 +156,10 @@ public class PrincipalNameGeneratorImplTest {
         PrincipalNameFilter filter = new CustomPrincipalNameFilterImpl();
         Map<String, RequestParameter[]> parameters = new HashMap<>();
         addParam(parameters, "displayName", "Na me1");
-        addParam(parameters, String.format("%s%s", SlingPostConstants.RP_NODE_NAME, SlingPostConstants.VALUE_FROM_SUFFIX), "displayName");
+        addParam(
+                parameters,
+                String.format("%s%s", SlingPostConstants.RP_NODE_NAME, SlingPostConstants.VALUE_FROM_SUFFIX),
+                "displayName");
         NameInfo nameInfo = generator.getPrincipalName(parameters, type, filter, defaultGenerator);
         assertNotNull(nameInfo);
         assertEquals("Na me1", nameInfo.getPrincipalName());
@@ -162,7 +172,10 @@ public class PrincipalNameGeneratorImplTest {
         PrincipalNameFilter filter = null;
         Map<String, RequestParameter[]> parameters = new HashMap<>();
         addParam(parameters, "displayName", "name1");
-        addParam(parameters, String.format("%s%s", SlingPostConstants.RP_NODE_NAME_HINT, SlingPostConstants.VALUE_FROM_SUFFIX), "displayName");
+        addParam(
+                parameters,
+                String.format("%s%s", SlingPostConstants.RP_NODE_NAME_HINT, SlingPostConstants.VALUE_FROM_SUFFIX),
+                "displayName");
         NameInfo nameInfo = generator.getPrincipalName(parameters, type, filter, defaultGenerator);
         assertNotNull(nameInfo);
         assertEquals("name1", nameInfo.getPrincipalName());
@@ -175,7 +188,10 @@ public class PrincipalNameGeneratorImplTest {
         PrincipalNameFilter filter = null;
         Map<String, RequestParameter[]> parameters = new HashMap<>();
         addParam(parameters, "displayName", "namethatistoolong123456789");
-        addParam(parameters, String.format("%s%s", SlingPostConstants.RP_NODE_NAME_HINT, SlingPostConstants.VALUE_FROM_SUFFIX), "displayName");
+        addParam(
+                parameters,
+                String.format("%s%s", SlingPostConstants.RP_NODE_NAME_HINT, SlingPostConstants.VALUE_FROM_SUFFIX),
+                "displayName");
         NameInfo nameInfo = generator.getPrincipalName(parameters, type, filter, defaultGenerator);
         assertNotNull(nameInfo);
         assertEquals("namethatistoolong123", nameInfo.getPrincipalName());
@@ -188,7 +204,10 @@ public class PrincipalNameGeneratorImplTest {
         PrincipalNameFilter filter = new CustomPrincipalNameFilterImpl();
         Map<String, RequestParameter[]> parameters = new HashMap<>();
         addParam(parameters, "displayName", "Na me1");
-        addParam(parameters, String.format("%s%s", SlingPostConstants.RP_NODE_NAME_HINT, SlingPostConstants.VALUE_FROM_SUFFIX), "displayName");
+        addParam(
+                parameters,
+                String.format("%s%s", SlingPostConstants.RP_NODE_NAME_HINT, SlingPostConstants.VALUE_FROM_SUFFIX),
+                "displayName");
         NameInfo nameInfo = generator.getPrincipalName(parameters, type, filter, defaultGenerator);
         assertNotNull(nameInfo);
         assertEquals("na_me1", nameInfo.getPrincipalName());
@@ -197,10 +216,7 @@ public class PrincipalNameGeneratorImplTest {
 
     @Test
     public void testPrincipalNameFromConfiguredHint() {
-        PrincipalNameGenerator generator = new PrincipalNameGeneratorImpl(new String[] {
-                    "displayName2"
-            },
-            10);
+        PrincipalNameGenerator generator = new PrincipalNameGeneratorImpl(new String[] {"displayName2"}, 10);
         PrincipalNameFilter filter = null;
         Map<String, RequestParameter[]> parameters = new HashMap<>();
         addParam(parameters, "displayName2", "name1");
@@ -212,10 +228,7 @@ public class PrincipalNameGeneratorImplTest {
 
     @Test
     public void testPrincipalNameFromConfiguredHintWithFilter() {
-        PrincipalNameGenerator generator = new PrincipalNameGeneratorImpl(new String[] {
-                    "displayName2"
-            },
-            10);
+        PrincipalNameGenerator generator = new PrincipalNameGeneratorImpl(new String[] {"displayName2"}, 10);
         PrincipalNameFilter filter = new CustomPrincipalNameFilterImpl();
         Map<String, RequestParameter[]> parameters = new HashMap<>();
         addParam(parameters, "displayName2", "Na me1");
@@ -227,10 +240,7 @@ public class PrincipalNameGeneratorImplTest {
 
     @Test
     public void testPrincipalNameFromConfiguredHintTooLong() {
-        PrincipalNameGenerator generator = new PrincipalNameGeneratorImpl(new String[] {
-                    "displayName2"
-            },
-            10);
+        PrincipalNameGenerator generator = new PrincipalNameGeneratorImpl(new String[] {"displayName2"}, 10);
         PrincipalNameFilter filter = null;
         Map<String, RequestParameter[]> parameters = new HashMap<>();
         addParam(parameters, "displayName2", "namethatistoolong");
@@ -255,8 +265,8 @@ public class PrincipalNameGeneratorImplTest {
         assertEquals(List.of("value"), generator.valueToList("value"));
         assertEquals(List.of("value1", "value2"), generator.valueToList(new String[] {"value1", "value2"}));
         assertEquals(List.of("value1", "value2"), generator.valueToList(new RequestParameter[] {
-                Builders.newRequestParameter("key1", "value1"), Builders.newRequestParameter("key1", "value2")}));
+            Builders.newRequestParameter("key1", "value1"), Builders.newRequestParameter("key1", "value2")
+        }));
         assertEquals(List.of(), generator.valueToList(new Object()));
     }
-
 }

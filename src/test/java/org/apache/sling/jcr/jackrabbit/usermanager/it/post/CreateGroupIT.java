@@ -1,30 +1,30 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 package org.apache.sling.jcr.jackrabbit.usermanager.it.post;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import jakarta.json.JsonException;
+import jakarta.json.JsonObject;
+import jakarta.servlet.http.HttpServletResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.auth.Credentials;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -36,9 +36,10 @@ import org.ops4j.pax.exam.junit.PaxExam;
 import org.ops4j.pax.exam.spi.reactors.ExamReactorStrategy;
 import org.ops4j.pax.exam.spi.reactors.PerClass;
 
-import jakarta.json.JsonException;
-import jakarta.json.JsonObject;
-import jakarta.servlet.http.HttpServletResponse;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests for the 'createGroup' Sling Post Operation
@@ -57,7 +58,7 @@ public class CreateGroupIT extends UserManagerClientTestSupport {
         postParams.add(new BasicNameValuePair("marker", testGroupId));
         assertAuthenticatedAdminPostStatus(postUrl, HttpServletResponse.SC_OK, postParams, null);
 
-        //fetch the group profile json to verify the settings
+        // fetch the group profile json to verify the settings
         String getUrl = String.format("%s/system/userManager/group/%s.json", baseServerUri, testGroupId);
         Credentials creds = new UsernamePasswordCredentials("admin", "admin");
         String json = getAuthenticatedContent(creds, getUrl, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
@@ -95,7 +96,7 @@ public class CreateGroupIT extends UserManagerClientTestSupport {
         postParams.add(new BasicNameValuePair("marker", testGroupId));
         assertAuthenticatedPostStatus(creds, postUrl, HttpServletResponse.SC_OK, postParams, null);
 
-        //fetch the group profile json to verify the settings
+        // fetch the group profile json to verify the settings
         String getUrl = String.format("%s/system/userManager/group/%s.json", baseServerUri, testGroupId);
         String json = getAuthenticatedContent(creds, getUrl, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
         assertNotNull(json);
@@ -117,8 +118,9 @@ public class CreateGroupIT extends UserManagerClientTestSupport {
         postParams.add(new BasicNameValuePair("marker", testGroupId));
 
         Credentials creds = new UsernamePasswordCredentials("admin", "admin");
-        String content = getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_HTML, postParams, HttpServletResponse.SC_OK);
-        assertEquals("Thanks!", content); //verify that the content matches the custom response
+        String content =
+                getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_HTML, postParams, HttpServletResponse.SC_OK);
+        assertEquals("Thanks!", content); // verify that the content matches the custom response
     }
 
     @Test
@@ -138,7 +140,7 @@ public class CreateGroupIT extends UserManagerClientTestSupport {
         postParams.add(new BasicNameValuePair(":name", testGroupId));
         assertAuthenticatedAdminPostStatus(postUrl, HttpServletResponse.SC_OK, postParams, null);
 
-        //post the same info again, should fail
+        // post the same info again, should fail
         assertAuthenticatedAdminPostStatus(postUrl, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, postParams, null);
     }
 
@@ -154,7 +156,7 @@ public class CreateGroupIT extends UserManagerClientTestSupport {
         postParams.add(new BasicNameValuePair("url", "http://www.apache.org"));
         assertAuthenticatedAdminPostStatus(postUrl, HttpServletResponse.SC_OK, postParams, null);
 
-        //fetch the group profile json to verify the settings
+        // fetch the group profile json to verify the settings
         String getUrl = String.format("%s/system/userManager/group/%s.json", baseServerUri, testGroupId);
         Credentials creds = new UsernamePasswordCredentials("admin", "admin");
         String json = getAuthenticatedContent(creds, getUrl, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
@@ -164,7 +166,6 @@ public class CreateGroupIT extends UserManagerClientTestSupport {
         assertEquals("My Test Group", jsonObj.getString("displayName"));
         assertEquals("http://www.apache.org", jsonObj.getString("url"));
     }
-
 
     /**
      * Test for SLING-1677
@@ -178,9 +179,10 @@ public class CreateGroupIT extends UserManagerClientTestSupport {
         postParams.add(new BasicNameValuePair(":name", testGroupId));
         postParams.add(new BasicNameValuePair("marker", testGroupId));
         Credentials creds = new UsernamePasswordCredentials("admin", "admin");
-        String json = getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
+        String json =
+                getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
 
-        //make sure the json response can be parsed as a JSON object
+        // make sure the json response can be parsed as a JSON object
         JsonObject jsonObj = parseJson(json);
         assertNotNull(jsonObj);
     }
@@ -221,17 +223,19 @@ public class CreateGroupIT extends UserManagerClientTestSupport {
         List<NameValuePair> postParams = new ArrayList<>();
         postParams.add(new BasicNameValuePair(":name", marker));
         Credentials creds = new UsernamePasswordCredentials("admin", "admin");
-        String json = getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
+        String json =
+                getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
 
-        //make sure the json response can be parsed as a JSON object
+        // make sure the json response can be parsed as a JSON object
         JsonObject jsonObj = parseJson(json);
         assertNotNull(jsonObj);
-        testGroupId  = ResourceUtil.getName(jsonObj.getString("path"));
+        testGroupId = ResourceUtil.getName(jsonObj.getString("path"));
         assertNotNull(testGroupId);
         assertEquals(marker, testGroupId);
 
         // second time with the same info fails since it is not unique
-        getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        getAuthenticatedPostContent(
+                creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
     }
 
     /**
@@ -246,19 +250,21 @@ public class CreateGroupIT extends UserManagerClientTestSupport {
         postParams.add(new BasicNameValuePair(":name@ValueFrom", "marker"));
         postParams.add(new BasicNameValuePair("marker", marker));
         Credentials creds = new UsernamePasswordCredentials("admin", "admin");
-        String json = getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
+        String json =
+                getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
 
-        //make sure the json response can be parsed as a JSON object
+        // make sure the json response can be parsed as a JSON object
         JsonObject jsonObj = parseJson(json);
         assertNotNull(jsonObj);
-        testGroupId  = ResourceUtil.getName(jsonObj.getString("path"));
+        testGroupId = ResourceUtil.getName(jsonObj.getString("path"));
         assertNotNull(testGroupId);
         assertEquals(marker, testGroupId);
 
         // second time with the same info fails since it is not unique
-        getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        getAuthenticatedPostContent(
+                creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
     }
-    
+
     /**
      * SLING-10902 Test for group name generated from a hint
      */
@@ -270,27 +276,27 @@ public class CreateGroupIT extends UserManagerClientTestSupport {
         List<NameValuePair> postParams = new ArrayList<>();
         postParams.add(new BasicNameValuePair(":nameHint", hint));
         Credentials creds = new UsernamePasswordCredentials("admin", "admin");
-        String json = getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
+        String json =
+                getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
 
-        //make sure the json response can be parsed as a JSON object
+        // make sure the json response can be parsed as a JSON object
         JsonObject jsonObj = parseJson(json);
         assertNotNull(jsonObj);
-        testGroupId  = ResourceUtil.getName(jsonObj.getString("path"));
+        testGroupId = ResourceUtil.getName(jsonObj.getString("path"));
         assertNotNull(testGroupId);
         assertEquals(hint.substring(0, 20), testGroupId);
 
         // second time with the same info generates a different unique name
         json = getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
 
-        //make sure the json response can be parsed as a JSON object
+        // make sure the json response can be parsed as a JSON object
         jsonObj = parseJson(json);
         assertNotNull(jsonObj);
-        testGroupId2  = ResourceUtil.getName(jsonObj.getString("path"));
+        testGroupId2 = ResourceUtil.getName(jsonObj.getString("path"));
         assertNotNull(testGroupId2);
         assertTrue(testGroupId2.startsWith(hint.substring(0, 20)));
         assertNotEquals(testGroupId, testGroupId2);
     }
-
 
     /**
      * SLING-10902 Test for group name generated from the value of another param
@@ -304,12 +310,13 @@ public class CreateGroupIT extends UserManagerClientTestSupport {
         postParams.add(new BasicNameValuePair(":name@ValueFrom", "marker"));
         postParams.add(new BasicNameValuePair("marker", marker));
         Credentials creds = new UsernamePasswordCredentials("admin", "admin");
-        String json = getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
+        String json =
+                getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
 
-        //make sure the json response can be parsed as a JSON object
+        // make sure the json response can be parsed as a JSON object
         JsonObject jsonObj = parseJson(json);
         assertNotNull(jsonObj);
-        testGroupId  = ResourceUtil.getName(jsonObj.getString("path"));
+        testGroupId = ResourceUtil.getName(jsonObj.getString("path"));
         assertNotNull(testGroupId);
         assertEquals(marker, testGroupId);
     }
@@ -326,12 +333,13 @@ public class CreateGroupIT extends UserManagerClientTestSupport {
         postParams.add(new BasicNameValuePair(":nameHint", hint));
         postParams.add(new BasicNameValuePair("marker", testUserId));
         Credentials creds = new UsernamePasswordCredentials("admin", "admin");
-        String json = getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
+        String json =
+                getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
 
-        //make sure the json response can be parsed as a JSON object
+        // make sure the json response can be parsed as a JSON object
         JsonObject jsonObj = parseJson(json);
         assertNotNull(jsonObj);
-        testGroupId  = ResourceUtil.getName(jsonObj.getString("path"));
+        testGroupId = ResourceUtil.getName(jsonObj.getString("path"));
         assertNotNull(testGroupId);
         assertEquals(hint.substring(0, 20), testGroupId);
     }
@@ -348,12 +356,13 @@ public class CreateGroupIT extends UserManagerClientTestSupport {
         postParams.add(new BasicNameValuePair(":nameHint@ValueFrom", "marker"));
         postParams.add(new BasicNameValuePair("marker", marker));
         Credentials creds = new UsernamePasswordCredentials("admin", "admin");
-        String json = getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
+        String json =
+                getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
 
-        //make sure the json response can be parsed as a JSON object
+        // make sure the json response can be parsed as a JSON object
         JsonObject jsonObj = parseJson(json);
         assertNotNull(jsonObj);
-        testGroupId  = ResourceUtil.getName(jsonObj.getString("path"));
+        testGroupId = ResourceUtil.getName(jsonObj.getString("path"));
         assertNotNull(testGroupId);
         assertEquals(marker.substring(0, 20), testGroupId);
     }
@@ -369,7 +378,8 @@ public class CreateGroupIT extends UserManagerClientTestSupport {
         List<NameValuePair> postParams = new ArrayList<>();
         postParams.add(new BasicNameValuePair("marker", marker));
         Credentials creds = new UsernamePasswordCredentials("admin", "admin");
-        getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        getAuthenticatedPostContent(
+                creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
     }
 
     /**
@@ -384,7 +394,8 @@ public class CreateGroupIT extends UserManagerClientTestSupport {
         postParams.add(new BasicNameValuePair(":name", ""));
         postParams.add(new BasicNameValuePair("marker", marker));
         Credentials creds = new UsernamePasswordCredentials("admin", "admin");
-        getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        getAuthenticatedPostContent(
+                creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
     }
 
     /**
@@ -399,9 +410,9 @@ public class CreateGroupIT extends UserManagerClientTestSupport {
         postParams.add(new BasicNameValuePair(":nameHint", ""));
         postParams.add(new BasicNameValuePair("marker", marker));
         Credentials creds = new UsernamePasswordCredentials("admin", "admin");
-        getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        getAuthenticatedPostContent(
+                creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
     }
-
 
     /**
      * SLING-10902 Test for group name generated from a default property name
@@ -414,12 +425,13 @@ public class CreateGroupIT extends UserManagerClientTestSupport {
         List<NameValuePair> postParams = new ArrayList<>();
         postParams.add(new BasicNameValuePair("displayName", marker));
         Credentials creds = new UsernamePasswordCredentials("admin", "admin");
-        String json = getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
+        String json =
+                getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
 
-        //make sure the json response can be parsed as a JSON object
+        // make sure the json response can be parsed as a JSON object
         JsonObject jsonObj = parseJson(json);
         assertNotNull(jsonObj);
-        testGroupId  = ResourceUtil.getName(jsonObj.getString("path"));
+        testGroupId = ResourceUtil.getName(jsonObj.getString("path"));
         assertNotNull(testGroupId);
         assertEquals(marker.substring(0, 20), testGroupId);
     }
@@ -436,12 +448,13 @@ public class CreateGroupIT extends UserManagerClientTestSupport {
         postParams.add(new BasicNameValuePair(":name", ""));
         postParams.add(new BasicNameValuePair("displayName", marker));
         Credentials creds = new UsernamePasswordCredentials("admin", "admin");
-        String json = getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
+        String json =
+                getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
 
-        //make sure the json response can be parsed as a JSON object
+        // make sure the json response can be parsed as a JSON object
         JsonObject jsonObj = parseJson(json);
         assertNotNull(jsonObj);
-        testGroupId  = ResourceUtil.getName(jsonObj.getString("path"));
+        testGroupId = ResourceUtil.getName(jsonObj.getString("path"));
         assertNotNull(testGroupId);
         assertEquals(marker.substring(0, 20), testGroupId);
     }
@@ -458,16 +471,16 @@ public class CreateGroupIT extends UserManagerClientTestSupport {
         postParams.add(new BasicNameValuePair(":nameHint", ""));
         postParams.add(new BasicNameValuePair("displayName", marker));
         Credentials creds = new UsernamePasswordCredentials("admin", "admin");
-        String json = getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
+        String json =
+                getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
 
-        //make sure the json response can be parsed as a JSON object
+        // make sure the json response can be parsed as a JSON object
         JsonObject jsonObj = parseJson(json);
         assertNotNull(jsonObj);
-        testGroupId  = ResourceUtil.getName(jsonObj.getString("path"));
+        testGroupId = ResourceUtil.getName(jsonObj.getString("path"));
         assertNotNull(testGroupId);
         assertEquals(marker.substring(0, 20), testGroupId);
     }
-
 
     /**
      * SLING-11023 Test for setting jcr:mixinTypes values
@@ -486,9 +499,10 @@ public class CreateGroupIT extends UserManagerClientTestSupport {
         Credentials creds = new UsernamePasswordCredentials("admin", "admin");
         assertAuthenticatedPostStatus(creds, postUrl, HttpServletResponse.SC_OK, postParams, null);
 
-        //fetch the user profile json to verify the settings
+        // fetch the user profile json to verify the settings
         String getUrl = String.format("%s/system/userManager/group/%s.json", baseServerUri, testGroupId);
-        assertAuthenticatedHttpStatus(creds, getUrl, HttpServletResponse.SC_OK, null); //make sure the profile request returns some data
+        assertAuthenticatedHttpStatus(
+                creds, getUrl, HttpServletResponse.SC_OK, null); // make sure the profile request returns some data
         String json = getAuthenticatedContent(creds, getUrl, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
         assertNotNull(json);
         JsonObject jsonObj = parseJson(json);
@@ -531,9 +545,10 @@ public class CreateGroupIT extends UserManagerClientTestSupport {
         Credentials creds = new UsernamePasswordCredentials("admin", "admin");
         assertAuthenticatedPostStatus(creds, postUrl, HttpServletResponse.SC_OK, postParams, null);
 
-        //fetch the user profile json to verify the settings
+        // fetch the user profile json to verify the settings
         String getUrl = String.format("%s/system/userManager/group/%s.json", baseServerUri, testGroupId);
-        assertAuthenticatedHttpStatus(creds, getUrl, HttpServletResponse.SC_OK, null); //make sure the profile request returns some data
+        assertAuthenticatedHttpStatus(
+                creds, getUrl, HttpServletResponse.SC_OK, null); // make sure the profile request returns some data
         String json = getAuthenticatedContent(creds, getUrl, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
         assertNotNull(json);
         JsonObject jsonObj = parseJson(json);
@@ -569,10 +584,10 @@ public class CreateGroupIT extends UserManagerClientTestSupport {
         Credentials creds = new UsernamePasswordCredentials("admin", "admin");
         assertAuthenticatedPostStatus(creds, postUrl, HttpServletResponse.SC_FORBIDDEN, postParams, null);
 
-        //fetch the user profile json to verify the settings
+        // fetch the user profile json to verify the settings
         String getUrl = String.format("%s/system/userManager/group/%s.json", baseServerUri, testGroupId);
-        assertAuthenticatedHttpStatus(creds, getUrl, HttpServletResponse.SC_NOT_FOUND, null); //make sure the profile request returns no data
+        assertAuthenticatedHttpStatus(
+                creds, getUrl, HttpServletResponse.SC_NOT_FOUND, null); // make sure the profile request returns no data
         testGroupId = null;
     }
-
 }

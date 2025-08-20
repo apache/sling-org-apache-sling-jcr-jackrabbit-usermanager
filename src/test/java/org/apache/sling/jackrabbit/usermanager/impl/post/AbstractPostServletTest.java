@@ -1,36 +1,31 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 package org.apache.sling.jackrabbit.usermanager.impl.post;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
+import javax.jcr.RepositoryException;
+import javax.jcr.Session;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-import javax.jcr.RepositoryException;
-import javax.jcr.Session;
-
+import jakarta.servlet.ServletException;
 import org.apache.jackrabbit.api.JackrabbitSession;
 import org.apache.jackrabbit.api.security.user.User;
 import org.apache.jackrabbit.api.security.user.UserManager;
@@ -56,7 +51,13 @@ import org.junit.Test;
 import org.mockito.Mockito;
 import org.osgi.framework.Constants;
 
-import jakarta.servlet.ServletException;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 
 /**
  *
@@ -81,30 +82,33 @@ public class AbstractPostServletTest {
         ResourceResolver rr = context.resourceResolver();
         // create a user to trigger unique name calculation
         Session jcrSession = context.resourceResolver().adaptTo(Session.class);
-        UserManager um = ((JackrabbitSession)jcrSession).getUserManager();
+        UserManager um = ((JackrabbitSession) jcrSession).getUserManager();
         User testUser = um.createUser("test", "test");
 
         context.currentResource(rr.getResource(testUser.getPath()));
 
         tps = Mockito.spy(tps);
         Mockito.doAnswer(invocation -> {
-            @SuppressWarnings("unchecked")
-            List<Modification> changes = invocation.getArgument(2, List.class);
-            changes.add(Modification.onModified("/modified"));
-            changes.add(Modification.onDeleted("/deleted"));
-            changes.add(Modification.onMoved("/moveSrcPath", "/moveDestPath"));
-            changes.add(Modification.onCopied("/copySrcPath", "/copyDestPath"));
-            changes.add(Modification.onCreated("/created"));
-            changes.add(Modification.onOrder("/ordered", "beforesibling"));
-            changes.add(Modification.onCheckin("/checkin"));
+                    @SuppressWarnings("unchecked")
+                    List<Modification> changes = invocation.getArgument(2, List.class);
+                    changes.add(Modification.onModified("/modified"));
+                    changes.add(Modification.onDeleted("/deleted"));
+                    changes.add(Modification.onMoved("/moveSrcPath", "/moveDestPath"));
+                    changes.add(Modification.onCopied("/copySrcPath", "/copyDestPath"));
+                    changes.add(Modification.onCreated("/created"));
+                    changes.add(Modification.onOrder("/ordered", "beforesibling"));
+                    changes.add(Modification.onCheckin("/checkin"));
 
-            return null;
-        }).when(tps).handleOperation(any(SlingJakartaHttpServletRequest.class), any(JakartaPostResponse.class), anyList());
+                    return null;
+                })
+                .when(tps)
+                .handleOperation(any(SlingJakartaHttpServletRequest.class), any(JakartaPostResponse.class), anyList());
 
         tps.doPost(jakartaRequest, jakartaResponse);
 
         assertEquals(SlingJakartaHttpServletResponse.SC_OK, jakartaResponse.getStatus());
     }
+
     @Test
     public void testDoPostWithResourceNotFound() throws ServletException, IOException, RepositoryException {
         MockSlingHttpServletRequest request = context.request();
@@ -117,7 +121,8 @@ public class AbstractPostServletTest {
 
         tps = Mockito.spy(tps);
         Mockito.doThrow(ResourceNotFoundException.class)
-            .when(tps).handleOperation(any(SlingJakartaHttpServletRequest.class), any(JakartaPostResponse.class), anyList());
+                .when(tps)
+                .handleOperation(any(SlingJakartaHttpServletRequest.class), any(JakartaPostResponse.class), anyList());
 
         tps.doPost(jakartaRequest, jakartaResponse);
 
@@ -142,6 +147,7 @@ public class AbstractPostServletTest {
         Mockito.when(mockPostResponseCreator.createPostResponse(jakartaRequest)).thenReturn(mockPostResponse);
         assertEquals(mockPostResponse, tps.createPostResponse(jakartaRequest));
     }
+
     @Test
     public void testCreatePostResponseWithNoAcceptParamOrHeader() {
         MockSlingHttpServletRequest request = context.request();
@@ -154,6 +160,7 @@ public class AbstractPostServletTest {
         request.setResponseContentType("application/json");
         assertTrue(tps.createPostResponse(jakartaRequest) instanceof JakartaJSONResponse);
     }
+
     @Test
     public void testCreatePostResponseWithEmptyAcceptParamOrHeader() {
         MockSlingHttpServletRequest request = context.request();
@@ -163,6 +170,7 @@ public class AbstractPostServletTest {
         request.setHeader(JakartaMediaRangeList.HEADER_ACCEPT, "");
         assertTrue(tps.createPostResponse(jakartaRequest) instanceof JakartaHtmlResponse);
     }
+
     @Test
     public void testCreatePostResponseWithAcceptParam() {
         MockSlingHttpServletRequest request = context.request();
@@ -171,6 +179,7 @@ public class AbstractPostServletTest {
         request.setParameterMap(Map.of(JakartaMediaRangeList.PARAM_ACCEPT, "application/json"));
         assertTrue(tps.createPostResponse(jakartaRequest) instanceof JakartaJSONResponse);
     }
+
     @Test
     public void testCreatePostResponseWithAcceptHeader() {
         MockSlingHttpServletRequest request = context.request();
@@ -194,6 +203,7 @@ public class AbstractPostServletTest {
         request.setParameterMap(Map.of(SlingPostConstants.RP_REDIRECT_TO, "/content/node"));
         assertEquals("/content/node", tps.getRedirectUrl(jakartaRequest, postResponse));
     }
+
     @Test
     public void testGetRedirectUrlWithHost() throws IOException {
         MockSlingHttpServletRequest request = context.request();
@@ -205,6 +215,7 @@ public class AbstractPostServletTest {
         request.setParameterMap(Map.of(SlingPostConstants.RP_REDIRECT_TO, "https://localhost/content/node"));
         assertThrows(IOException.class, () -> tps.getRedirectUrl(jakartaRequest, postResponse));
     }
+
     @Test
     public void testGetRedirectUrlWithInvalidSyntax() throws IOException {
         MockSlingHttpServletRequest request = context.request();
@@ -216,6 +227,7 @@ public class AbstractPostServletTest {
         request.setParameterMap(Map.of(SlingPostConstants.RP_REDIRECT_TO, "https://"));
         assertThrows(IOException.class, () -> tps.getRedirectUrl(jakartaRequest, postResponse));
     }
+
     @Test
     public void testGetRedirectUrlToCreated() throws IOException {
         MockSlingHttpServletRequest request = context.request();
@@ -287,6 +299,7 @@ public class AbstractPostServletTest {
 
         assertEquals("/path", tps.externalizePath(jakartaRequest, "/content/path"));
     }
+
     @Test
     public void testExternalizePathWithDisplayExtension() {
         MockSlingHttpServletRequest request = context.request();
@@ -370,8 +383,9 @@ public class AbstractPostServletTest {
         private static final long serialVersionUID = -2948341218853558959L;
 
         @Override
-        protected void handleOperation(SlingJakartaHttpServletRequest request, JakartaPostResponse response,
-                List<Modification> changes) throws RepositoryException {
+        protected void handleOperation(
+                SlingJakartaHttpServletRequest request, JakartaPostResponse response, List<Modification> changes)
+                throws RepositoryException {
             // do nothing
         }
     }

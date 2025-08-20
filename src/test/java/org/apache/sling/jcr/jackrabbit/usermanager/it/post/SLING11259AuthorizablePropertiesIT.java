@@ -1,26 +1,27 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 package org.apache.sling.jcr.jackrabbit.usermanager.it.post;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
-import static org.ops4j.pax.exam.CoreOptions.composite;
-import static org.ops4j.pax.exam.cm.ConfigurationAdminOptions.newConfiguration;
+import javax.inject.Inject;
+import javax.jcr.RepositoryException;
+import javax.jcr.Session;
+import javax.jcr.SimpleCredentials;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -33,11 +34,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 
-import javax.inject.Inject;
-import javax.jcr.RepositoryException;
-import javax.jcr.Session;
-import javax.jcr.SimpleCredentials;
-
+import jakarta.json.JsonArray;
+import jakarta.json.JsonException;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonValue;
+import jakarta.json.JsonValue.ValueType;
+import jakarta.servlet.http.HttpServletResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.auth.Credentials;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -53,13 +55,11 @@ import org.ops4j.pax.exam.junit.PaxExam;
 import org.ops4j.pax.exam.spi.reactors.ExamReactorStrategy;
 import org.ops4j.pax.exam.spi.reactors.PerClass;
 
-import jakarta.json.JsonArray;
-import jakarta.json.JsonException;
-import jakarta.json.JsonObject;
-import jakarta.json.JsonValue;
-import jakarta.json.JsonValue.ValueType;
-import jakarta.servlet.http.HttpServletResponse;
-
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
+import static org.ops4j.pax.exam.CoreOptions.composite;
+import static org.ops4j.pax.exam.cm.ConfigurationAdminOptions.newConfiguration;
 
 /**
  * Test to verify that setting authorizable properties can determine
@@ -75,8 +75,10 @@ public class SLING11259AuthorizablePropertiesIT extends UserManagerClientTestSup
     @Override
     protected Option[] additionalOptions() {
         return composite(super.additionalOptions())
-                .add(newConfiguration("org.apache.sling.jackrabbit.usermanager.impl.resource.AuthorizableResourceProvider")
-                        .put("resources.for.nested.properties", true).asOption())
+                .add(newConfiguration(
+                                "org.apache.sling.jackrabbit.usermanager.impl.resource.AuthorizableResourceProvider")
+                        .put("resources.for.nested.properties", true)
+                        .asOption())
                 .getOptions();
     }
 
@@ -105,8 +107,7 @@ public class SLING11259AuthorizablePropertiesIT extends UserManagerClientTestSup
      */
     @Test
     public void testCreateUserPropsWithUndefinedPropertyTypes() throws IOException, JsonException {
-        createUserPropsWithPropertyTypes(Collections.emptyList(),
-                VERFIY_WEAKLY_TYPED_JSON);
+        createUserPropsWithPropertyTypes(Collections.emptyList(), VERFIY_WEAKLY_TYPED_JSON);
     }
 
     /**
@@ -114,14 +115,14 @@ public class SLING11259AuthorizablePropertiesIT extends UserManagerClientTestSup
      */
     @Test
     public void testCreateUserPropsWithTypeHints() throws IOException, JsonException {
-        createUserPropsWithPropertyTypes(Arrays.asList(
-                    new BasicNameValuePair("nested/booleanProp@TypeHint", "Boolean"),
-                    new BasicNameValuePair("nested/longProp@TypeHint", "Long"),
-                    new BasicNameValuePair("nested/booleanMultiProp1@TypeHint", "Boolean[]"),
-                    new BasicNameValuePair("nested/longMultiProp1@TypeHint", "Long[]"),
-                    new BasicNameValuePair("nested/booleanMultiProp2@TypeHint", "Boolean[]"),
-                    new BasicNameValuePair("nested/longMultiProp2@TypeHint", "Long[]")
-                ),
+        createUserPropsWithPropertyTypes(
+                Arrays.asList(
+                        new BasicNameValuePair("nested/booleanProp@TypeHint", "Boolean"),
+                        new BasicNameValuePair("nested/longProp@TypeHint", "Long"),
+                        new BasicNameValuePair("nested/booleanMultiProp1@TypeHint", "Boolean[]"),
+                        new BasicNameValuePair("nested/longMultiProp1@TypeHint", "Long[]"),
+                        new BasicNameValuePair("nested/booleanMultiProp2@TypeHint", "Boolean[]"),
+                        new BasicNameValuePair("nested/longMultiProp2@TypeHint", "Long[]")),
                 VERIFY_STONGLY_TYPED_JSON);
     }
 
@@ -131,7 +132,8 @@ public class SLING11259AuthorizablePropertiesIT extends UserManagerClientTestSup
      */
     @Test
     public void testCreateUserPropsWithPropertyTypesDefinedByPrimaryType() throws IOException, JsonException {
-        createUserPropsWithPropertyTypes(Collections.singletonList(new BasicNameValuePair("nested/jcr:primaryType", "sling11259:userPrivate")),
+        createUserPropsWithPropertyTypes(
+                Collections.singletonList(new BasicNameValuePair("nested/jcr:primaryType", "sling11259:userPrivate")),
                 VERIFY_STONGLY_TYPED_JSON);
     }
 
@@ -141,7 +143,8 @@ public class SLING11259AuthorizablePropertiesIT extends UserManagerClientTestSup
      */
     @Test
     public void testCreateUserPropsWithPropertyTypesNotDefinedByPrimaryType() throws IOException, JsonException {
-        createUserPropsWithPropertyTypes(Collections.singletonList(new BasicNameValuePair("nested/jcr:primaryType", "nt:unstructured")),
+        createUserPropsWithPropertyTypes(
+                Collections.singletonList(new BasicNameValuePair("nested/jcr:primaryType", "nt:unstructured")),
                 VERFIY_WEAKLY_TYPED_JSON);
     }
 
@@ -151,12 +154,14 @@ public class SLING11259AuthorizablePropertiesIT extends UserManagerClientTestSup
      */
     @Test
     public void testCreateUserPropsWithPropertyTypesDefinedByMixinType() throws IOException, JsonException {
-        createUserPropsWithPropertyTypes(Collections.singletonList(new BasicNameValuePair("nested/jcr:mixinTypes", "sling11259:userPublic")),
+        createUserPropsWithPropertyTypes(
+                Collections.singletonList(new BasicNameValuePair("nested/jcr:mixinTypes", "sling11259:userPublic")),
                 VERIFY_STONGLY_TYPED_JSON);
     }
 
-    private void createUserPropsWithPropertyTypes(List<NameValuePair> extraPostParams,
-            Consumer<JsonObject> verifyJsonObject) throws IOException, JsonException {
+    private void createUserPropsWithPropertyTypes(
+            List<NameValuePair> extraPostParams, Consumer<JsonObject> verifyJsonObject)
+            throws IOException, JsonException {
         String postUrl = String.format("%s/system/userManager/user.create.html", baseServerUri);
 
         testUserId = "testUser" + getNextInt();
@@ -177,9 +182,10 @@ public class SLING11259AuthorizablePropertiesIT extends UserManagerClientTestSup
         Credentials creds = new UsernamePasswordCredentials("admin", "admin");
         assertAuthenticatedPostStatus(creds, postUrl, HttpServletResponse.SC_OK, postParams, null);
 
-        //fetch the user profile json to verify the settings
+        // fetch the user profile json to verify the settings
         String getUrl = String.format("%s/system/userManager/user/%s/nested.json", baseServerUri, testUserId);
-        assertAuthenticatedHttpStatus(creds, getUrl, HttpServletResponse.SC_OK, null); //make sure the profile request returns some data
+        assertAuthenticatedHttpStatus(
+                creds, getUrl, HttpServletResponse.SC_OK, null); // make sure the profile request returns some data
         String json = getAuthenticatedContent(creds, getUrl, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
         assertNotNull(json);
         JsonObject jsonObj = parseJson(json);
@@ -206,16 +212,16 @@ public class SLING11259AuthorizablePropertiesIT extends UserManagerClientTestSup
         // should be a multi-boolean prop in this context
         JsonValue booleanMultiPropValue = jsonObj.get("booleanMultiProp2");
         assertEquals(ValueType.ARRAY, booleanMultiPropValue.getValueType());
-        assertEquals(2, ((JsonArray)booleanMultiPropValue).size());
-        assertEquals(true, ((JsonArray)booleanMultiPropValue).getBoolean(0));
-        assertEquals(false, ((JsonArray)booleanMultiPropValue).getBoolean(1));
+        assertEquals(2, ((JsonArray) booleanMultiPropValue).size());
+        assertEquals(true, ((JsonArray) booleanMultiPropValue).getBoolean(0));
+        assertEquals(false, ((JsonArray) booleanMultiPropValue).getBoolean(1));
 
         // should be a number prop in this context
         JsonValue longMultiPropValue = jsonObj.get("longMultiProp2");
         assertEquals(ValueType.ARRAY, longMultiPropValue.getValueType());
-        assertEquals(2, ((JsonArray)longMultiPropValue).size());
-        assertEquals(1234L, ((JsonArray)longMultiPropValue).getJsonNumber(0).longValue());
-        assertEquals(5678L, ((JsonArray)longMultiPropValue).getJsonNumber(1).longValue());
+        assertEquals(2, ((JsonArray) longMultiPropValue).size());
+        assertEquals(1234L, ((JsonArray) longMultiPropValue).getJsonNumber(0).longValue());
+        assertEquals(5678L, ((JsonArray) longMultiPropValue).getJsonNumber(1).longValue());
 
         // should be a string prop in this context
         assertEquals(ValueType.STRING, jsonObj.get("undefinedBooleanProp").getValueType());
@@ -242,20 +248,19 @@ public class SLING11259AuthorizablePropertiesIT extends UserManagerClientTestSup
         // should be a multi-string prop in this context
         JsonValue booleanMultiPropValue = jsonObj.get("booleanMultiProp2");
         assertEquals(ValueType.ARRAY, booleanMultiPropValue.getValueType());
-        assertEquals(2, ((JsonArray)booleanMultiPropValue).size());
-        assertEquals("true", ((JsonArray)booleanMultiPropValue).getString(0));
-        assertEquals("false", ((JsonArray)booleanMultiPropValue).getString(1));
+        assertEquals(2, ((JsonArray) booleanMultiPropValue).size());
+        assertEquals("true", ((JsonArray) booleanMultiPropValue).getString(0));
+        assertEquals("false", ((JsonArray) booleanMultiPropValue).getString(1));
 
         // should be a string prop in this context
         JsonValue longMultiPropValue = jsonObj.get("longMultiProp2");
         assertEquals(ValueType.ARRAY, longMultiPropValue.getValueType());
-        assertEquals(2, ((JsonArray)longMultiPropValue).size());
-        assertEquals("1234", ((JsonArray)longMultiPropValue).getString(0));
-        assertEquals("5678", ((JsonArray)longMultiPropValue).getString(1));
+        assertEquals(2, ((JsonArray) longMultiPropValue).size());
+        assertEquals("1234", ((JsonArray) longMultiPropValue).getString(0));
+        assertEquals("5678", ((JsonArray) longMultiPropValue).getString(1));
 
         // should be a string prop in this context
         assertEquals(ValueType.STRING, jsonObj.get("undefinedBooleanProp").getValueType());
         assertEquals("true", jsonObj.getString("undefinedBooleanProp"));
     };
-
 }

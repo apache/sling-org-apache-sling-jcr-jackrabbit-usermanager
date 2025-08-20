@@ -18,17 +18,12 @@
  */
 package org.apache.sling.jcr.jackrabbit.usermanager.it.resource;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import javax.jcr.RepositoryException;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-
-import javax.jcr.RepositoryException;
 
 import org.apache.jackrabbit.api.security.user.Group;
 import org.apache.sling.api.resource.LoginException;
@@ -38,6 +33,11 @@ import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.junit.PaxExam;
 import org.ops4j.pax.exam.spi.reactors.ExamReactorStrategy;
 import org.ops4j.pax.exam.spi.reactors.PerClass;
+
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 
 /**
  * Basic test of AuthorizableValueMap
@@ -54,14 +54,12 @@ public class AuthorizableValueMapIT extends BaseAuthorizableValueMapIT {
 
         Map<String, Object> groupProps = new HashMap<>();
         groupProps.put(":member", group1.getID());
-        group2 = createGroup.createGroup(adminSession, createUniqueName("group"),
-                groupProps, new ArrayList<>());
+        group2 = createGroup.createGroup(adminSession, createUniqueName("group"), groupProps, new ArrayList<>());
         assertNotNull("Expected group2 to not be null", group2);
 
         if (adminSession.hasPendingChanges()) {
             adminSession.save();
         }
-
     }
 
     @Override
@@ -113,7 +111,12 @@ public class AuthorizableValueMapIT extends BaseAuthorizableValueMapIT {
         ValueMap vm = getValueMap(user1);
         String[] memberOf = vm.get("memberOf", String[].class);
         assertNotNull(memberOf);
-        assertArrayEquals(new String[] { String.format("%s%s", userManagerPaths.getGroupPrefix(), group1.getID()), String.format("%s%s", userManagerPaths.getGroupPrefix(), group2.getID()) }, memberOf);
+        assertArrayEquals(
+                new String[] {
+                    String.format("%s%s", userManagerPaths.getGroupPrefix(), group1.getID()),
+                    String.format("%s%s", userManagerPaths.getGroupPrefix(), group2.getID())
+                },
+                memberOf);
     }
 
     @Test
@@ -121,7 +124,9 @@ public class AuthorizableValueMapIT extends BaseAuthorizableValueMapIT {
         ValueMap vm = getValueMap(user1);
         String[] declaredMemberOf = vm.get("declaredMemberOf", String[].class);
         assertNotNull(declaredMemberOf);
-        assertArrayEquals(new String[] { String.format("%s%s", userManagerPaths.getGroupPrefix(), group1.getID()) }, declaredMemberOf);
+        assertArrayEquals(
+                new String[] {String.format("%s%s", userManagerPaths.getGroupPrefix(), group1.getID())},
+                declaredMemberOf);
     }
 
     @Test
@@ -141,7 +146,8 @@ public class AuthorizableValueMapIT extends BaseAuthorizableValueMapIT {
         ValueMap vm = getValueMap(group1);
         String[] memberOf = vm.get("memberOf", String[].class);
         assertNotNull(memberOf);
-        assertArrayEquals(new String[] { String.format("%s%s", userManagerPaths.getGroupPrefix(), group2.getID()) }, memberOf);
+        assertArrayEquals(
+                new String[] {String.format("%s%s", userManagerPaths.getGroupPrefix(), group2.getID())}, memberOf);
 
         ValueMap vm2 = getValueMap(group2);
         String[] memberOf2 = vm2.get("memberOf", String[].class);
@@ -154,7 +160,9 @@ public class AuthorizableValueMapIT extends BaseAuthorizableValueMapIT {
         ValueMap vm = getValueMap(group1);
         String[] declaredMemberOf = vm.get("declaredMemberOf", String[].class);
         assertNotNull(declaredMemberOf);
-        assertArrayEquals(new String[] { String.format("%s%s", userManagerPaths.getGroupPrefix(), group2.getID())}, declaredMemberOf);
+        assertArrayEquals(
+                new String[] {String.format("%s%s", userManagerPaths.getGroupPrefix(), group2.getID())},
+                declaredMemberOf);
 
         ValueMap vm2 = getValueMap(group2);
         String[] declaredMemberOf2 = vm2.get("declaredMemberOf", String[].class);
@@ -167,12 +175,18 @@ public class AuthorizableValueMapIT extends BaseAuthorizableValueMapIT {
         ValueMap vm = getValueMap(group1);
         String[] members = vm.get("members", String[].class);
         assertNotNull(members);
-        assertArrayEquals(new String[] { String.format("%s%s", userManagerPaths.getUserPrefix(), user1.getID()) }, members);
+        assertArrayEquals(
+                new String[] {String.format("%s%s", userManagerPaths.getUserPrefix(), user1.getID())}, members);
 
         ValueMap vm2 = getValueMap(group2);
         String[] members2 = vm2.get("members", String[].class);
         assertNotNull(members2);
-        assertArrayEquals(new String[] { String.format("%s%s", userManagerPaths.getGroupPrefix(), group1.getID()), String.format("%s%s", userManagerPaths.getUserPrefix(), user1.getID()) }, members2);
+        assertArrayEquals(
+                new String[] {
+                    String.format("%s%s", userManagerPaths.getGroupPrefix(), group1.getID()),
+                    String.format("%s%s", userManagerPaths.getUserPrefix(), user1.getID())
+                },
+                members2);
     }
 
     @Test
@@ -180,12 +194,14 @@ public class AuthorizableValueMapIT extends BaseAuthorizableValueMapIT {
         ValueMap vm = getValueMap(group1);
         String[] declaredMembers = vm.get("declaredMembers", String[].class);
         assertNotNull(declaredMembers);
-        assertArrayEquals(new String[] { String.format("%s%s", userManagerPaths.getUserPrefix(), user1.getID()) }, declaredMembers);
+        assertArrayEquals(
+                new String[] {String.format("%s%s", userManagerPaths.getUserPrefix(), user1.getID())}, declaredMembers);
 
         ValueMap vm2 = getValueMap(group2);
         String[] declaredMembers2 = vm2.get("declaredMembers", String[].class);
         assertNotNull(declaredMembers2);
-        assertArrayEquals(new String[] { String.format("%s%s", userManagerPaths.getGroupPrefix(), group1.getID()) }, declaredMembers2);
+        assertArrayEquals(
+                new String[] {String.format("%s%s", userManagerPaths.getGroupPrefix(), group1.getID())},
+                declaredMembers2);
     }
-
 }

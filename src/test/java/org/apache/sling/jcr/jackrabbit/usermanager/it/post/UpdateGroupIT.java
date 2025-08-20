@@ -1,28 +1,31 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 package org.apache.sling.jcr.jackrabbit.usermanager.it.post;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import jakarta.json.JsonArray;
+import jakarta.json.JsonException;
+import jakarta.json.JsonObject;
+import jakarta.servlet.http.HttpServletResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.auth.Credentials;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -33,10 +36,8 @@ import org.ops4j.pax.exam.junit.PaxExam;
 import org.ops4j.pax.exam.spi.reactors.ExamReactorStrategy;
 import org.ops4j.pax.exam.spi.reactors.PerClass;
 
-import jakarta.json.JsonArray;
-import jakarta.json.JsonException;
-import jakarta.json.JsonObject;
-import jakarta.servlet.http.HttpServletResponse;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 /**
  * Tests for the 'updateAuthorizable' Sling Post Operation on
@@ -59,9 +60,10 @@ public class UpdateGroupIT extends UserManagerClientTestSupport {
         Credentials creds = new UsernamePasswordCredentials("admin", "admin");
         assertAuthenticatedPostStatus(creds, postUrl, HttpServletResponse.SC_OK, postParams, null);
 
-        //fetch the user profile json to verify the settings
+        // fetch the user profile json to verify the settings
         String getUrl = String.format("%s/system/userManager/group/%s.json", baseServerUri, testGroupId);
-        assertAuthenticatedHttpStatus(creds, getUrl, HttpServletResponse.SC_OK, null); //make sure the profile request returns some data
+        assertAuthenticatedHttpStatus(
+                creds, getUrl, HttpServletResponse.SC_OK, null); // make sure the profile request returns some data
         String json = getAuthenticatedContent(creds, getUrl, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
         assertNotNull(json);
         JsonObject jsonObj = parseJson(json);
@@ -71,7 +73,7 @@ public class UpdateGroupIT extends UserManagerClientTestSupport {
 
     @Test
     public void testNotAuthorizedUpdateGroup() throws IOException, JsonException {
-        //a user who is not authorized to do the action
+        // a user who is not authorized to do the action
         testUserId2 = createTestUser();
 
         testGroupId = createTestGroup();
@@ -88,7 +90,7 @@ public class UpdateGroupIT extends UserManagerClientTestSupport {
 
     @Test
     public void testAuthorizedUpdateGroup() throws IOException, JsonException {
-        //a user who is authorized to do the action
+        // a user who is authorized to do the action
         testUserId2 = createTestUser();
         grantUserManagementRights(testUserId2);
 
@@ -103,9 +105,10 @@ public class UpdateGroupIT extends UserManagerClientTestSupport {
         Credentials creds = new UsernamePasswordCredentials(testUserId2, "testPwd");
         assertAuthenticatedPostStatus(creds, postUrl, HttpServletResponse.SC_OK, postParams, null);
 
-        //fetch the user profile json to verify the settings
+        // fetch the user profile json to verify the settings
         String getUrl = String.format("%s/system/userManager/group/%s.json", baseServerUri, testGroupId);
-        assertAuthenticatedHttpStatus(creds, getUrl, HttpServletResponse.SC_OK, null); //make sure the profile request returns some data
+        assertAuthenticatedHttpStatus(
+                creds, getUrl, HttpServletResponse.SC_OK, null); // make sure the profile request returns some data
         String json = getAuthenticatedContent(creds, getUrl, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
         assertNotNull(json);
         JsonObject jsonObj = parseJson(json);
@@ -127,8 +130,9 @@ public class UpdateGroupIT extends UserManagerClientTestSupport {
         postParams.add(new BasicNameValuePair("displayName", "My Updated Test Group"));
 
         Credentials creds = new UsernamePasswordCredentials("admin", "admin");
-        String content = getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_HTML, postParams, HttpServletResponse.SC_OK);
-        assertEquals("Thanks!", content); //verify that the content matches the custom response
+        String content =
+                getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_HTML, postParams, HttpServletResponse.SC_OK);
+        assertEquals("Thanks!", content); // verify that the content matches the custom response
     }
 
     @Test
@@ -170,12 +174,11 @@ public class UpdateGroupIT extends UserManagerClientTestSupport {
 
         memberships = getTestUserMemberships(creds);
         assertEquals(0, memberships.size());
-
     }
 
     @Test
     public void testAuthorizedUpdateGroupMembers() throws IOException, JsonException {
-        //a user who is authorized to do the action
+        // a user who is authorized to do the action
         testUserId2 = createTestUser();
         grantUserManagementRights(testUserId2);
 
@@ -216,12 +219,12 @@ public class UpdateGroupIT extends UserManagerClientTestSupport {
 
         memberships = getTestUserMemberships(creds);
         assertEquals(0, memberships.size());
-
     }
 
     JsonArray getTestUserMemberships(Credentials creds) throws IOException, JsonException {
         String getUrl = String.format("%s/system/userManager/user/%s.json", baseServerUri, testUserId);
-        assertAuthenticatedHttpStatus(creds, getUrl, HttpServletResponse.SC_OK, null); //make sure the profile request returns some data
+        assertAuthenticatedHttpStatus(
+                creds, getUrl, HttpServletResponse.SC_OK, null); // make sure the profile request returns some data
         String json = getAuthenticatedContent(creds, getUrl, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
         assertNotNull(json);
         JsonObject jsonObj = parseJson(json);
@@ -230,7 +233,8 @@ public class UpdateGroupIT extends UserManagerClientTestSupport {
 
     JsonArray getTestGroupMembers(Credentials creds) throws IOException, JsonException {
         String getUrl = String.format("%s/system/userManager/group/%s.json", baseServerUri, testGroupId);
-        assertAuthenticatedHttpStatus(creds, getUrl, HttpServletResponse.SC_OK, null); //make sure the profile request returns some data
+        assertAuthenticatedHttpStatus(
+                creds, getUrl, HttpServletResponse.SC_OK, null); // make sure the profile request returns some data
         String json = getAuthenticatedContent(creds, getUrl, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
         assertNotNull(json);
         JsonObject jsonObj = parseJson(json);
@@ -251,9 +255,10 @@ public class UpdateGroupIT extends UserManagerClientTestSupport {
         postParams.add(new BasicNameValuePair("url", "http://www.apache.org/updated"));
 
         Credentials creds = new UsernamePasswordCredentials("admin", "admin");
-        String json = getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
+        String json =
+                getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
 
-        //make sure the json response can be parsed as a JSON object
+        // make sure the json response can be parsed as a JSON object
         JsonObject jsonObj = parseJson(json);
         assertNotNull(jsonObj);
     }
@@ -303,9 +308,10 @@ public class UpdateGroupIT extends UserManagerClientTestSupport {
         Credentials creds = new UsernamePasswordCredentials("admin", "admin");
         assertAuthenticatedPostStatus(creds, postUrl, HttpServletResponse.SC_OK, postParams, null);
 
-        //fetch the user profile json to verify the settings
+        // fetch the user profile json to verify the settings
         String getUrl = String.format("%s/system/userManager/group/%s.json", baseServerUri, testGroupId);
-        assertAuthenticatedHttpStatus(creds, getUrl, HttpServletResponse.SC_OK, null); //make sure the profile request returns some data
+        assertAuthenticatedHttpStatus(
+                creds, getUrl, HttpServletResponse.SC_OK, null); // make sure the profile request returns some data
         String json = getAuthenticatedContent(creds, getUrl, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
         assertNotNull(json);
         JsonObject jsonObj = parseJson(json);
@@ -348,9 +354,10 @@ public class UpdateGroupIT extends UserManagerClientTestSupport {
         Credentials creds = new UsernamePasswordCredentials("admin", "admin");
         assertAuthenticatedPostStatus(creds, postUrl, HttpServletResponse.SC_OK, postParams, null);
 
-        //fetch the user profile json to verify the settings
+        // fetch the user profile json to verify the settings
         String getUrl = String.format("%s/system/userManager/group/%s.json", baseServerUri, testGroupId);
-        assertAuthenticatedHttpStatus(creds, getUrl, HttpServletResponse.SC_OK, null); //make sure the profile request returns some data
+        assertAuthenticatedHttpStatus(
+                creds, getUrl, HttpServletResponse.SC_OK, null); // make sure the profile request returns some data
         String json = getAuthenticatedContent(creds, getUrl, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
         assertNotNull(json);
         JsonObject jsonObj = parseJson(json);
@@ -386,9 +393,10 @@ public class UpdateGroupIT extends UserManagerClientTestSupport {
         Credentials creds = new UsernamePasswordCredentials("admin", "admin");
         assertAuthenticatedPostStatus(creds, postUrl, HttpServletResponse.SC_FORBIDDEN, postParams, null);
 
-        //fetch the user profile json to verify the settings
+        // fetch the user profile json to verify the settings
         String getUrl = String.format("%s/system/userManager/group/%s.json", baseServerUri, testGroupId);
-        assertAuthenticatedHttpStatus(creds, getUrl, HttpServletResponse.SC_OK, null); //make sure the profile request returns some data
+        assertAuthenticatedHttpStatus(
+                creds, getUrl, HttpServletResponse.SC_OK, null); // make sure the profile request returns some data
         String json = getAuthenticatedContent(creds, getUrl, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
         assertNotNull(json);
         JsonObject jsonObj = parseJson(json);
@@ -402,6 +410,4 @@ public class UpdateGroupIT extends UserManagerClientTestSupport {
         jsonObj = parseJson(json);
         assertEquals("rep:Group", jsonObj.getString("jcr:primaryType"));
     }
-
 }
-

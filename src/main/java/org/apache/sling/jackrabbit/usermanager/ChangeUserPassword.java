@@ -18,10 +18,10 @@
  */
 package org.apache.sling.jackrabbit.usermanager;
 
-import java.util.List;
-
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
+
+import java.util.List;
 
 import org.apache.jackrabbit.api.security.user.User;
 import org.apache.sling.servlets.post.Modification;
@@ -32,14 +32,14 @@ import org.apache.sling.servlets.post.Modification;
  * This interface is not intended to be implemented by bundles. It is
  * implemented by this bundle and may be used by client bundles.
  * </p>
- * 
+ *
  * @since 2.2.0
  */
 public interface ChangeUserPassword {
 
     /**
      * Update the password of a user in the repository
-     * 
+     *
      * @param jcrSession the JCR session of the user updating the user
      * @param name The name of the user to update (required)
      * @param oldPassword The current password of the user (required for non-admin users)
@@ -49,12 +49,12 @@ public interface ChangeUserPassword {
      * @return the user whose password was changed
      * @throws RepositoryException if password can't be changed for some reason
      */
-    public User changePassword(Session jcrSession,
-                            String name,
-                            String oldPassword,
-                            String newPassword,
-                            String newPasswordConfirm,
-                            List<Modification> changes
-                ) throws RepositoryException;
-    
+    public User changePassword(
+            Session jcrSession,
+            String name,
+            String oldPassword,
+            String newPassword,
+            String newPasswordConfirm,
+            List<Modification> changes)
+            throws RepositoryException;
 }

@@ -1,18 +1,20 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 package org.apache.sling.jackrabbit.usermanager.impl.post;
 
@@ -35,11 +37,11 @@ import org.osgi.service.metatype.annotations.Designate;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
 /**
- * Default implementation that generates a principal name based on a set of 
+ * Default implementation that generates a principal name based on a set of
  * well-known request parameters
- * 
+ *
  * <p>
- * The value is resolved by the locating the first request parameter that is a 
+ * The value is resolved by the locating the first request parameter that is a
  * match of one of the choices in the following order:
  * </p>
  * <ol>
@@ -56,25 +58,27 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 @Designate(ocd = PrincipalNameGeneratorImpl.Config.class)
 public class PrincipalNameGeneratorImpl implements PrincipalNameGenerator {
 
-    @ObjectClassDefinition(name = "Apache Sling Principal Name Generator",
+    @ObjectClassDefinition(
+            name = "Apache Sling Principal Name Generator",
             description = "The Sling helper to generate a principal name from a hint")
     public @interface Config {
 
-        @AttributeDefinition(name = "Maximum Principal Name Length",
-                description = "Maximum number of characters to "+
-                 "use for automatically generated principal names. The default value is 20. Note, "+
-                 "that actual principal names may be generated with at most 4 more characters if "+
-                 "numeric suffixes must be appended to make the name unique.")
+        @AttributeDefinition(
+                name = "Maximum Principal Name Length",
+                description = "Maximum number of characters to "
+                        + "use for automatically generated principal names. The default value is 20. Note, "
+                        + "that actual principal names may be generated with at most 4 more characters if "
+                        + "numeric suffixes must be appended to make the name unique.")
         int principalNameMaxLength() default DEFAULT_MAX_NAME_LENGTH;
 
-        @AttributeDefinition(name = "Principal Name Hint Properties",
-                description = "The list of properties whose values "+
-                 "may be used to derive a name for newly created principal. When handling a request "+
-                 "to create a new principal, the name is automatically generated from this set if "+
-                 "no \":name\" or \":nameHint\" property is provided. In this case the request "+
-                 "parameters listed in this configuration value may be used as a hint to create the name.")
+        @AttributeDefinition(
+                name = "Principal Name Hint Properties",
+                description = "The list of properties whose values "
+                        + "may be used to derive a name for newly created principal. When handling a request "
+                        + "to create a new principal, the name is automatically generated from this set if "
+                        + "no \":name\" or \":nameHint\" property is provided. In this case the request "
+                        + "parameters listed in this configuration value may be used as a hint to create the name.")
         String[] principalNameHints();
-
     }
 
     private String[] parameterNames;
@@ -94,9 +98,7 @@ public class PrincipalNameGeneratorImpl implements PrincipalNameGenerator {
             this.parameterNames = parameterNames;
         }
 
-        this.maxLength = (maxNameLength > 0)
-                ? maxNameLength
-                : DEFAULT_MAX_NAME_LENGTH;
+        this.maxLength = (maxNameLength > 0) ? maxNameLength : DEFAULT_MAX_NAME_LENGTH;
     }
 
     @Activate
@@ -156,7 +158,8 @@ public class PrincipalNameGeneratorImpl implements PrincipalNameGenerator {
             // check for a paramName@ValueFrom param
             // SLING-130: VALUE_FROM_SUFFIX means take the value of this
             // property from a different field
-            values = valueToList(parameters.get(String.format("%s%s", paramName, SlingPostConstants.VALUE_FROM_SUFFIX)));
+            values =
+                    valueToList(parameters.get(String.format("%s%s", paramName, SlingPostConstants.VALUE_FROM_SUFFIX)));
             if (!values.isEmpty()) {
                 for (String specialParam : values) {
                     if (specialParam != null && !specialParam.isEmpty()) {
@@ -196,8 +199,11 @@ public class PrincipalNameGeneratorImpl implements PrincipalNameGenerator {
      * @return the principal name to be created or null if other PrincipalNameGenerators should be consulted
      */
     @Override
-    public NameInfo getPrincipalName(Map<String, ?> parameters, AuthorizableType type,
-            PrincipalNameFilter principalNameFilter, PrincipalNameGenerator defaultPrincipalNameGenerator) {
+    public NameInfo getPrincipalName(
+            Map<String, ?> parameters,
+            AuthorizableType type,
+            PrincipalNameFilter principalNameFilter,
+            PrincipalNameGenerator defaultPrincipalNameGenerator) {
         String valueToUse = null;
         boolean doFilter = true;
 
@@ -208,7 +214,7 @@ public class PrincipalNameGeneratorImpl implements PrincipalNameGenerator {
         if (valueToUse != null) {
             doFilter = false;
         }
-        if ( valueToUse == null ) {
+        if (valueToUse == null) {
             valueToUse = getValueToUse(parameters, SlingPostConstants.RP_NODE_NAME_HINT);
 
             if (valueToUse == null && parameterNames != null) {
@@ -239,5 +245,4 @@ public class PrincipalNameGeneratorImpl implements PrincipalNameGenerator {
             return null;
         }
     }
-
 }

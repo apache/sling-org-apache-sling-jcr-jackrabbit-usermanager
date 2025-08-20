@@ -18,11 +18,11 @@
  */
 package org.apache.sling.jackrabbit.usermanager;
 
-import java.util.List;
-import java.util.Map;
-
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
+
+import java.util.List;
+import java.util.Map;
 
 import org.apache.jackrabbit.api.security.user.User;
 import org.apache.sling.servlets.post.Modification;
@@ -33,14 +33,14 @@ import org.apache.sling.servlets.post.Modification;
  * This interface is not intended to be implemented by bundles. It is
  * implemented by this bundle and may be used by client bundles.
  * </p>
- * 
+ *
  * @since 2.2.0
  */
 public interface CreateUser {
 
     /**
      * Create a new user for the repository
-     * 
+     *
      * @param jcrSession the JCR session of the user creating the user
      * @param name The name of the new user.  If null or empty, the name is calculated from the supplied properties (per SLING-10902).
      * @param password The password of the new user (required)
@@ -50,18 +50,19 @@ public interface CreateUser {
      * @return the user that was created
      * @throws RepositoryException if user can't be created
      */
-    public User createUser(Session jcrSession,
-                            String name,
-                            String password,
-                            String passwordConfirm,
-                            Map<String, ?> properties,
-                            List<Modification> changes
-                ) throws RepositoryException;
+    public User createUser(
+            Session jcrSession,
+            String name,
+            String password,
+            String passwordConfirm,
+            Map<String, ?> properties,
+            List<Modification> changes)
+            throws RepositoryException;
 
     /**
-     * Create a new user for the repository. The name is calculated from the 
+     * Create a new user for the repository. The name is calculated from the
      * supplied properties (per SLING-10902).
-     * 
+     *
      * @param jcrSession the JCR session of the user creating the user
      * @param password The password of the new user (required)
      * @param passwordConfirm The password of the new user again (required)
@@ -70,12 +71,13 @@ public interface CreateUser {
      * @return the user that was created
      * @throws RepositoryException if user can't be created
      */
-    public default User createUser(Session jcrSession,
-                            String password,
-                            String passwordConfirm,
-                            Map<String, ?> properties,
-                            List<Modification> changes
-                ) throws RepositoryException {
+    public default User createUser(
+            Session jcrSession,
+            String password,
+            String passwordConfirm,
+            Map<String, ?> properties,
+            List<Modification> changes)
+            throws RepositoryException {
         return createUser(jcrSession, null, password, passwordConfirm, properties, changes);
     }
 }

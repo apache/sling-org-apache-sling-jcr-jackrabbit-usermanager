@@ -18,11 +18,11 @@
  */
 package org.apache.sling.jackrabbit.usermanager;
 
-import java.util.List;
-import java.util.Map;
-
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
+
+import java.util.List;
+import java.util.Map;
 
 import org.apache.jackrabbit.api.security.user.User;
 import org.apache.sling.servlets.post.Modification;
@@ -33,25 +33,21 @@ import org.apache.sling.servlets.post.Modification;
  * This interface is not intended to be implemented by bundles. It is
  * implemented by this bundle and may be used by client bundles.
  * </p>
- * 
+ *
  * @since 2.2.0
  */
 public interface UpdateUser {
 
     /**
      * Update a user in the repository
-     * 
+     *
      * @param jcrSession the JCR session of the user updating the user
      * @param name The name of the user to update (required)
      * @param properties Extra properties to update on the user. The entry values should be either a String or String[] (optional)
      * @param changes The list of changes for this operation (optional)
-     * @return the user that was updated or null if not found 
+     * @return the user that was updated or null if not found
      * @throws RepositoryException if user can't be updated
      */
-    public User updateUser(Session jcrSession,
-                            String name,
-                            Map<String, ?> properties,
-                            List<Modification> changes
-                ) throws RepositoryException;
-    
+    public User updateUser(Session jcrSession, String name, Map<String, ?> properties, List<Modification> changes)
+            throws RepositoryException;
 }

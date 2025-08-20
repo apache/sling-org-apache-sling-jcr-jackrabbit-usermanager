@@ -1,28 +1,30 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 package org.apache.sling.jcr.jackrabbit.usermanager.it.post;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import jakarta.json.JsonException;
+import jakarta.json.JsonObject;
+import jakarta.servlet.http.HttpServletResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.auth.Credentials;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -33,9 +35,8 @@ import org.ops4j.pax.exam.junit.PaxExam;
 import org.ops4j.pax.exam.spi.reactors.ExamReactorStrategy;
 import org.ops4j.pax.exam.spi.reactors.PerClass;
 
-import jakarta.json.JsonException;
-import jakarta.json.JsonObject;
-import jakarta.servlet.http.HttpServletResponse;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 /**
  * Tests for the 'removeAuthorizable' Sling Post Operation
@@ -51,18 +52,23 @@ public class RemoveAuthorizablesIT extends UserManagerClientTestSupport {
         Credentials creds = new UsernamePasswordCredentials("admin", "admin");
 
         String getUrl = String.format("%s/system/userManager/user/%s.json", baseServerUri, userId);
-        assertAuthenticatedHttpStatus(creds, getUrl, HttpServletResponse.SC_OK, null); //make sure the profile request returns some data
+        assertAuthenticatedHttpStatus(
+                creds, getUrl, HttpServletResponse.SC_OK, null); // make sure the profile request returns some data
 
         String postUrl = String.format("%s/system/userManager/user/%s.delete.html", baseServerUri, userId);
         List<NameValuePair> postParams = new ArrayList<>();
         assertAuthenticatedPostStatus(creds, postUrl, HttpServletResponse.SC_OK, postParams, null);
 
-        assertAuthenticatedHttpStatus(creds, getUrl, HttpServletResponse.SC_NOT_FOUND, null); //make sure the profile request returns some data
+        assertAuthenticatedHttpStatus(
+                creds,
+                getUrl,
+                HttpServletResponse.SC_NOT_FOUND,
+                null); // make sure the profile request returns some data
     }
 
     @Test
     public void testNotAuthorizedRemoveUser() throws IOException {
-        //a user who is not authorized to do the action
+        // a user who is not authorized to do the action
         testUserId2 = createTestUser();
 
         String userId = createTestUser();
@@ -70,19 +76,21 @@ public class RemoveAuthorizablesIT extends UserManagerClientTestSupport {
         Credentials creds = new UsernamePasswordCredentials("admin", "admin");
 
         String getUrl = String.format("%s/system/userManager/user/%s.json", baseServerUri, userId);
-        assertAuthenticatedHttpStatus(creds, getUrl, HttpServletResponse.SC_OK, null); //make sure the profile request returns some data
+        assertAuthenticatedHttpStatus(
+                creds, getUrl, HttpServletResponse.SC_OK, null); // make sure the profile request returns some data
 
         Credentials creds2 = new UsernamePasswordCredentials(testUserId2, "testPwd");
         String postUrl = String.format("%s/system/userManager/user/%s.delete.html", baseServerUri, userId);
         List<NameValuePair> postParams = new ArrayList<>();
         assertAuthenticatedPostStatus(creds2, postUrl, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, postParams, null);
 
-        assertAuthenticatedHttpStatus(creds, getUrl, HttpServletResponse.SC_OK, null); //make sure the profile request returns some data
+        assertAuthenticatedHttpStatus(
+                creds, getUrl, HttpServletResponse.SC_OK, null); // make sure the profile request returns some data
     }
 
     @Test
     public void testAuthorizedRemoveUser() throws IOException {
-        //a user who is authorized to do the action
+        // a user who is authorized to do the action
         testUserId2 = createTestUser();
         grantUserManagementRights(testUserId2);
 
@@ -91,13 +99,18 @@ public class RemoveAuthorizablesIT extends UserManagerClientTestSupport {
         Credentials creds = new UsernamePasswordCredentials(testUserId2, "testPwd");
 
         String getUrl = String.format("%s/system/userManager/user/%s.json", baseServerUri, userId);
-        assertAuthenticatedHttpStatus(creds, getUrl, HttpServletResponse.SC_OK, null); //make sure the profile request returns some data
+        assertAuthenticatedHttpStatus(
+                creds, getUrl, HttpServletResponse.SC_OK, null); // make sure the profile request returns some data
 
         String postUrl = String.format("%s/system/userManager/user/%s.delete.html", baseServerUri, userId);
         List<NameValuePair> postParams = new ArrayList<>();
         assertAuthenticatedPostStatus(creds, postUrl, HttpServletResponse.SC_OK, postParams, null);
 
-        assertAuthenticatedHttpStatus(creds, getUrl, HttpServletResponse.SC_NOT_FOUND, null); //make sure the profile request returns some data
+        assertAuthenticatedHttpStatus(
+                creds,
+                getUrl,
+                HttpServletResponse.SC_NOT_FOUND,
+                null); // make sure the profile request returns some data
     }
 
     /**
@@ -112,8 +125,9 @@ public class RemoveAuthorizablesIT extends UserManagerClientTestSupport {
         postParams.add(new BasicNameValuePair(":responseType", "custom"));
 
         Credentials creds = new UsernamePasswordCredentials("admin", "admin");
-        String content = getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_HTML, postParams, HttpServletResponse.SC_OK);
-        assertEquals("Thanks!", content); //verify that the content matches the custom response
+        String content =
+                getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_HTML, postParams, HttpServletResponse.SC_OK);
+        assertEquals("Thanks!", content); // verify that the content matches the custom response
     }
 
     @Test
@@ -123,18 +137,23 @@ public class RemoveAuthorizablesIT extends UserManagerClientTestSupport {
         Credentials creds = new UsernamePasswordCredentials("admin", "admin");
 
         String getUrl = String.format("%s/system/userManager/group/%s.json", baseServerUri, groupId);
-        assertAuthenticatedHttpStatus(creds, getUrl, HttpServletResponse.SC_OK, null); //make sure the profile request returns some data
+        assertAuthenticatedHttpStatus(
+                creds, getUrl, HttpServletResponse.SC_OK, null); // make sure the profile request returns some data
 
         String postUrl = String.format("%s/system/userManager/group/%s.delete.html", baseServerUri, groupId);
         List<NameValuePair> postParams = new ArrayList<>();
         assertAuthenticatedPostStatus(creds, postUrl, HttpServletResponse.SC_OK, postParams, null);
 
-        assertAuthenticatedHttpStatus(creds, getUrl, HttpServletResponse.SC_NOT_FOUND, null); //make sure the profile request returns some data
+        assertAuthenticatedHttpStatus(
+                creds,
+                getUrl,
+                HttpServletResponse.SC_NOT_FOUND,
+                null); // make sure the profile request returns some data
     }
 
     @Test
     public void testNotAuthorizedRemoveGroup() throws IOException {
-        //a user who is not authorized to do the action
+        // a user who is not authorized to do the action
         testUserId2 = createTestUser();
 
         String groupId = createTestGroup();
@@ -142,19 +161,21 @@ public class RemoveAuthorizablesIT extends UserManagerClientTestSupport {
         Credentials creds = new UsernamePasswordCredentials("admin", "admin");
 
         String getUrl = String.format("%s/system/userManager/group/%s.json", baseServerUri, groupId);
-        assertAuthenticatedHttpStatus(creds, getUrl, HttpServletResponse.SC_OK, null); //make sure the profile request returns some data
+        assertAuthenticatedHttpStatus(
+                creds, getUrl, HttpServletResponse.SC_OK, null); // make sure the profile request returns some data
 
         Credentials creds2 = new UsernamePasswordCredentials(testUserId2, "testPwd");
         String postUrl = String.format("%s/system/userManager/group/%s.delete.html", baseServerUri, groupId);
         List<NameValuePair> postParams = new ArrayList<>();
         assertAuthenticatedPostStatus(creds2, postUrl, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, postParams, null);
 
-        assertAuthenticatedHttpStatus(creds, getUrl, HttpServletResponse.SC_OK, null); //make sure the profile request returns some data
+        assertAuthenticatedHttpStatus(
+                creds, getUrl, HttpServletResponse.SC_OK, null); // make sure the profile request returns some data
     }
 
     @Test
     public void testAuthorizedRemoveGroup() throws IOException {
-        //a user who is authorized to do the action
+        // a user who is authorized to do the action
         testUserId2 = createTestUser();
         grantUserManagementRights(testUserId2);
 
@@ -163,13 +184,18 @@ public class RemoveAuthorizablesIT extends UserManagerClientTestSupport {
         Credentials creds = new UsernamePasswordCredentials(testUserId2, "testPwd");
 
         String getUrl = String.format("%s/system/userManager/group/%s.json", baseServerUri, groupId);
-        assertAuthenticatedHttpStatus(creds, getUrl, HttpServletResponse.SC_OK, null); //make sure the profile request returns some data
+        assertAuthenticatedHttpStatus(
+                creds, getUrl, HttpServletResponse.SC_OK, null); // make sure the profile request returns some data
 
         String postUrl = String.format("%s/system/userManager/group/%s.delete.html", baseServerUri, groupId);
         List<NameValuePair> postParams = new ArrayList<>();
         assertAuthenticatedPostStatus(creds, postUrl, HttpServletResponse.SC_OK, postParams, null);
 
-        assertAuthenticatedHttpStatus(creds, getUrl, HttpServletResponse.SC_NOT_FOUND, null); //make sure the profile request returns some data
+        assertAuthenticatedHttpStatus(
+                creds,
+                getUrl,
+                HttpServletResponse.SC_NOT_FOUND,
+                null); // make sure the profile request returns some data
     }
 
     /**
@@ -184,8 +210,9 @@ public class RemoveAuthorizablesIT extends UserManagerClientTestSupport {
         postParams.add(new BasicNameValuePair(":responseType", "custom"));
 
         Credentials creds = new UsernamePasswordCredentials("admin", "admin");
-        String content = getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_HTML, postParams, HttpServletResponse.SC_OK);
-        assertEquals("Thanks!", content); //verify that the content matches the custom response
+        String content =
+                getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_HTML, postParams, HttpServletResponse.SC_OK);
+        assertEquals("Thanks!", content); // verify that the content matches the custom response
     }
 
     @Test
@@ -196,10 +223,12 @@ public class RemoveAuthorizablesIT extends UserManagerClientTestSupport {
         Credentials creds = new UsernamePasswordCredentials("admin", "admin");
 
         String getUrl = String.format("%s/system/userManager/user/%s.json", baseServerUri, userId);
-        assertAuthenticatedHttpStatus(creds, getUrl, HttpServletResponse.SC_OK, null); //make sure the profile request returns some data
+        assertAuthenticatedHttpStatus(
+                creds, getUrl, HttpServletResponse.SC_OK, null); // make sure the profile request returns some data
 
         getUrl = String.format("%s/system/userManager/group/%s.json", baseServerUri, groupId);
-        assertAuthenticatedHttpStatus(creds, getUrl, HttpServletResponse.SC_OK, null); //make sure the profile request returns some data
+        assertAuthenticatedHttpStatus(
+                creds, getUrl, HttpServletResponse.SC_OK, null); // make sure the profile request returns some data
 
         String postUrl = String.format("%s/system/userManager.delete.html", baseServerUri);
         List<NameValuePair> postParams = new ArrayList<>();
@@ -208,10 +237,18 @@ public class RemoveAuthorizablesIT extends UserManagerClientTestSupport {
         assertAuthenticatedPostStatus(creds, postUrl, HttpServletResponse.SC_OK, postParams, null);
 
         getUrl = String.format("%s/system/userManager/user/%s.json", baseServerUri, userId);
-        assertAuthenticatedHttpStatus(creds, getUrl, HttpServletResponse.SC_NOT_FOUND, null); //make sure the profile request returns some data
+        assertAuthenticatedHttpStatus(
+                creds,
+                getUrl,
+                HttpServletResponse.SC_NOT_FOUND,
+                null); // make sure the profile request returns some data
 
         getUrl = String.format("%s/system/userManager/group/%s.json", baseServerUri, groupId);
-        assertAuthenticatedHttpStatus(creds, getUrl, HttpServletResponse.SC_NOT_FOUND, null); //make sure the profile request returns some data
+        assertAuthenticatedHttpStatus(
+                creds,
+                getUrl,
+                HttpServletResponse.SC_NOT_FOUND,
+                null); // make sure the profile request returns some data
     }
 
     /**
@@ -229,15 +266,19 @@ public class RemoveAuthorizablesIT extends UserManagerClientTestSupport {
         assertAuthenticatedPostStatus(creds, addMemberPostUrl, HttpServletResponse.SC_OK, addMemberPostParams, null);
 
         String getUrl = String.format("%s/system/userManager/group/%s.json", baseServerUri, groupId);
-        assertAuthenticatedHttpStatus(creds, getUrl, HttpServletResponse.SC_OK, null); //make sure the profile request returns some data
+        assertAuthenticatedHttpStatus(
+                creds, getUrl, HttpServletResponse.SC_OK, null); // make sure the profile request returns some data
 
         String postUrl = String.format("%s/system/userManager/group/%s.delete.html", baseServerUri, groupId);
         List<NameValuePair> postParams = new ArrayList<>();
         assertAuthenticatedPostStatus(creds, postUrl, HttpServletResponse.SC_OK, postParams, null);
 
-        assertAuthenticatedHttpStatus(creds, getUrl, HttpServletResponse.SC_NOT_FOUND, null); //make sure the profile request returns some data
+        assertAuthenticatedHttpStatus(
+                creds,
+                getUrl,
+                HttpServletResponse.SC_NOT_FOUND,
+                null); // make sure the profile request returns some data
     }
-
 
     /**
      * Test for SLING-1677
@@ -253,9 +294,10 @@ public class RemoveAuthorizablesIT extends UserManagerClientTestSupport {
         List<NameValuePair> postParams = new ArrayList<>();
         postParams.add(new BasicNameValuePair(":applyTo", "group/" + groupId));
         postParams.add(new BasicNameValuePair(":applyTo", "user/" + userId));
-        String json = getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
+        String json =
+                getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
 
-        //make sure the json response can be parsed as a JSON object
+        // make sure the json response can be parsed as a JSON object
         JsonObject jsonObj = parseJson(json);
         assertNotNull(jsonObj);
     }
@@ -286,5 +328,4 @@ public class RemoveAuthorizablesIT extends UserManagerClientTestSupport {
     public void testRemoveAuthorizableInvalidRedirectWithInvalidURI() throws IOException, JsonException {
         testRemoveAuthorizablesRedirect("https://", SC_UNPROCESSABLE_ENTITY);
     }
-
 }

@@ -18,17 +18,7 @@
  */
 package org.apache.sling.jcr.jackrabbit.usermanager.it.post;
 
-import static org.apache.sling.testing.paxexam.SlingOptions.slingBundleresource;
-import static org.apache.sling.testing.paxexam.SlingOptions.slingCommonsCompiler;
-import static org.apache.sling.testing.paxexam.SlingOptions.slingJcrJackrabbitAccessmanager;
-import static org.apache.sling.testing.paxexam.SlingOptions.slingJcrJackrabbitUsermanager;
-import static org.apache.sling.testing.paxexam.SlingOptions.slingScriptingJavascript;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.ops4j.pax.exam.CoreOptions.when;
-import static org.ops4j.pax.exam.cm.ConfigurationAdminOptions.factoryConfiguration;
-import static org.ops4j.pax.exam.cm.ConfigurationAdminOptions.newConfiguration;
+import javax.inject.Inject;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -44,8 +34,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import javax.inject.Inject;
-
+import jakarta.json.Json;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonReader;
+import jakarta.servlet.http.HttpServletResponse;
 import org.apache.http.Header;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
@@ -86,10 +78,17 @@ import org.osgi.framework.ServiceRegistration;
 import org.osgi.service.cm.Configuration;
 import org.osgi.service.cm.ConfigurationAdmin;
 
-import jakarta.json.Json;
-import jakarta.json.JsonObject;
-import jakarta.json.JsonReader;
-import jakarta.servlet.http.HttpServletResponse;
+import static org.apache.sling.testing.paxexam.SlingOptions.slingBundleresource;
+import static org.apache.sling.testing.paxexam.SlingOptions.slingCommonsCompiler;
+import static org.apache.sling.testing.paxexam.SlingOptions.slingJcrJackrabbitAccessmanager;
+import static org.apache.sling.testing.paxexam.SlingOptions.slingJcrJackrabbitUsermanager;
+import static org.apache.sling.testing.paxexam.SlingOptions.slingScriptingJavascript;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.ops4j.pax.exam.CoreOptions.when;
+import static org.ops4j.pax.exam.cm.ConfigurationAdminOptions.factoryConfiguration;
+import static org.ops4j.pax.exam.cm.ConfigurationAdminOptions.newConfiguration;
 
 /**
  * base class for tests doing http requests to verify calls to the usermanager
@@ -139,7 +138,7 @@ public abstract class UserManagerClientTestSupport extends UserManagerTestSuppor
         // optionally create a tinybundle that contains a test script
         final Option bundle = buildBundleResourcesBundle();
 
-        return new Option[]{
+        return new Option[] {
             slingBundleresource(),
             // for usermanager support
             slingJcrJackrabbitUsermanager(),
@@ -154,29 +153,29 @@ public abstract class UserManagerClientTestSupport extends UserManagerTestSuppor
             // enable the healthcheck configuration for checking when the server is ready to
             //  receive http requests.  (adapted from the starter healthcheck.json configuration)
             factoryConfiguration("org.apache.felix.hc.generalchecks.FrameworkStartCheck")
-                .put("hc.tags", new String[] {"systemalive"})
-                .put("targetStartLevel", 5)
-                .asOption(),
+                    .put("hc.tags", new String[] {"systemalive"})
+                    .put("targetStartLevel", 5)
+                    .asOption(),
             factoryConfiguration("org.apache.felix.hc.generalchecks.ServicesCheck")
-                .put("hc.tags", new String[] {"systemalive"})
-                .put("services.list", new String[] {
+                    .put("hc.tags", new String[] {"systemalive"})
+                    .put("services.list", new String[] {
                         "org.apache.sling.jcr.api.SlingRepository",
                         "org.apache.sling.engine.auth.Authenticator",
                         "org.apache.sling.api.resource.ResourceResolverFactory",
                         "org.apache.sling.api.servlets.ServletResolver",
                         "javax.script.ScriptEngineManager"
-                })
-                .asOption(),
+                    })
+                    .asOption(),
             factoryConfiguration("org.apache.felix.hc.generalchecks.BundlesStartedCheck")
-                .put("hc.tags", new String[] {"bundles"})
-                .asOption(),
+                    .put("hc.tags", new String[] {"bundles"})
+                    .asOption(),
             factoryConfiguration("org.apache.sling.jcr.contentloader.hc.BundleContentLoadedCheck")
-                .put("hc.tags", new String[] {"bundles"})
-                .asOption(),
+                    .put("hc.tags", new String[] {"bundles"})
+                    .asOption(),
             // SLING-10902 configure principal name hint
             newConfiguration("org.apache.sling.jackrabbit.usermanager.PrincipalNameGenerator")
-                        .put("principalNameHints", new String[] {"displayName"})
-                        .asOption()
+                    .put("principalNameHints", new String[] {"displayName"})
+                    .asOption()
         };
     }
 
@@ -184,8 +183,8 @@ public abstract class UserManagerClientTestSupport extends UserManagerTestSuppor
     public void before() throws IOException, URISyntaxException {
         Bundle bundle = FrameworkUtil.getBundle(getClass());
         Dictionary<String, Object> props = new Hashtable<>(); // NOSONAR
-        serviceReg = bundle.getBundleContext().registerService(JakartaPostResponseCreator.class,
-                new CustomPostResponseCreatorImpl(), props);
+        serviceReg = bundle.getBundleContext()
+                .registerService(JakartaPostResponseCreator.class, new CustomPostResponseCreatorImpl(), props);
 
         // wait for the health checks to be OK
         waitForServerReady(Duration.ofMinutes(1).toMillis(), 500);
@@ -203,21 +202,24 @@ public abstract class UserManagerClientTestSupport extends UserManagerTestSuppor
         httpContext.setCookieStore(new BasicCookieStore());
         httpContext.setCredentialsProvider(new BasicCredentialsProvider());
         httpContext.setAuthCache(authCache);
-        RequestConfig requestConfig = RequestConfig.custom().setCookieSpec(CookieSpecs.STANDARD_STRICT).build();
-        httpContext.setRequestConfig(requestConfig);
-        httpClient = HttpClients.custom()
-                .disableRedirectHandling()
+        RequestConfig requestConfig = RequestConfig.custom()
+                .setCookieSpec(CookieSpecs.STANDARD_STRICT)
                 .build();
+        httpContext.setRequestConfig(requestConfig);
+        httpClient = HttpClients.custom().disableRedirectHandling().build();
 
         // SLING-12083 - wait for the "users" resource to be available to try to avoid flaky
         //   failures while creating test users
         Awaitility.await("users resource available")
-            .atMost(10000, TimeUnit.MILLISECONDS)
-            .pollInterval(1000, TimeUnit.MILLISECONDS)
-            .ignoreException(LoginException.class)
-            .until(() -> {
-                    Map<String, Object> authInfo = Map.of(ResourceResolverFactory.USER, "admin",
-                                                          ResourceResolverFactory.PASSWORD, "admin".toCharArray());
+                .atMost(10000, TimeUnit.MILLISECONDS)
+                .pollInterval(1000, TimeUnit.MILLISECONDS)
+                .ignoreException(LoginException.class)
+                .until(() -> {
+                    Map<String, Object> authInfo = Map.of(
+                            ResourceResolverFactory.USER,
+                            "admin",
+                            ResourceResolverFactory.PASSWORD,
+                            "admin".toCharArray());
                     try (ResourceResolver resourceResolver = resourceResolverFactory.getResourceResolver(authInfo)) {
                         return resourceResolver.getResource("/system/userManager/user") != null;
                     }
@@ -233,33 +235,33 @@ public abstract class UserManagerClientTestSupport extends UserManagerTestSuppor
         Credentials creds = new UsernamePasswordCredentials("admin", "admin");
 
         if (testFolderUrl != null) {
-            //remove the test user if it exists.
+            // remove the test user if it exists.
             List<NameValuePair> postParams = new ArrayList<>();
             postParams.add(new BasicNameValuePair(":operation", "delete"));
             assertAuthenticatedPostStatus(creds, testFolderUrl, HttpServletResponse.SC_OK, postParams, null);
         }
         if (testGroupId != null) {
-            //remove the test user if it exists.
+            // remove the test user if it exists.
             String postUrl = String.format("%s/system/userManager/group/%s.delete.html", baseServerUri, testGroupId);
             assertAuthenticatedPostStatus(creds, postUrl, HttpServletResponse.SC_OK, Collections.emptyList(), null);
         }
         if (testGroupId2 != null) {
-            //remove the test user if it exists.
+            // remove the test user if it exists.
             String postUrl = String.format("%s/system/userManager/group/%s.delete.html", baseServerUri, testGroupId2);
             assertAuthenticatedPostStatus(creds, postUrl, HttpServletResponse.SC_OK, Collections.emptyList(), null);
         }
         if (testUserId != null) {
-            //remove the test user if it exists.
+            // remove the test user if it exists.
             String postUrl = String.format("%s/system/userManager/user/%s.delete.html", baseServerUri, testUserId);
             assertAuthenticatedPostStatus(creds, postUrl, HttpServletResponse.SC_OK, Collections.emptyList(), null);
         }
         if (testUserId2 != null) {
-            //remove the test user if it exists.
+            // remove the test user if it exists.
             String postUrl = String.format("%s/system/userManager/user/%s.delete.html", baseServerUri, testUserId2);
             assertAuthenticatedPostStatus(creds, postUrl, HttpServletResponse.SC_OK, Collections.emptyList(), null);
         }
         if (testUserId3 != null) {
-            //remove the test user if it exists.
+            // remove the test user if it exists.
             String postUrl = String.format("%s/system/userManager/user/%s.delete.html", baseServerUri, testUserId3);
             assertAuthenticatedPostStatus(creds, postUrl, HttpServletResponse.SC_OK, Collections.emptyList(), null);
         }
@@ -290,7 +292,7 @@ public abstract class UserManagerClientTestSupport extends UserManagerTestSuppor
             host = "localhost";
         } else {
             assertTrue(hostObj instanceof String);
-            host = (String)hostObj;
+            host = (String) hostObj;
         }
         assertNotNull(host);
 
@@ -311,7 +313,7 @@ public abstract class UserManagerClientTestSupport extends UserManagerTestSuppor
         }
         int port = -1;
         if (portObj instanceof Number) {
-            port = ((Number)portObj).intValue();
+            port = ((Number) portObj).intValue();
         }
         assertTrue(port > 0);
 
@@ -319,7 +321,7 @@ public abstract class UserManagerClientTestSupport extends UserManagerTestSuppor
     }
 
     protected void assertPrivilege(Collection<String> privileges, boolean expected, String privilegeName) {
-        if(expected != privileges.contains(privilegeName)) {
+        if (expected != privileges.contains(privilegeName)) {
             fail("Expected privilege " + privilegeName + " to be "
                     + (expected ? "included" : "NOT INCLUDED")
                     + " in supplied list: " + privileges + ")");
@@ -328,7 +330,8 @@ public abstract class UserManagerClientTestSupport extends UserManagerTestSuppor
 
     protected Object doAuthenticatedWork(Credentials creds, AuthenticatedWorker worker) throws IOException {
         Object result = null;
-        AuthScope authScope = new AuthScope(baseServerUri.getHost(), baseServerUri.getPort(), baseServerUri.getScheme());
+        AuthScope authScope =
+                new AuthScope(baseServerUri.getHost(), baseServerUri.getPort(), baseServerUri.getScheme());
         CredentialsProvider oldCredentialsProvider = httpContext.getCredentialsProvider();
         try {
             BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
@@ -344,14 +347,27 @@ public abstract class UserManagerClientTestSupport extends UserManagerTestSuppor
         return result;
     }
 
-    protected void assertAuthenticatedAdminPostStatus(String url, int expectedStatusCode, List<NameValuePair> postParams, String assertMessage) throws IOException {
+    protected void assertAuthenticatedAdminPostStatus(
+            String url, int expectedStatusCode, List<NameValuePair> postParams, String assertMessage)
+            throws IOException {
         Credentials creds = new UsernamePasswordCredentials("admin", "admin");
         assertAuthenticatedPostStatus(creds, url, expectedStatusCode, postParams, assertMessage);
     }
-    protected void assertAuthenticatedPostStatus(Credentials creds, String url, int expectedStatusCode, List<NameValuePair> postParams, String assertMessage) throws IOException {
+
+    protected void assertAuthenticatedPostStatus(
+            Credentials creds, String url, int expectedStatusCode, List<NameValuePair> postParams, String assertMessage)
+            throws IOException {
         assertAuthenticatedPostStatus(creds, url, expectedStatusCode, postParams, assertMessage, null);
     }
-    protected void assertAuthenticatedPostStatus(Credentials creds, String url, int expectedStatusCode, List<NameValuePair> postParams, String assertMessage, ValidateResponse validate) throws IOException {
+
+    protected void assertAuthenticatedPostStatus(
+            Credentials creds,
+            String url,
+            int expectedStatusCode,
+            List<NameValuePair> postParams,
+            String assertMessage,
+            ValidateResponse validate)
+            throws IOException {
         doAuthenticatedWork(creds, () -> {
             HttpPost postRequest = new HttpPost(url);
             postRequest.setEntity(new UrlEncodedFormEntity(postParams));
@@ -365,7 +381,8 @@ public abstract class UserManagerClientTestSupport extends UserManagerTestSuppor
         });
     }
 
-    protected void assertAuthenticatedHttpStatus(Credentials creds, String urlString, int expectedStatusCode, String assertMessage) throws IOException {
+    protected void assertAuthenticatedHttpStatus(
+            Credentials creds, String urlString, int expectedStatusCode, String assertMessage) throws IOException {
         doAuthenticatedWork(creds, () -> {
             HttpGet getRequest = new HttpGet(urlString);
             try (CloseableHttpResponse response = httpClient.execute(getRequest, httpContext)) {
@@ -375,8 +392,9 @@ public abstract class UserManagerClientTestSupport extends UserManagerTestSuppor
         });
     }
 
-    protected String getAuthenticatedContent(Credentials creds, String url, String expectedContentType, int expectedStatusCode) throws IOException {
-        return (String)doAuthenticatedWork(creds, () -> {
+    protected String getAuthenticatedContent(
+            Credentials creds, String url, String expectedContentType, int expectedStatusCode) throws IOException {
+        return (String) doAuthenticatedWork(creds, () -> {
             HttpGet getRequest = new HttpGet(url);
             try (CloseableHttpResponse response = httpClient.execute(getRequest, httpContext)) {
                 verifyHttpStatus(response, null, expectedStatusCode);
@@ -386,24 +404,27 @@ public abstract class UserManagerClientTestSupport extends UserManagerTestSuppor
                         fail("Expected null Content-Type, got " + h.getValue());
                     }
                 } else if (h == null) {
-                    fail(
-                            "Expected Content-Type that starts with '" + expectedContentType
-                            +" but got no Content-Type header at " + url
-                    );
+                    fail("Expected Content-Type that starts with '" + expectedContentType
+                            + " but got no Content-Type header at " + url);
                 } else {
                     assertTrue(
-                        "Expected Content-Type that starts with '" + expectedContentType
-                        + "' for " + url + ", got '" + h.getValue() + "'",
-                        h.getValue().startsWith(expectedContentType)
-                    );
+                            "Expected Content-Type that starts with '" + expectedContentType + "' for " + url
+                                    + ", got '" + h.getValue() + "'",
+                            h.getValue().startsWith(expectedContentType));
                 }
                 return EntityUtils.toString(response.getEntity());
             }
         });
     }
 
-    protected String getAuthenticatedPostContent(Credentials creds, String url, String expectedContentType, List<NameValuePair> postParams, int expectedStatusCode) throws IOException {
-        return (String)doAuthenticatedWork(creds, () -> {
+    protected String getAuthenticatedPostContent(
+            Credentials creds,
+            String url,
+            String expectedContentType,
+            List<NameValuePair> postParams,
+            int expectedStatusCode)
+            throws IOException {
+        return (String) doAuthenticatedWork(creds, () -> {
             HttpPost postRequest = new HttpPost(url);
             postRequest.setEntity(new UrlEncodedFormEntity(postParams));
             try (CloseableHttpResponse response = httpClient.execute(postRequest, httpContext)) {
@@ -414,16 +435,13 @@ public abstract class UserManagerClientTestSupport extends UserManagerTestSuppor
                         fail("Expected null Content-Type, got " + h.getValue());
                     }
                 } else if (h == null) {
-                    fail(
-                            "Expected Content-Type that starts with '" + expectedContentType
-                            +" but got no Content-Type header at " + url
-                    );
+                    fail("Expected Content-Type that starts with '" + expectedContentType
+                            + " but got no Content-Type header at " + url);
                 } else {
                     assertTrue(
-                        "Expected Content-Type that starts with '" + expectedContentType
-                        + "' for " + url + ", got '" + h.getValue() + "'",
-                        h.getValue().startsWith(expectedContentType)
-                    );
+                            "Expected Content-Type that starts with '" + expectedContentType + "' for " + url
+                                    + ", got '" + h.getValue() + "'",
+                            h.getValue().startsWith(expectedContentType));
                 }
                 return EntityUtils.toString(response.getEntity());
             }
@@ -443,8 +461,8 @@ public abstract class UserManagerClientTestSupport extends UserManagerTestSuppor
         assertAuthenticatedPostStatus(creds, postUrl, HttpServletResponse.SC_OK, postParams, msg);
 
         final String sessionInfoUrl = String.format("%s/system/sling/info.sessionInfo.json", baseServerUri);
-        assertAuthenticatedHttpStatus(creds, sessionInfoUrl, HttpServletResponse.SC_OK,
-                "session info failed for user " + userId);
+        assertAuthenticatedHttpStatus(
+                creds, sessionInfoUrl, HttpServletResponse.SC_OK, "session info failed for user " + userId);
 
         return userId;
     }
@@ -470,6 +488,7 @@ public abstract class UserManagerClientTestSupport extends UserManagerTestSuppor
     protected String createTestFolder(String parentPath, String nameHint) throws IOException {
         return createTestFolder(parentPath, nameHint, TEST_FOLDER_JSON);
     }
+
     protected String createTestFolder(String parentPath, String nameHint, String jsonImport) throws IOException {
         JsonObject json = importJSON(parentPath, nameHint, jsonImport);
         return String.format("%s%s", baseServerUri, json.getString("path"));
@@ -482,7 +501,7 @@ public abstract class UserManagerClientTestSupport extends UserManagerTestSuppor
     protected JsonObject importJSON(String parentPath, String nameHint, String jsonImport) throws IOException {
         JsonObject result = null;
         Credentials creds = new UsernamePasswordCredentials("admin", "admin");
-        result = (JsonObject)doAuthenticatedWork(creds, () -> {
+        result = (JsonObject) doAuthenticatedWork(creds, () -> {
             List<NameValuePair> parameters = new ArrayList<>();
             parameters.add(new BasicNameValuePair(":operation", "import"));
             if (nameHint != null) {
@@ -554,7 +573,8 @@ public abstract class UserManagerClientTestSupport extends UserManagerTestSuppor
      * @param errorMessage   error message; if {@code null}, errorMessage is extracted from response
      * @param expectedStatus List of acceptable HTTP Statuses
      */
-    protected void verifyHttpStatus(HttpResponse response, String errorMessage, int... expectedStatus) throws IOException {
+    protected void verifyHttpStatus(HttpResponse response, String errorMessage, int... expectedStatus)
+            throws IOException {
         if (!checkStatus(response, expectedStatus)) {
             failWithErrorAndResponseContent(response, errorMessage, expectedStatus);
         }
@@ -562,7 +582,7 @@ public abstract class UserManagerClientTestSupport extends UserManagerTestSuppor
 
     /**
      * Check if the response status matches one of the expected values
-     * 
+     *
      * @param response the response to check
      * @param expectedStatus the set of status values that are expected
      * @return true if the status is as expected, false otherwise
@@ -593,12 +613,13 @@ public abstract class UserManagerClientTestSupport extends UserManagerTestSuppor
 
     /**
      * Fail with a message that includes the response content
-     * 
+     *
      * @param response the response to check
      * @param errorMessage the extra error message to use (or null)
      * @param expectedStatus the set of status values that are expected
      */
-    protected void failWithErrorAndResponseContent(HttpResponse response, String errorMessage, int... expectedStatus) throws IOException {
+    protected void failWithErrorAndResponseContent(HttpResponse response, String errorMessage, int... expectedStatus)
+            throws IOException {
         // build error message
         StringBuilder errorMsgBuilder = new StringBuilder();
         errorMsgBuilder.append("Expected HTTP Status: ");
@@ -606,20 +627,19 @@ public abstract class UserManagerClientTestSupport extends UserManagerTestSuppor
             errorMsgBuilder.append(expected).append(" ");
         }
 
-        errorMsgBuilder.append(". Instead ")
-            .append(response.getStatusLine().getStatusCode())
-            .append(" was returned!\n");
+        errorMsgBuilder
+                .append(". Instead ")
+                .append(response.getStatusLine().getStatusCode())
+                .append(" was returned!\n");
 
         if (errorMessage != null) {
             errorMsgBuilder.append(errorMessage);
         }
 
         String content = EntityUtils.toString(response.getEntity());
-        errorMsgBuilder.append("\nResponse Content:\n")
-            .append(content);
+        errorMsgBuilder.append("\nResponse Content:\n").append(content);
 
         // fail with the error message
         fail(errorMsgBuilder.toString());
     }
-
 }

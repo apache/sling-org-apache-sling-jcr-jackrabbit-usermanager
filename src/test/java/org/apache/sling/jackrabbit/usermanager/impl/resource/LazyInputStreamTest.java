@@ -1,33 +1,35 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 package org.apache.sling.jackrabbit.usermanager.impl.resource;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import javax.jcr.ValueFactory;
 
 import java.io.IOException;
-
-import javax.jcr.ValueFactory;
 
 import org.apache.jackrabbit.value.ValueFactoryImpl;
 import org.apache.sling.jackrabbit.usermanager.impl.resource.BaseAuthorizableValueMap.LazyInputStream;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Provides code coverage for BaseAuthorizableValueMap.LazyInputStream
@@ -39,7 +41,7 @@ public class LazyInputStreamTest {
     @Before
     public void setup() {
         ValueFactory vf = ValueFactoryImpl.getInstance();
-        lazyIS = new LazyInputStream(vf.createValue("Hello World")); 
+        lazyIS = new LazyInputStream(vf.createValue("Hello World"));
     }
 
     public void teardown() {
@@ -57,7 +59,7 @@ public class LazyInputStreamTest {
     public void testClose() throws IOException {
         // first without any reads that would construct the delegatee
         lazyIS.close();
-        //then some call that initiates te delegatee
+        // then some call that initiates te delegatee
         assertTrue(lazyIS.available() > 0);
         // and close again
         lazyIS.close();
@@ -112,11 +114,11 @@ public class LazyInputStreamTest {
         assertEquals('e', lazyIS.read());
         assertEquals('l', lazyIS.read());
 
-        //also try exceeding the readlimit
+        // also try exceeding the readlimit
         lazyIS.mark(readlimit);
         lazyIS.read(new byte[readlimit + 1]);
         lazyIS.reset();
-        byte [] whatsleft = new byte[8];
+        byte[] whatsleft = new byte[8];
         assertEquals(8, lazyIS.read(whatsleft));
         assertArrayEquals("lo World".getBytes(), whatsleft);
     }
@@ -130,5 +132,4 @@ public class LazyInputStreamTest {
         lazyIS.reset();
         assertEquals('H', lazyIS.read());
     }
-
 }

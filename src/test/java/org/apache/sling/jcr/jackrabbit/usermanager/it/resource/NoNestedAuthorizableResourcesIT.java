@@ -18,19 +18,13 @@
  */
 package org.apache.sling.jcr.jackrabbit.usermanager.it.resource;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.ops4j.pax.exam.cm.ConfigurationAdminOptions.newConfiguration;
+import javax.jcr.RepositoryException;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-
-import javax.jcr.RepositoryException;
 
 import org.apache.sling.api.resource.LoginException;
 import org.apache.sling.api.resource.Resource;
@@ -46,8 +40,14 @@ import org.ops4j.pax.exam.junit.PaxExam;
 import org.ops4j.pax.exam.spi.reactors.ExamReactorStrategy;
 import org.ops4j.pax.exam.spi.reactors.PerClass;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.ops4j.pax.exam.cm.ConfigurationAdminOptions.newConfiguration;
+
 /**
- * Testing that no nested property container resources are available when that 
+ * Testing that no nested property container resources are available when that
  * capability is disabled via configuration.
  */
 @RunWith(PaxExam.class)
@@ -57,7 +57,7 @@ public class NoNestedAuthorizableResourcesIT extends BaseAuthorizableResourcesIT
     @Override
     protected Option[] additionalOptions() {
         return new Option[] {
-                newConfiguration("org.apache.sling.jackrabbit.usermanager.impl.resource.AuthorizableResourceProvider")
+            newConfiguration("org.apache.sling.jackrabbit.usermanager.impl.resource.AuthorizableResourceProvider")
                     .put("resources.for.nested.properties", false)
                     .asOption()
         };
@@ -72,30 +72,29 @@ public class NoNestedAuthorizableResourcesIT extends BaseAuthorizableResourcesIT
         nestedProps.put("key1", "value1");
         nestedProps.put("private/key2", "value2");
         nestedProps.put("private/sub/key3", "value3");
-        user1 = createUser.createUser(adminSession, createUniqueName("user"), "testPwd", "testPwd",
-                nestedProps, new ArrayList<>());
+        user1 = createUser.createUser(
+                adminSession, createUniqueName("user"), "testPwd", "testPwd", nestedProps, new ArrayList<>());
         assertNotNull("Expected user1 to not be null", user1);
 
         if (adminSession.hasPendingChanges()) {
             adminSession.save();
         }
 
-        try (ResourceResolver resourceResolver = resourceResolverFactory.getResourceResolver(Collections.singletonMap(JcrResourceConstants.AUTHENTICATION_INFO_SESSION, adminSession))) {
-            Resource resource = resourceResolver.resolve(String.format("%s%s", userManagerPaths.getUserPrefix(), user1.getID()));
-            assertTrue("Expected resource type of sling/user for: " + resource.getPath(),
+        try (ResourceResolver resourceResolver = resourceResolverFactory.getResourceResolver(
+                Collections.singletonMap(JcrResourceConstants.AUTHENTICATION_INFO_SESSION, adminSession))) {
+            Resource resource =
+                    resourceResolver.resolve(String.format("%s%s", userManagerPaths.getUserPrefix(), user1.getID()));
+            assertTrue(
+                    "Expected resource type of sling/user for: " + resource.getPath(),
                     resource.isResourceType("sling/user"));
 
-            @NotNull
-            ValueMap valueMap = resource.getValueMap();
-            assertEquals("Expected value1 for key1 property of: " + resource.getPath(),
-                    "value1", valueMap.get("key1"));
+            @NotNull ValueMap valueMap = resource.getValueMap();
+            assertEquals("Expected value1 for key1 property of: " + resource.getPath(), "value1", valueMap.get("key1"));
 
-            @Nullable
-            Resource child = resource.getChild("private");
+            @Nullable Resource child = resource.getChild("private");
             assertNull(child);
 
-            @Nullable
-            Resource grandchild = resource.getChild("private/sub");
+            @Nullable Resource grandchild = resource.getChild("private/sub");
             assertNull(grandchild);
         }
     }
@@ -110,32 +109,29 @@ public class NoNestedAuthorizableResourcesIT extends BaseAuthorizableResourcesIT
         nestedProps.put("private/key2", "value2");
         nestedProps.put("private/sub/key3", "value3");
 
-        group1 = createGroup.createGroup(adminSession, createUniqueName("group"),
-                nestedProps, new ArrayList<>());
+        group1 = createGroup.createGroup(adminSession, createUniqueName("group"), nestedProps, new ArrayList<>());
         assertNotNull("Expected group1 to not be null", group1);
 
         if (adminSession.hasPendingChanges()) {
             adminSession.save();
         }
 
-        try (ResourceResolver resourceResolver = resourceResolverFactory.getResourceResolver(Collections.singletonMap(JcrResourceConstants.AUTHENTICATION_INFO_SESSION, adminSession))) {
-            Resource resource = resourceResolver.resolve(String.format("%s%s", userManagerPaths.getGroupPrefix(), group1.getID()));
-            assertTrue("Expected resource type of sling/group for: " + resource.getPath(),
+        try (ResourceResolver resourceResolver = resourceResolverFactory.getResourceResolver(
+                Collections.singletonMap(JcrResourceConstants.AUTHENTICATION_INFO_SESSION, adminSession))) {
+            Resource resource =
+                    resourceResolver.resolve(String.format("%s%s", userManagerPaths.getGroupPrefix(), group1.getID()));
+            assertTrue(
+                    "Expected resource type of sling/group for: " + resource.getPath(),
                     resource.isResourceType("sling/group"));
 
-            @NotNull
-            ValueMap valueMap = resource.getValueMap();
-            assertEquals("Expected value1 for key1 property of: " + resource.getPath(),
-                    "value1", valueMap.get("key1"));
+            @NotNull ValueMap valueMap = resource.getValueMap();
+            assertEquals("Expected value1 for key1 property of: " + resource.getPath(), "value1", valueMap.get("key1"));
 
-            @Nullable
-            Resource child = resource.getChild("private");
+            @Nullable Resource child = resource.getChild("private");
             assertNull(child);
 
-            @Nullable
-            Resource grandchild = resource.getChild("private/sub");
+            @Nullable Resource grandchild = resource.getChild("private/sub");
             assertNull(grandchild);
         }
     }
-
 }

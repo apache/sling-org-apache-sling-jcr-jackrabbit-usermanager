@@ -1,32 +1,30 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 package org.apache.sling.jcr.jackrabbit.usermanager.it.post;
-
-import static org.apache.sling.testing.paxexam.SlingOptions.slingAuthForm;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.ops4j.pax.exam.CoreOptions.composite;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import jakarta.json.JsonException;
+import jakarta.json.JsonObject;
+import jakarta.servlet.http.HttpServletResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.auth.Credentials;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -38,9 +36,12 @@ import org.ops4j.pax.exam.junit.PaxExam;
 import org.ops4j.pax.exam.spi.reactors.ExamReactorStrategy;
 import org.ops4j.pax.exam.spi.reactors.PerClass;
 
-import jakarta.json.JsonException;
-import jakarta.json.JsonObject;
-import jakarta.servlet.http.HttpServletResponse;
+import static org.apache.sling.testing.paxexam.SlingOptions.slingAuthForm;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.ops4j.pax.exam.CoreOptions.composite;
 
 /**
  * Tests for the 'updateAuthorizable' and 'changePassword' Sling Post
@@ -71,9 +72,10 @@ public class UpdateUserIT extends UserManagerClientTestSupport {
         Credentials creds = new UsernamePasswordCredentials(testUserId, "testPwd");
         assertAuthenticatedPostStatus(creds, postUrl, HttpServletResponse.SC_OK, postParams, null);
 
-        //fetch the user profile json to verify the settings
+        // fetch the user profile json to verify the settings
         String getUrl = String.format("%s/system/userManager/user/%s.json", baseServerUri, testUserId);
-        assertAuthenticatedHttpStatus(creds, getUrl, HttpServletResponse.SC_OK, null); //make sure the profile request returns some data
+        assertAuthenticatedHttpStatus(
+                creds, getUrl, HttpServletResponse.SC_OK, null); // make sure the profile request returns some data
         String json = getAuthenticatedContent(creds, getUrl, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
         assertNotNull(json);
         JsonObject jsonObj = parseJson(json);
@@ -106,9 +108,10 @@ public class UpdateUserIT extends UserManagerClientTestSupport {
         Credentials creds = new UsernamePasswordCredentials(testUserId, "testPwd");
         assertAuthenticatedPostStatus(creds, postUrl, HttpServletResponse.SC_OK, postParams, null);
 
-        //fetch the user profile json to verify the settings
+        // fetch the user profile json to verify the settings
         String getUrl = String.format("%s/system/userManager/user/%s.json", baseServerUri, testUserId);
-        assertAuthenticatedHttpStatus(creds, getUrl, HttpServletResponse.SC_OK, null); //make sure the profile request returns some data
+        assertAuthenticatedHttpStatus(
+                creds, getUrl, HttpServletResponse.SC_OK, null); // make sure the profile request returns some data
         String json = getAuthenticatedContent(creds, getUrl, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
         assertNotNull(json);
         JsonObject jsonObj = parseJson(json);
@@ -123,17 +126,17 @@ public class UpdateUserIT extends UserManagerClientTestSupport {
         jsonObj = parseJson(json);
         assertEquals("value", jsonObj.getString("param"));
 
-        //now remove
+        // now remove
         postParams = new ArrayList<>();
         postParams.add(new BasicNameValuePair("url@Delete", "true"));
         // remove nested param
         postParams.add(new BasicNameValuePair("nested/param@Delete", "true"));
         assertAuthenticatedPostStatus(creds, postUrl, HttpServletResponse.SC_OK, postParams, null);
 
-
-        //and verify
+        // and verify
         getUrl = String.format("%s/system/userManager/user/%s.json", baseServerUri, testUserId);
-        assertAuthenticatedHttpStatus(creds, getUrl, HttpServletResponse.SC_OK, null); //make sure the profile request returns some data
+        assertAuthenticatedHttpStatus(
+                creds, getUrl, HttpServletResponse.SC_OK, null); // make sure the profile request returns some data
         json = getAuthenticatedContent(creds, getUrl, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
         assertNotNull(json);
         jsonObj = parseJson(json);
@@ -151,7 +154,7 @@ public class UpdateUserIT extends UserManagerClientTestSupport {
 
     @Test
     public void testNotAuthorizedUpdateUser() throws IOException, JsonException {
-        //a user who is not authorized to do the action
+        // a user who is not authorized to do the action
         testUserId2 = createTestUser();
 
         testUserId = createTestUser();
@@ -166,14 +169,15 @@ public class UpdateUserIT extends UserManagerClientTestSupport {
         Credentials creds = new UsernamePasswordCredentials(testUserId2, "testPwd");
         assertAuthenticatedPostStatus(creds, postUrl, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, postParams, null);
 
-        //fetch the user profile json to verify the settings
+        // fetch the user profile json to verify the settings
         String getUrl = String.format("%s/system/userManager/user/%s.json", baseServerUri, testUserId);
-        assertAuthenticatedHttpStatus(creds, getUrl, HttpServletResponse.SC_NOT_FOUND, null); //make sure the profile request is not there
+        assertAuthenticatedHttpStatus(
+                creds, getUrl, HttpServletResponse.SC_NOT_FOUND, null); // make sure the profile request is not there
     }
 
     @Test
     public void testAuthorizedUpdateUser() throws IOException, JsonException {
-        //a user who is authorized to do the action
+        // a user who is authorized to do the action
         testUserId2 = createTestUser();
         grantUserManagementRights(testUserId2);
 
@@ -189,9 +193,10 @@ public class UpdateUserIT extends UserManagerClientTestSupport {
         Credentials creds = new UsernamePasswordCredentials(testUserId2, "testPwd");
         assertAuthenticatedPostStatus(creds, postUrl, HttpServletResponse.SC_OK, postParams, null);
 
-        //fetch the user profile json to verify the settings
+        // fetch the user profile json to verify the settings
         String getUrl = String.format("%s/system/userManager/user/%s.json", baseServerUri, testUserId);
-        assertAuthenticatedHttpStatus(creds, getUrl, HttpServletResponse.SC_OK, null); //make sure the profile request returns some data
+        assertAuthenticatedHttpStatus(
+                creds, getUrl, HttpServletResponse.SC_OK, null); // make sure the profile request returns some data
         String json = getAuthenticatedContent(creds, getUrl, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
         assertNotNull(json);
         JsonObject jsonObj = parseJson(json);
@@ -222,8 +227,9 @@ public class UpdateUserIT extends UserManagerClientTestSupport {
         postParams.add(new BasicNameValuePair("displayName", "My Updated Test User"));
 
         Credentials creds = new UsernamePasswordCredentials(testUserId, "testPwd");
-        String content = getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_HTML, postParams, HttpServletResponse.SC_OK);
-        assertEquals("Thanks!", content); //verify that the content matches the custom response
+        String content =
+                getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_HTML, postParams, HttpServletResponse.SC_OK);
+        assertEquals("Thanks!", content); // verify that the content matches the custom response
     }
 
     @Test
@@ -257,8 +263,9 @@ public class UpdateUserIT extends UserManagerClientTestSupport {
         postParams.add(new BasicNameValuePair("newPwdConfirm", "testNewPwd"));
 
         Credentials creds = new UsernamePasswordCredentials(testUserId, "testPwd");
-        String content = getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_HTML, postParams, HttpServletResponse.SC_OK);
-        assertEquals("Thanks!", content); //verify that the content matches the custom response
+        String content =
+                getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_HTML, postParams, HttpServletResponse.SC_OK);
+        assertEquals("Thanks!", content); // verify that the content matches the custom response
     }
 
     @Test
@@ -304,13 +311,13 @@ public class UpdateUserIT extends UserManagerClientTestSupport {
         postParams.add(new BasicNameValuePair("displayName", "My Updated Test User"));
         postParams.add(new BasicNameValuePair("url", "http://www.apache.org/updated"));
         Credentials creds = new UsernamePasswordCredentials(testUserId, "testPwd");
-        String json = getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
+        String json =
+                getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
 
-        //make sure the json response can be parsed as a JSON object
+        // make sure the json response can be parsed as a JSON object
         JsonObject jsonObj = parseJson(json);
         assertNotNull(jsonObj);
     }
-
 
     /**
      * Test for SLING-2069
@@ -337,40 +344,55 @@ public class UpdateUserIT extends UserManagerClientTestSupport {
     public void testDisableUser() throws IOException {
         testUserId = createTestUser();
 
-        //login before the user is disabled, so login should work
+        // login before the user is disabled, so login should work
         List<NameValuePair> params = new ArrayList<>();
         params.add(new BasicNameValuePair("j_username", testUserId));
         params.add(new BasicNameValuePair("j_password", "testPwd"));
         params.add(new BasicNameValuePair("j_validate", "true"));
         String postUrl = String.format("%s/j_security_check", baseServerUri);
-        assertAuthenticatedPostStatus(null, postUrl, HttpServletResponse.SC_OK, params, null,
+        assertAuthenticatedPostStatus(
+                null,
+                postUrl,
+                HttpServletResponse.SC_OK,
+                params,
+                null,
                 response -> assertNull(response.getFirstHeader("X-Reason")));
         httpContext.getCredentialsProvider().clear();
         httpContext.getCookieStore().clear();
 
-        //update the user to disable it
+        // update the user to disable it
         postUrl = String.format("%s/system/userManager/user/%s.update.html", baseServerUri, testUserId);
         List<NameValuePair> postParams = new ArrayList<>();
         postParams.add(new BasicNameValuePair(":disabled", "true"));
         postParams.add(new BasicNameValuePair(":disabledReason", "Just Testing"));
         assertAuthenticatedAdminPostStatus(postUrl, HttpServletResponse.SC_OK, postParams, null);
 
-        //the user is now disabled, so login should fail
+        // the user is now disabled, so login should fail
         postUrl = String.format("%s/j_security_check", baseServerUri);
-        assertAuthenticatedPostStatus(null, postUrl, HttpServletResponse.SC_FORBIDDEN, params, null,
+        assertAuthenticatedPostStatus(
+                null,
+                postUrl,
+                HttpServletResponse.SC_FORBIDDEN,
+                params,
+                null,
                 response -> assertNotNull(response.getFirstHeader("X-Reason")));
         httpContext.getCredentialsProvider().clear();
         httpContext.getCookieStore().clear();
 
-        //enable the user again
+        // enable the user again
         postUrl = String.format("%s/system/userManager/user/%s.update.html", baseServerUri, testUserId);
         postParams = new ArrayList<>();
         postParams.add(new BasicNameValuePair(":disabled", "false"));
         assertAuthenticatedAdminPostStatus(postUrl, HttpServletResponse.SC_OK, postParams, null);
 
-        //login after the user is enabled, so login should work
+        // login after the user is enabled, so login should work
         postUrl = String.format("%s/j_security_check", baseServerUri);
-        assertAuthenticatedPostStatus(null, postUrl, HttpServletResponse.SC_OK, params, null,
+        assertAuthenticatedPostStatus(
+                null,
+                postUrl,
+                HttpServletResponse.SC_OK,
+                params,
+                null,
                 response -> assertNull(response.getFirstHeader("X-Reason")));
         httpContext.getCredentialsProvider().clear();
         httpContext.getCookieStore().clear();
@@ -450,9 +472,10 @@ public class UpdateUserIT extends UserManagerClientTestSupport {
         Credentials creds = new UsernamePasswordCredentials(testUserId, "testPwd");
         assertAuthenticatedPostStatus(creds, postUrl, HttpServletResponse.SC_OK, postParams, null);
 
-        //fetch the user profile json to verify the settings
+        // fetch the user profile json to verify the settings
         String getUrl = String.format("%s/system/userManager/user/%s.json", baseServerUri, testUserId);
-        assertAuthenticatedHttpStatus(creds, getUrl, HttpServletResponse.SC_OK, null); //make sure the profile request returns some data
+        assertAuthenticatedHttpStatus(
+                creds, getUrl, HttpServletResponse.SC_OK, null); // make sure the profile request returns some data
         String json = getAuthenticatedContent(creds, getUrl, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
         assertNotNull(json);
         JsonObject jsonObj = parseJson(json);
@@ -495,9 +518,10 @@ public class UpdateUserIT extends UserManagerClientTestSupport {
         Credentials creds = new UsernamePasswordCredentials(testUserId, "testPwd");
         assertAuthenticatedPostStatus(creds, postUrl, HttpServletResponse.SC_OK, postParams, null);
 
-        //fetch the user profile json to verify the settings
+        // fetch the user profile json to verify the settings
         String getUrl = String.format("%s/system/userManager/user/%s.json", baseServerUri, testUserId);
-        assertAuthenticatedHttpStatus(creds, getUrl, HttpServletResponse.SC_OK, null); //make sure the profile request returns some data
+        assertAuthenticatedHttpStatus(
+                creds, getUrl, HttpServletResponse.SC_OK, null); // make sure the profile request returns some data
         String json = getAuthenticatedContent(creds, getUrl, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
         assertNotNull(json);
         JsonObject jsonObj = parseJson(json);
@@ -533,9 +557,10 @@ public class UpdateUserIT extends UserManagerClientTestSupport {
         Credentials creds = new UsernamePasswordCredentials(testUserId, "testPwd");
         assertAuthenticatedPostStatus(creds, postUrl, HttpServletResponse.SC_FORBIDDEN, postParams, null);
 
-        //fetch the user profile json to verify the settings
+        // fetch the user profile json to verify the settings
         String getUrl = String.format("%s/system/userManager/user/%s.json", baseServerUri, testUserId);
-        assertAuthenticatedHttpStatus(creds, getUrl, HttpServletResponse.SC_OK, null); //make sure the profile request returns some data
+        assertAuthenticatedHttpStatus(
+                creds, getUrl, HttpServletResponse.SC_OK, null); // make sure the profile request returns some data
         String json = getAuthenticatedContent(creds, getUrl, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
         assertNotNull(json);
         JsonObject jsonObj = parseJson(json);
@@ -549,5 +574,4 @@ public class UpdateUserIT extends UserManagerClientTestSupport {
         jsonObj = parseJson(json);
         assertEquals("rep:User", jsonObj.getString("jcr:primaryType"));
     }
-
 }

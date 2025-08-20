@@ -1,20 +1,26 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 package org.apache.sling.jackrabbit.usermanager.impl.post;
+
+import javax.jcr.AccessDeniedException;
+import javax.jcr.RepositoryException;
+import javax.jcr.Session;
 
 import java.io.IOException;
 import java.net.URI;
@@ -24,10 +30,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import javax.jcr.AccessDeniedException;
-import javax.jcr.RepositoryException;
-import javax.jcr.Session;
-
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.apache.sling.api.SlingJakartaHttpServletRequest;
 import org.apache.sling.api.SlingJakartaHttpServletResponse;
 import org.apache.sling.api.request.header.JakartaMediaRangeList;
@@ -45,18 +50,13 @@ import org.osgi.framework.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-
 /**
  * Base class for all the POST servlets for the UserManager operations
  */
-public abstract class AbstractPostServlet extends
-        SlingJakartaAllMethodsServlet {
+public abstract class AbstractPostServlet extends SlingJakartaAllMethodsServlet {
 
     private static final long serialVersionUID = 7408267654653472120L;
-    
+
     /**
      * default log
      */
@@ -76,9 +76,8 @@ public abstract class AbstractPostServlet extends
      * org.apache.sling.api.SlingJakartaHttpServletResponse)
      */
     @Override
-    protected void doPost(SlingJakartaHttpServletRequest request,
-            SlingJakartaHttpServletResponse httpResponse) throws ServletException,
-            IOException {
+    protected void doPost(SlingJakartaHttpServletRequest request, SlingJakartaHttpServletResponse httpResponse)
+            throws ServletException, IOException {
         // prepare the response
         JakartaPostResponse response = createPostResponse(request);
         response.setReferer(request.getHeader("referer"));
@@ -113,19 +112,16 @@ public abstract class AbstractPostServlet extends
                         response.onDeleted(change.getSource());
                         break;
                     case MOVE:
-                        response.onMoved(change.getSource(),
-                            change.getDestination());
+                        response.onMoved(change.getSource(), change.getDestination());
                         break;
                     case COPY:
-                        response.onCopied(change.getSource(),
-                            change.getDestination());
+                        response.onCopied(change.getSource(), change.getDestination());
                         break;
                     case CREATE:
                         response.onCreated(change.getSource());
                         break;
                     case ORDER:
-                        response.onChange("ordered", change.getSource(),
-                            change.getDestination());
+                        response.onChange("ordered", change.getSource(), change.getDestination());
                         break;
                     default:
                         break;
@@ -136,21 +132,21 @@ public abstract class AbstractPostServlet extends
                 session.save();
             }
         } catch (ResourceNotFoundException rnfe) {
-            response.setStatus(HttpServletResponse.SC_NOT_FOUND,
-                rnfe.getMessage());
+            response.setStatus(HttpServletResponse.SC_NOT_FOUND, rnfe.getMessage());
         } catch (Exception throwable) {
             if (log.isDebugEnabled()) {
-                log.debug(String.format("Exception while handling POST %s with %s",
-                        request.getResource().getPath(), getClass().getName()),
-                    throwable);
+                log.debug(
+                        String.format(
+                                "Exception while handling POST %s with %s",
+                                request.getResource().getPath(), getClass().getName()),
+                        throwable);
             }
             Throwable cause = throwable.getCause();
             if (cause == null) {
                 cause = throwable;
             }
             if (cause instanceof AccessDeniedException) {
-                response.setStatus(HttpServletResponse.SC_FORBIDDEN,
-                        cause.getMessage());
+                response.setStatus(HttpServletResponse.SC_FORBIDDEN, cause.getMessage());
             } else {
                 response.setError(throwable);
             }
@@ -160,8 +156,7 @@ public abstract class AbstractPostServlet extends
                     session.refresh(false);
                 }
             } catch (RepositoryException e) {
-                log.warn("RepositoryException in finally block: {}",
-                    e.getMessage(), e);
+                log.warn("RepositoryException in finally block: {}", e.getMessage(), e);
             }
         }
 
@@ -172,8 +167,11 @@ public abstract class AbstractPostServlet extends
                 redirect = getRedirectUrl(request, response);
             } catch (IOException e) {
                 if (log.isDebugEnabled()) {
-                    log.debug(String.format("Exception while handling redirect for POST %s with %s",
-                            request.getResource().getPath(), getClass().getName()), e);
+                    log.debug(
+                            String.format(
+                                    "Exception while handling redirect for POST %s with %s",
+                                    request.getResource().getPath(), getClass().getName()),
+                            e);
                 }
                 // http status code for 422 Unprocessable Entity
                 response.setStatus(422, "invalid redirect");
@@ -208,14 +206,14 @@ public abstract class AbstractPostServlet extends
             }
         }
 
-        //for backward compatibility, if no "accept" request param or header is supplied
+        // for backward compatibility, if no "accept" request param or header is supplied
         // then prefer the SlingHttpServletRequest#getResponseContentType value
         JakartaMediaRangeList mediaRangeList = null;
         String queryParam = req.getParameter(JakartaMediaRangeList.PARAM_ACCEPT);
         if (queryParam == null || queryParam.trim().length() == 0) {
             String headerValue = req.getHeader(JakartaMediaRangeList.HEADER_ACCEPT);
             if (headerValue == null || headerValue.trim().length() == 0) {
-                //no param or header supplied, so try the response content type
+                // no param or header supplied, so try the response content type
                 mediaRangeList = new JakartaMediaRangeList(req.getResponseContentType());
             }
         }
@@ -224,7 +222,8 @@ public abstract class AbstractPostServlet extends
         if (mediaRangeList == null) {
             mediaRangeList = new JakartaMediaRangeList(req);
         }
-        if (JakartaJSONResponse.RESPONSE_CONTENT_TYPE.equals(mediaRangeList.prefer("text/html", JakartaJSONResponse.RESPONSE_CONTENT_TYPE))) {
+        if (JakartaJSONResponse.RESPONSE_CONTENT_TYPE.equals(
+                mediaRangeList.prefer("text/html", JakartaJSONResponse.RESPONSE_CONTENT_TYPE))) {
             return new JakartaJSONResponse();
         } else {
             return new JakartaHtmlResponse();
@@ -233,14 +232,14 @@ public abstract class AbstractPostServlet extends
 
     /**
      * Extending Servlet should implement this operation to do the work
-     * 
+     *
      * @param request the sling http request to process
      * @param response the response
      * @param changes the changes to report
      * @throws RepositoryException in case of exceptions during the operation
      */
-    protected abstract void handleOperation(SlingJakartaHttpServletRequest request,
-            JakartaPostResponse response, List<Modification> changes)
+    protected abstract void handleOperation(
+            SlingJakartaHttpServletRequest request, JakartaPostResponse response, List<Modification> changes)
             throws RepositoryException;
 
     /**
@@ -258,7 +257,8 @@ public abstract class AbstractPostServlet extends
                 URI redirectUri = new URI(result);
                 if (redirectUri.getAuthority() != null) {
                     // if it has a host information
-                    throw new IOException("The redirect target included host information. This is not allowed for security reasons!");
+                    throw new IOException(
+                            "The redirect target included host information. This is not allowed for security reasons!");
                 }
             } catch (URISyntaxException e) {
                 throw new IOException("The redirect target was not a valid uri");
@@ -300,28 +300,23 @@ public abstract class AbstractPostServlet extends
         String statusParam = request.getParameter(SlingPostConstants.RP_STATUS);
         if (statusParam == null) {
             log.debug(
-                "getStatusMode: Parameter {} not set, assuming standard status code",
-                SlingPostConstants.RP_STATUS);
+                    "getStatusMode: Parameter {} not set, assuming standard status code", SlingPostConstants.RP_STATUS);
             return true;
         }
 
         if (SlingPostConstants.STATUS_VALUE_BROWSER.equals(statusParam)) {
-            log.debug(
-                "getStatusMode: Parameter {} asks for user-friendly status code",
-                SlingPostConstants.RP_STATUS);
+            log.debug("getStatusMode: Parameter {} asks for user-friendly status code", SlingPostConstants.RP_STATUS);
             return false;
         }
 
         if (SlingPostConstants.STATUS_VALUE_STANDARD.equals(statusParam)) {
-            log.debug(
-                "getStatusMode: Parameter {} asks for standard status code",
-                SlingPostConstants.RP_STATUS);
+            log.debug("getStatusMode: Parameter {} asks for standard status code", SlingPostConstants.RP_STATUS);
             return true;
         }
 
         log.debug(
-            "getStatusMode: Parameter {} set to unknown value, assuming standard status code",
-            SlingPostConstants.RP_STATUS);
+                "getStatusMode: Parameter {} set to unknown value, assuming standard status code",
+                SlingPostConstants.RP_STATUS);
         return true;
     }
 
@@ -342,13 +337,12 @@ public abstract class AbstractPostServlet extends
     /**
      * Returns an external form of the given path prepending the context path
      * and appending a display extension.
-     * 
+     *
      * @param request the request
      * @param path the path to externalize
      * @return the url
      */
-    protected final String externalizePath(SlingJakartaHttpServletRequest request,
-            String path) {
+    protected final String externalizePath(SlingJakartaHttpServletRequest request, String path) {
         StringBuilder ret = new StringBuilder();
         ret.append(SlingRequestPaths.getContextPath(request));
         ret.append(request.getResourceResolver().map(path));
@@ -365,26 +359,28 @@ public abstract class AbstractPostServlet extends
         return ret.toString();
     }
 
-
     /**
      * Bind a new post response creator
      */
-    // NOTE: the @Reference annotation is not inherited, so subclasses will need to override the #bindPostResponseCreator
+    // NOTE: the @Reference annotation is not inherited, so subclasses will need to override the
+    // #bindPostResponseCreator
     // and #unbindPostResponseCreator methods to provide the @Reference annotation.
     //
     // @Reference(service = PostResponseCreator.class,
     //         cardinality = ReferenceCardinality.MULTIPLE,
     //         policy = ReferencePolicy.DYNAMIC)
-    protected void bindPostResponseCreator(final JakartaPostResponseCreator creator, final Map<String, Object> properties) {
-        final JakartaPostResponseCreatorHolder nngh = new JakartaPostResponseCreatorHolder(creator, getRanking(properties));
+    protected void bindPostResponseCreator(
+            final JakartaPostResponseCreator creator, final Map<String, Object> properties) {
+        final JakartaPostResponseCreatorHolder nngh =
+                new JakartaPostResponseCreatorHolder(creator, getRanking(properties));
 
-        synchronized ( this.postResponseCreators ) {
+        synchronized (this.postResponseCreators) {
             int index = 0;
-            while ( index < this.postResponseCreators.size() &&
-                    nngh.ranking() < this.postResponseCreators.get(index).ranking() ) {
+            while (index < this.postResponseCreators.size()
+                    && nngh.ranking() < this.postResponseCreators.get(index).ranking()) {
                 index++;
             }
-            if ( index == this.postResponseCreators.size() ) {
+            if (index == this.postResponseCreators.size()) {
                 this.postResponseCreators.add(nngh);
             } else {
                 this.postResponseCreators.add(index, nngh);
@@ -396,12 +392,13 @@ public abstract class AbstractPostServlet extends
     /**
      * Unbind a post response creator
      */
-    protected void unbindPostResponseCreator(final JakartaPostResponseCreator creator, final Map<String, Object> properties) {  //NOSONAR
-        synchronized ( this.postResponseCreators ) {
+    protected void unbindPostResponseCreator(
+            final JakartaPostResponseCreator creator, final Map<String, Object> properties) { // NOSONAR
+        synchronized (this.postResponseCreators) {
             final Iterator<JakartaPostResponseCreatorHolder> i = this.postResponseCreators.iterator();
-            while ( i.hasNext() ) {
+            while (i.hasNext()) {
                 final JakartaPostResponseCreatorHolder current = i.next();
-                if ( current.creator() == creator ) {
+                if (current.creator() == creator) {
                     i.remove();
                 }
             }
@@ -414,9 +411,10 @@ public abstract class AbstractPostServlet extends
      * This method is called by sync'ed methods, no need to add additional syncing.
      */
     private void updatePostResponseCreatorCache() {
-        final JakartaPostResponseCreator[] localCache = new JakartaPostResponseCreator[this.postResponseCreators.size()];
+        final JakartaPostResponseCreator[] localCache =
+                new JakartaPostResponseCreator[this.postResponseCreators.size()];
         int index = 0;
-        for(final JakartaPostResponseCreatorHolder current : this.postResponseCreators) {
+        for (final JakartaPostResponseCreatorHolder current : this.postResponseCreators) {
             localCache[index] = current.creator;
             index++;
         }
@@ -429,5 +427,4 @@ public abstract class AbstractPostServlet extends
     }
 
     private static final record JakartaPostResponseCreatorHolder(JakartaPostResponseCreator creator, int ranking) {}
-
 }

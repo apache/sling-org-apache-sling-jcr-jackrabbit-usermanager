@@ -1,31 +1,30 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 package org.apache.sling.jcr.jackrabbit.usermanager.it.post;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import jakarta.json.JsonException;
+import jakarta.json.JsonObject;
+import jakarta.servlet.http.HttpServletResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.auth.Credentials;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -37,9 +36,11 @@ import org.ops4j.pax.exam.junit.PaxExam;
 import org.ops4j.pax.exam.spi.reactors.ExamReactorStrategy;
 import org.ops4j.pax.exam.spi.reactors.PerClass;
 
-import jakarta.json.JsonException;
-import jakarta.json.JsonObject;
-import jakarta.servlet.http.HttpServletResponse;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests for the 'createUser' Sling Post Operation
@@ -49,13 +50,13 @@ import jakarta.servlet.http.HttpServletResponse;
 public class CreateUserIT extends UserManagerClientTestSupport {
 
     /*
-        <form action="/system/userManager/user.create.html" method="POST">
-           <div>Name: <input type="text" name=":name" value="testUser" /></div>
-           <div>Password: <input type="text" name="pwd" value="testUser" /></div>
-           <div>Password Confirm: <input type="text" name="pwdConfirm" value="testUser" /></div>
-           <input type="submit" value="Submit" />
-        </form>
-     */
+       <form action="/system/userManager/user.create.html" method="POST">
+          <div>Name: <input type="text" name=":name" value="testUser" /></div>
+          <div>Password: <input type="text" name="pwd" value="testUser" /></div>
+          <div>Password Confirm: <input type="text" name="pwdConfirm" value="testUser" /></div>
+          <input type="submit" value="Submit" />
+       </form>
+    */
     @Test
     public void testCreateUser() throws IOException, JsonException {
         testUserId = "testUser" + getNextInt();
@@ -81,7 +82,8 @@ public class CreateUserIT extends UserManagerClientTestSupport {
         // fetch the session info to verify that the user can log in
         final Credentials newUserCreds = new UsernamePasswordCredentials(testUserId, "testPwd");
         final String getUrl2 = String.format("%s/system/sling/info.sessionInfo.json", baseServerUri);
-        final String json2 = getAuthenticatedContent(newUserCreds, getUrl2, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
+        final String json2 =
+                getAuthenticatedContent(newUserCreds, getUrl2, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
         assertNotNull(json2);
         final JsonObject jsonObj2 = parseJson(json2);
         assertEquals(testUserId, jsonObj2.getString("userID"));
@@ -130,7 +132,8 @@ public class CreateUserIT extends UserManagerClientTestSupport {
         // fetch the session info to verify that the user can log in
         final Credentials newUserCreds = new UsernamePasswordCredentials(testUserId, "testPwd");
         final String getUrl2 = String.format("%s/system/sling/info.sessionInfo.json", baseServerUri);
-        final String json2 = getAuthenticatedContent(newUserCreds, getUrl2, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
+        final String json2 =
+                getAuthenticatedContent(newUserCreds, getUrl2, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
         assertNotNull(json2);
         final JsonObject jsonObj2 = parseJson(json2);
         assertEquals(testUserId, jsonObj2.getString("userID"));
@@ -181,7 +184,7 @@ public class CreateUserIT extends UserManagerClientTestSupport {
         Credentials creds = new UsernamePasswordCredentials("admin", "admin");
         assertAuthenticatedPostStatus(creds, postUrl, HttpServletResponse.SC_OK, postParams, null);
 
-        //post the same info again, should fail
+        // post the same info again, should fail
         assertAuthenticatedPostStatus(creds, postUrl, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, postParams, null);
     }
 
@@ -210,7 +213,7 @@ public class CreateUserIT extends UserManagerClientTestSupport {
         Credentials creds = new UsernamePasswordCredentials("admin", "admin");
         assertAuthenticatedPostStatus(creds, postUrl, HttpServletResponse.SC_OK, postParams, null);
 
-        //fetch the user profile json to verify the settings
+        // fetch the user profile json to verify the settings
         String getUrl = String.format("%s/system/userManager/user/%s.json", baseServerUri, testUserId);
         String json = getAuthenticatedContent(creds, getUrl, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
         assertNotNull(json);
@@ -236,10 +239,9 @@ public class CreateUserIT extends UserManagerClientTestSupport {
         postParams.add(new BasicNameValuePair(":name", userId));
         postParams.add(new BasicNameValuePair("pwd", "testPwd"));
         postParams.add(new BasicNameValuePair("pwdConfirm", "testPwd"));
-        //user create without logging in as a privileged user should return a 500 error
+        // user create without logging in as a privileged user should return a 500 error
         assertAuthenticatedPostStatus(null, postUrl, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, postParams, null);
     }
-
 
     /**
      * Test for SLING-1677
@@ -255,9 +257,10 @@ public class CreateUserIT extends UserManagerClientTestSupport {
         postParams.add(new BasicNameValuePair("pwd", "testPwd"));
         postParams.add(new BasicNameValuePair("pwdConfirm", "testPwd"));
         Credentials creds = new UsernamePasswordCredentials("admin", "admin");
-        String json = getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
+        String json =
+                getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
 
-        //make sure the json response can be parsed as a JSON object
+        // make sure the json response can be parsed as a JSON object
         JsonObject jsonObj = parseJson(json);
         assertNotNull(jsonObj);
     }
@@ -276,8 +279,9 @@ public class CreateUserIT extends UserManagerClientTestSupport {
         postParams.add(new BasicNameValuePair("pwd", "testPwd"));
         postParams.add(new BasicNameValuePair("pwdConfirm", "testPwd"));
         Credentials creds = new UsernamePasswordCredentials("admin", "admin");
-        String content = getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_HTML, postParams, HttpServletResponse.SC_OK);
-        assertEquals("Thanks!", content); //verify that the content matches the custom response
+        String content =
+                getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_HTML, postParams, HttpServletResponse.SC_OK);
+        assertEquals("Thanks!", content); // verify that the content matches the custom response
     }
 
     private void testCreateUserRedirect(String redirectTo, int expectedStatus) throws IOException {
@@ -319,17 +323,19 @@ public class CreateUserIT extends UserManagerClientTestSupport {
         postParams.add(new BasicNameValuePair("pwd", "testPwd"));
         postParams.add(new BasicNameValuePair("pwdConfirm", "testPwd"));
         Credentials creds = new UsernamePasswordCredentials("admin", "admin");
-        String json = getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
+        String json =
+                getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
 
-        //make sure the json response can be parsed as a JSON object
+        // make sure the json response can be parsed as a JSON object
         JsonObject jsonObj = parseJson(json);
         assertNotNull(jsonObj);
-        testUserId  = ResourceUtil.getName(jsonObj.getString("path"));
+        testUserId = ResourceUtil.getName(jsonObj.getString("path"));
         assertNotNull(testUserId);
         assertEquals(marker, testUserId);
 
         // second time with the same info fails since it is not unique
-        getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        getAuthenticatedPostContent(
+                creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
     }
 
     /**
@@ -346,17 +352,19 @@ public class CreateUserIT extends UserManagerClientTestSupport {
         postParams.add(new BasicNameValuePair("pwd", "testPwd"));
         postParams.add(new BasicNameValuePair("pwdConfirm", "testPwd"));
         Credentials creds = new UsernamePasswordCredentials("admin", "admin");
-        String json = getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
+        String json =
+                getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
 
-        //make sure the json response can be parsed as a JSON object
+        // make sure the json response can be parsed as a JSON object
         JsonObject jsonObj = parseJson(json);
         assertNotNull(jsonObj);
-        testUserId  = ResourceUtil.getName(jsonObj.getString("path"));
+        testUserId = ResourceUtil.getName(jsonObj.getString("path"));
         assertNotNull(testUserId);
         assertEquals(marker, testUserId);
 
         // second time with the same info fails since it is not unique
-        getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        getAuthenticatedPostContent(
+                creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
     }
 
     /**
@@ -372,27 +380,27 @@ public class CreateUserIT extends UserManagerClientTestSupport {
         postParams.add(new BasicNameValuePair("pwd", "testPwd"));
         postParams.add(new BasicNameValuePair("pwdConfirm", "testPwd"));
         Credentials creds = new UsernamePasswordCredentials("admin", "admin");
-        String json = getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
+        String json =
+                getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
 
-        //make sure the json response can be parsed as a JSON object
+        // make sure the json response can be parsed as a JSON object
         JsonObject jsonObj = parseJson(json);
         assertNotNull(jsonObj);
-        testUserId  = ResourceUtil.getName(jsonObj.getString("path"));
+        testUserId = ResourceUtil.getName(jsonObj.getString("path"));
         assertNotNull(testUserId);
         assertEquals(hint.substring(0, 20), testUserId);
 
         // second time with the same info generates a different unique name
         json = getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
 
-        //make sure the json response can be parsed as a JSON object
+        // make sure the json response can be parsed as a JSON object
         jsonObj = parseJson(json);
         assertNotNull(jsonObj);
-        testUserId2  = ResourceUtil.getName(jsonObj.getString("path"));
+        testUserId2 = ResourceUtil.getName(jsonObj.getString("path"));
         assertNotNull(testUserId2);
         assertTrue(testUserId2.startsWith(hint.substring(0, 20)));
         assertNotEquals(testUserId, testUserId2);
     }
-
 
     /**
      * SLING-10902 Test for user name generated from the value of another param
@@ -408,12 +416,13 @@ public class CreateUserIT extends UserManagerClientTestSupport {
         postParams.add(new BasicNameValuePair("pwd", "testPwd"));
         postParams.add(new BasicNameValuePair("pwdConfirm", "testPwd"));
         Credentials creds = new UsernamePasswordCredentials("admin", "admin");
-        String json = getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
+        String json =
+                getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
 
-        //make sure the json response can be parsed as a JSON object
+        // make sure the json response can be parsed as a JSON object
         JsonObject jsonObj = parseJson(json);
         assertNotNull(jsonObj);
-        testUserId  = ResourceUtil.getName(jsonObj.getString("path"));
+        testUserId = ResourceUtil.getName(jsonObj.getString("path"));
         assertNotNull(testUserId);
         assertEquals(marker, testUserId);
     }
@@ -431,12 +440,13 @@ public class CreateUserIT extends UserManagerClientTestSupport {
         postParams.add(new BasicNameValuePair("pwd", "testPwd"));
         postParams.add(new BasicNameValuePair("pwdConfirm", "testPwd"));
         Credentials creds = new UsernamePasswordCredentials("admin", "admin");
-        String json = getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
+        String json =
+                getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
 
-        //make sure the json response can be parsed as a JSON object
+        // make sure the json response can be parsed as a JSON object
         JsonObject jsonObj = parseJson(json);
         assertNotNull(jsonObj);
-        testUserId  = ResourceUtil.getName(jsonObj.getString("path"));
+        testUserId = ResourceUtil.getName(jsonObj.getString("path"));
         assertNotNull(testUserId);
         assertEquals(hint.substring(0, 20), testUserId);
     }
@@ -455,12 +465,13 @@ public class CreateUserIT extends UserManagerClientTestSupport {
         postParams.add(new BasicNameValuePair("pwd", "testPwd"));
         postParams.add(new BasicNameValuePair("pwdConfirm", "testPwd"));
         Credentials creds = new UsernamePasswordCredentials("admin", "admin");
-        String json = getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
+        String json =
+                getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
 
-        //make sure the json response can be parsed as a JSON object
+        // make sure the json response can be parsed as a JSON object
         JsonObject jsonObj = parseJson(json);
         assertNotNull(jsonObj);
-        testUserId  = ResourceUtil.getName(jsonObj.getString("path"));
+        testUserId = ResourceUtil.getName(jsonObj.getString("path"));
         assertNotNull(testUserId);
         assertEquals(marker.substring(0, 20), testUserId);
     }
@@ -477,7 +488,8 @@ public class CreateUserIT extends UserManagerClientTestSupport {
         postParams.add(new BasicNameValuePair("pwd", "testPwd"));
         postParams.add(new BasicNameValuePair("pwdConfirm", "testPwd"));
         Credentials creds = new UsernamePasswordCredentials("admin", "admin");
-        getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        getAuthenticatedPostContent(
+                creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
     }
 
     /**
@@ -493,7 +505,8 @@ public class CreateUserIT extends UserManagerClientTestSupport {
         postParams.add(new BasicNameValuePair("pwd", "testPwd"));
         postParams.add(new BasicNameValuePair("pwdConfirm", "testPwd"));
         Credentials creds = new UsernamePasswordCredentials("admin", "admin");
-        getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        getAuthenticatedPostContent(
+                creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
     }
 
     /**
@@ -509,7 +522,8 @@ public class CreateUserIT extends UserManagerClientTestSupport {
         postParams.add(new BasicNameValuePair("pwd", "testPwd"));
         postParams.add(new BasicNameValuePair("pwdConfirm", "testPwd"));
         Credentials creds = new UsernamePasswordCredentials("admin", "admin");
-        getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        getAuthenticatedPostContent(
+                creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
     }
 
     /**
@@ -526,12 +540,13 @@ public class CreateUserIT extends UserManagerClientTestSupport {
         postParams.add(new BasicNameValuePair("pwd", "testPwd"));
         postParams.add(new BasicNameValuePair("pwdConfirm", "testPwd"));
         Credentials creds = new UsernamePasswordCredentials("admin", "admin");
-        String json = getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
+        String json =
+                getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
 
-        //make sure the json response can be parsed as a JSON object
+        // make sure the json response can be parsed as a JSON object
         JsonObject jsonObj = parseJson(json);
         assertNotNull(jsonObj);
-        testUserId  = ResourceUtil.getName(jsonObj.getString("path"));
+        testUserId = ResourceUtil.getName(jsonObj.getString("path"));
         assertNotNull(testUserId);
         assertEquals(marker.substring(0, 20), testUserId);
     }
@@ -551,12 +566,13 @@ public class CreateUserIT extends UserManagerClientTestSupport {
         postParams.add(new BasicNameValuePair("pwd", "testPwd"));
         postParams.add(new BasicNameValuePair("pwdConfirm", "testPwd"));
         Credentials creds = new UsernamePasswordCredentials("admin", "admin");
-        String json = getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
+        String json =
+                getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
 
-        //make sure the json response can be parsed as a JSON object
+        // make sure the json response can be parsed as a JSON object
         JsonObject jsonObj = parseJson(json);
         assertNotNull(jsonObj);
-        testUserId  = ResourceUtil.getName(jsonObj.getString("path"));
+        testUserId = ResourceUtil.getName(jsonObj.getString("path"));
         assertNotNull(testUserId);
         assertEquals(marker.substring(0, 20), testUserId);
     }
@@ -576,12 +592,13 @@ public class CreateUserIT extends UserManagerClientTestSupport {
         postParams.add(new BasicNameValuePair("pwd", "testPwd"));
         postParams.add(new BasicNameValuePair("pwdConfirm", "testPwd"));
         Credentials creds = new UsernamePasswordCredentials("admin", "admin");
-        String json = getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
+        String json =
+                getAuthenticatedPostContent(creds, postUrl, CONTENT_TYPE_JSON, postParams, HttpServletResponse.SC_OK);
 
-        //make sure the json response can be parsed as a JSON object
+        // make sure the json response can be parsed as a JSON object
         JsonObject jsonObj = parseJson(json);
         assertNotNull(jsonObj);
-        testUserId  = ResourceUtil.getName(jsonObj.getString("path"));
+        testUserId = ResourceUtil.getName(jsonObj.getString("path"));
         assertNotNull(testUserId);
         assertEquals(marker.substring(0, 20), testUserId);
     }
@@ -604,9 +621,10 @@ public class CreateUserIT extends UserManagerClientTestSupport {
         Credentials creds = new UsernamePasswordCredentials("admin", "admin");
         assertAuthenticatedPostStatus(creds, postUrl, HttpServletResponse.SC_OK, postParams, null);
 
-        //fetch the user profile json to verify the settings
+        // fetch the user profile json to verify the settings
         String getUrl = String.format("%s/system/userManager/user/%s.json", baseServerUri, testUserId);
-        assertAuthenticatedHttpStatus(creds, getUrl, HttpServletResponse.SC_OK, null); //make sure the profile request returns some data
+        assertAuthenticatedHttpStatus(
+                creds, getUrl, HttpServletResponse.SC_OK, null); // make sure the profile request returns some data
         String json = getAuthenticatedContent(creds, getUrl, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
         assertNotNull(json);
         JsonObject jsonObj = parseJson(json);
@@ -650,9 +668,10 @@ public class CreateUserIT extends UserManagerClientTestSupport {
         Credentials creds = new UsernamePasswordCredentials("admin", "admin");
         assertAuthenticatedPostStatus(creds, postUrl, HttpServletResponse.SC_OK, postParams, null);
 
-        //fetch the user profile json to verify the settings
+        // fetch the user profile json to verify the settings
         String getUrl = String.format("%s/system/userManager/user/%s.json", baseServerUri, testUserId);
-        assertAuthenticatedHttpStatus(creds, getUrl, HttpServletResponse.SC_OK, null); //make sure the profile request returns some data
+        assertAuthenticatedHttpStatus(
+                creds, getUrl, HttpServletResponse.SC_OK, null); // make sure the profile request returns some data
         String json = getAuthenticatedContent(creds, getUrl, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
         assertNotNull(json);
         JsonObject jsonObj = parseJson(json);
@@ -689,10 +708,10 @@ public class CreateUserIT extends UserManagerClientTestSupport {
         Credentials creds = new UsernamePasswordCredentials("admin", "admin");
         assertAuthenticatedPostStatus(creds, postUrl, HttpServletResponse.SC_FORBIDDEN, postParams, null);
 
-        //fetch the user profile json to verify the settings
+        // fetch the user profile json to verify the settings
         String getUrl = String.format("%s/system/userManager/user/%s.json", baseServerUri, testUserId);
-        assertAuthenticatedHttpStatus(creds, getUrl, HttpServletResponse.SC_NOT_FOUND, null); //make sure the profile request returns no data
+        assertAuthenticatedHttpStatus(
+                creds, getUrl, HttpServletResponse.SC_NOT_FOUND, null); // make sure the profile request returns no data
         testUserId = null;
     }
-
 }
