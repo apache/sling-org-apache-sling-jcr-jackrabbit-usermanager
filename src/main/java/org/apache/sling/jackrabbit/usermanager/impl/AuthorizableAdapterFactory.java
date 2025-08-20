@@ -43,8 +43,7 @@ public class AuthorizableAdapterFactory implements AdapterFactory {
     @Override
     public <T> T getAdapter(final Object adaptable, final Class<T> type) {
         Session session = ((ResourceResolver) adaptable).adaptTo(Session.class);
-        if (session instanceof JackrabbitSession) {
-            JackrabbitSession jackrabbitSession = (JackrabbitSession) session;
+        if (session instanceof JackrabbitSession jackrabbitSession) {
             try {
                 UserManager um = jackrabbitSession.getUserManager();
                 Authorizable authorizable = um.getAuthorizable(jackrabbitSession.getUserID());

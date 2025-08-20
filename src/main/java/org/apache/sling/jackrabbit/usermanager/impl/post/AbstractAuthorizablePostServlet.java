@@ -16,7 +16,6 @@
  */
 package org.apache.sling.jackrabbit.usermanager.impl.post;
 
-import java.lang.reflect.Array;
 import java.security.SecureRandom;
 import java.util.Calendar;
 import java.util.Collection;
@@ -26,6 +25,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 import javax.jcr.AccessDeniedException;
@@ -133,7 +133,7 @@ public abstract class AbstractAuthorizablePostServlet extends
         this.principalNameFilter = filter;
     }
     protected void unbindPrincipalNameFilter(final PrincipalNameFilter filter) {
-        if (filter != null && filter.equals(this.principalNameFilter)) {
+        if (Objects.equals(filter, this.principalNameFilter)) {
             this.principalNameFilter = null;
         }
     }
@@ -195,10 +195,10 @@ public abstract class AbstractAuthorizablePostServlet extends
         } else {
             // fallback to the old behavior
             Object obj = properties.get(SlingPostConstants.RP_NODE_NAME);
-            if (obj instanceof String[] && Array.getLength(obj) == 1) {
-                principalName = ((String[])obj)[0];
-            } else if (obj instanceof String) {
-                principalName= ((String)obj);
+            if (obj instanceof String[] values && values.length == 1) {
+                principalName = values[0];
+            } else if (obj instanceof String value) {
+                principalName= value;
             }
         }
 
@@ -222,18 +222,6 @@ public abstract class AbstractAuthorizablePostServlet extends
     // ------ The methods below are based on the private methods from the
     // ModifyOperation class -----
 
-    /**
-     * Collects the properties that form the content to be written back to the
-     * repository.
-     * @param properties the properties out of which to generate the {@link RequestProperty}s
-     * @return the list of {@link RequestProperty}s
-     * @deprecated use {@link #collectContentMap(Map)} instead since 2.2.18
-     */
-    @Deprecated
-    protected Collection<RequestProperty> collectContent(
-            Map<String, ?> properties) {
-        return collectContentMap(properties).values();
-    }
     /**
      * Collects the properties that form the content to be written back to the
      * repository.
@@ -295,7 +283,7 @@ public abstract class AbstractAuthorizablePostServlet extends
                         reqProperties, propPath,
                         SlingPostConstants.DEFAULT_VALUE_SUFFIX);
 
-                    prop.setDefaultValues(convertToRequestParameterArray(e.getValue()));
+                    prop.setDefaultValues(convertToRequestParameterArray(paramName, e.getValue()));
                 } else if (propPath.endsWith(SlingPostConstants.VALUE_FROM_SUFFIX)) {
                     // SLING-130: VALUE_FROM_SUFFIX means take the value of this
                     // property from a different field
@@ -311,7 +299,7 @@ public abstract class AbstractAuthorizablePostServlet extends
                     String [] valueFrom = convertToStringArray(e.getValue());
                     if (valueFrom.length == 1) {
                         String refName = valueFrom[0];
-                        prop.setValues(convertToRequestParameterArray(refName));
+                        prop.setValues(convertToRequestParameterArray(paramName, refName));
                     }
                 } else if (propPath.endsWith(SlingPostConstants.SUFFIX_DELETE)) {
                     // SLING-458: Allow Removal of properties prior to update
@@ -344,7 +332,7 @@ public abstract class AbstractAuthorizablePostServlet extends
                     // plain property, create from values
                     RequestProperty prop = getOrCreateRequestProperty(reqProperties,
                         propPath, null);
-                    prop.setValues(convertToRequestParameterArray(e.getValue()));
+                    prop.setValues(convertToRequestParameterArray(paramName, e.getValue()));
                 }
             }
         }
@@ -485,14 +473,14 @@ public abstract class AbstractAuthorizablePostServlet extends
                                 // don't allow changing the primaryType of the user home root
                                 throw new AccessDeniedException("Access denied.");
                             } else {
-                                final String nodeType = prop == null ? null : prop.getStringValues()[0];
+                                final String nodeType = prop.getStringValues()[0];
                                 if (nodeType != null && !node.isNodeType(nodeType)) {
                                     node.setPrimaryType(nodeType);
                                     changes.add(Modification.onModified(concatPath(node.getPath(), propName)));
                                 }
                             }
                         } else if (JcrConstants.JCR_MIXINTYPES.equals(propName)) {
-                            String[] mixins = (prop == null) || !prop.hasValues() ? null : prop.getStringValues();
+                            String[] mixins = !prop.hasValues() ? null : prop.getStringValues();
                             if (mixins != null) {
                                 for (final String mixin : mixins) {
                                     if (!node.isNodeType(mixin)) {
@@ -816,40 +804,30 @@ public abstract class AbstractAuthorizablePostServlet extends
 
 
     protected String convertToString(Object obj) {
-        if (obj == null) {
-            return null;
-        }
-
-        if (obj instanceof String) {
-            return (String)obj;
-        } else if (obj instanceof String[]) {
-            String [] values = (String[])obj;
+        String strValue = null;
+        if (obj instanceof String value) {
+            strValue = value;
+        } else if (obj instanceof String[] values) {
             if (values.length > 0) {
-                return values[0];
+                strValue = values[0];
             }
-            return null;
-        } else if (obj instanceof RequestParameter) {
-            ((RequestParameter)obj).getString();
-        } else if (obj instanceof RequestParameter[]) {
-            RequestParameter[] values = (RequestParameter[])obj;
-            if (values.length > 0) {
-                return values[0].getString();
-            }
-            return null;
+        } else if (obj instanceof RequestParameter reqParam) {
+            strValue = reqParam.getString();
+        } else if (obj instanceof RequestParameter[] reqParams && reqParams.length > 0) {
+            strValue = reqParams[0].getString();
         }
-        return null;
+        return strValue;
     }
 
     protected @NotNull String[] convertToStringArray(Object obj) {
         String [] strArray = null;
-        if (obj instanceof String) {
-            strArray = new String[] {(String)obj};
-        } else if (obj instanceof String[]) {
-            strArray = (String[])obj;
-        } else if (obj instanceof RequestParameter) {
-            strArray = new String[] {((RequestParameter)obj).getString()};
-        } else if (obj instanceof RequestParameter[]) {
-            RequestParameter[] values = (RequestParameter[])obj;
+        if (obj instanceof String value) {
+            strArray = new String[] {value};
+        } else if (obj instanceof String[] value) {
+            strArray = value;
+        } else if (obj instanceof RequestParameter value) {
+            strArray = new String[] {value.getString()};
+        } else if (obj instanceof RequestParameter[] values) {
             strArray = new String[values.length];
             for (int i=0; i < values.length; i++) {
                 strArray[i] = values[i].getString();
@@ -859,22 +837,21 @@ public abstract class AbstractAuthorizablePostServlet extends
         return strArray == null ? new String[0] : strArray;
     }
 
-    protected @NotNull RequestParameter[] convertToRequestParameterArray(Object obj) {
+    protected @NotNull RequestParameter[] convertToRequestParameterArray(String paramName, Object obj) {
         RequestParameter [] paramArray = null;
-        if (obj instanceof String) {
+        if (obj instanceof String value) {
             paramArray = new RequestParameter[] {
-                    Builders.newRequestParameter(null, (String)obj)
+                    Builders.newRequestParameter(paramName, value)
             };
-        } else if (obj instanceof String[]) {
-            String [] strValues = (String[])obj;
+        } else if (obj instanceof String[] strValues) {
             paramArray = new RequestParameter[strValues.length];
             for (int i=0; i < strValues.length; i++) {
-                paramArray[i] = Builders.newRequestParameter(null, strValues[i]);
+                paramArray[i] = Builders.newRequestParameter(paramName, strValues[i]);
             }
-        } else if (obj instanceof RequestParameter) {
-            paramArray = new RequestParameter[] {(RequestParameter)obj};
-        } else if (obj instanceof RequestParameter[]) {
-            paramArray = (RequestParameter[])obj;
+        } else if (obj instanceof RequestParameter reqParam) {
+            paramArray = new RequestParameter[] {reqParam};
+        } else if (obj instanceof RequestParameter[] reqParams) {
+            paramArray = reqParams;
         }
 
         return paramArray == null ? new RequestParameter[0] : paramArray;

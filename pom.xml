@@ -28,7 +28,7 @@
     </parent>
 
     <artifactId>org.apache.sling.jcr.jackrabbit.usermanager</artifactId>
-    <version>2.2.31-SNAPSHOT</version>
+    <version>3.0.0-SNAPSHOT</version>
     <name>Apache Sling JCR Jackrabbit User Manager</name>
     <description>
         Provides ResourceProvider and POST operations for the Jackrabbit
@@ -36,8 +36,10 @@
     </description>
 
     <properties>
+        <sling.java.version>17</sling.java.version>
         <project.build.outputTimestamp>2023-12-19T02:05:12Z</project.build.outputTimestamp>
-        <org.ops4j.pax.exam.version>4.13.3</org.ops4j.pax.exam.version>
+        <org.ops4j.pax.exam.version>4.14.0</org.ops4j.pax.exam.version>
+        <slf4j.version>2.0.17</slf4j.version>
     </properties>
 
     <scm>
@@ -121,15 +123,21 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>jakarta.servlet-api</artifactId>
+            <version>6.0.0</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
             <groupId>org.apache.sling</groupId>
             <artifactId>org.apache.sling.api</artifactId>
-            <version>2.27.0</version>
+            <version>3.0.0</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.sling</groupId>
             <artifactId>org.apache.sling.servlets.post</artifactId>
-            <version>2.3.22</version>
+            <version>3.0.0</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -175,6 +183,7 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
+            <version>${slf4j.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -196,8 +205,14 @@
         <dependency>
           <groupId>org.apache.sling</groupId>
           <artifactId>org.apache.sling.testing.paxexam</artifactId>
-          <version>4.0.0</version>
+          <version>4.1.2</version>
           <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.sling</groupId>
+            <artifactId>org.apache.sling.testing.sling-mock.junit4</artifactId>
+            <version>3.5.4</version>
+            <scope>test</scope>
         </dependency>
 
         <!-- an OSGi framework -->
@@ -213,6 +228,12 @@
           <groupId>junit</groupId>
           <artifactId>junit</artifactId>
           <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>5.11.0</version>
+            <scope>test</scope>
         </dependency>
 
         <!-- Pax Exam -->
@@ -259,12 +280,7 @@
         <dependency>
           <groupId>org.slf4j</groupId>
           <artifactId>slf4j-simple</artifactId>
-          <scope>test</scope>
-        </dependency>
-        <dependency>
-          <groupId>org.apache.sling</groupId>
-          <artifactId>org.apache.sling.jcr.jackrabbit.accessmanager</artifactId>
-          <version>3.0.6</version>
+          <version>${slf4j.version}</version>
           <scope>test</scope>
         </dependency>
         <dependency>
@@ -283,7 +299,7 @@
        <dependency>
             <groupId>org.awaitility</groupId>
             <artifactId>awaitility</artifactId>
-            <version>4.0.0</version>
+            <version>4.3.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -304,6 +320,13 @@
             <version>2.1.1</version>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>org.apache.felix</groupId>
+            <artifactId>org.apache.felix.http.wrappers</artifactId>
+            <version>1.1.10</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
     <profiles>
         <profile>
@@ -316,6 +339,7 @@
                         <configuration>
                             <excludes>
                                 <exclude>org/apache/sling/servlets/post/impl/helper/*</exclude>
+                                <exclude>org/apache/sling/servlets/post/impl/jackrabbit/*</exclude>
                             </excludes>
                         </configuration>
                     </plugin>

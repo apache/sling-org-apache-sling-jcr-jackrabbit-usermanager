@@ -23,7 +23,6 @@ import javax.jcr.RepositoryException;
 import javax.jcr.Session;
 import javax.jcr.security.AccessControlManager;
 import javax.jcr.security.Privilege;
-import javax.servlet.Servlet;
 
 import org.apache.jackrabbit.api.JackrabbitSession;
 import org.apache.jackrabbit.api.security.user.Authorizable;
@@ -31,7 +30,7 @@ import org.apache.jackrabbit.api.security.user.Group;
 import org.apache.jackrabbit.api.security.user.User;
 import org.apache.jackrabbit.api.security.user.UserManager;
 import org.apache.jackrabbit.oak.spi.security.privilege.PrivilegeConstants;
-import org.apache.sling.api.SlingHttpServletRequest;
+import org.apache.sling.api.SlingJakartaHttpServletRequest;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ResourceNotFoundException;
 import org.apache.sling.commons.osgi.OsgiUtil;
@@ -39,9 +38,9 @@ import org.apache.sling.jackrabbit.usermanager.ChangeUserPassword;
 import org.apache.sling.jackrabbit.usermanager.resource.SystemUserManagerPaths;
 import org.apache.sling.jcr.api.SlingRepository;
 import org.apache.sling.serviceusermapping.ServiceUserMapped;
+import org.apache.sling.servlets.post.JakartaPostResponse;
+import org.apache.sling.servlets.post.JakartaPostResponseCreator;
 import org.apache.sling.servlets.post.Modification;
-import org.apache.sling.servlets.post.PostResponse;
-import org.apache.sling.servlets.post.PostResponseCreator;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
@@ -53,6 +52,8 @@ import org.osgi.service.metatype.annotations.Designate;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import jakarta.servlet.Servlet;
 
 /**
  * <h2>
@@ -107,6 +108,11 @@ import org.slf4j.LoggerFactory;
                    AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=yyyy-MM-dd",
                    AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=dd.MM.yyyy HH:mm:ss",
                    AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=dd.MM.yyyy"
+           },
+           reference = {
+                   @Reference(name="SystemUserManagerPaths",
+                           bind = "bindSystemUserManagerPaths",
+                           service = SystemUserManagerPaths.class)
            })
 @Designate(ocd=ChangeUserPasswordServlet.Config.class)
 public class ChangeUserPasswordServlet extends AbstractAuthorizablePostServlet implements ChangeUserPassword {
@@ -189,33 +195,24 @@ public class ChangeUserPasswordServlet extends AbstractAuthorizablePostServlet i
         super.deactivate();
     }
 
-    /* (non-Javadoc)
-     * @see org.apache.sling.jackrabbit.usermanager.impl.post.AbstractAuthorizablePostServlet#bindSystemUserManagerPaths(org.apache.sling.jackrabbit.usermanager.impl.resource.SystemUserManagerPaths)
-     */
-    @Reference
-    @Override
-    protected void bindSystemUserManagerPaths(SystemUserManagerPaths sump) {
-        super.bindSystemUserManagerPaths(sump);
-    }
-    
     /**
      * Overridden since the @Reference annotation is not inherited from the super method
      *  
-     * @see org.apache.sling.jackrabbit.usermanager.impl.post.AbstractPostServlet#bindPostResponseCreator(org.apache.sling.servlets.post.PostResponseCreator, java.util.Map)
+     * @see org.apache.sling.jackrabbit.usermanager.impl.post.AbstractPostServlet#bindPostResponseCreator(org.apache.sling.servlets.post.JakartaPostResponseCreator, java.util.Map)
      */
     @Override
-    @Reference(service = PostResponseCreator.class,
+    @Reference(service = JakartaPostResponseCreator.class,
         cardinality = ReferenceCardinality.MULTIPLE,
         policy = ReferencePolicy.DYNAMIC)
-    protected void bindPostResponseCreator(PostResponseCreator creator, Map<String, Object> properties) {
+    protected void bindPostResponseCreator(JakartaPostResponseCreator creator, Map<String, Object> properties) {
         super.bindPostResponseCreator(creator, properties);
     }
 
     /* (non-Javadoc)
-     * @see org.apache.sling.jackrabbit.usermanager.impl.post.AbstractPostServlet#unbindPostResponseCreator(org.apache.sling.servlets.post.PostResponseCreator, java.util.Map)
+     * @see org.apache.sling.jackrabbit.usermanager.impl.post.AbstractPostServlet#unbindPostResponseCreator(org.apache.sling.servlets.post.JakartaPostResponseCreator, java.util.Map)
      */
     @Override
-    protected void unbindPostResponseCreator(PostResponseCreator creator, Map<String, Object> properties) { //NOSONAR
+    protected void unbindPostResponseCreator(JakartaPostResponseCreator creator, Map<String, Object> properties) { //NOSONAR
         super.unbindPostResponseCreator(creator, properties);
     }
 
@@ -223,12 +220,12 @@ public class ChangeUserPasswordServlet extends AbstractAuthorizablePostServlet i
      * (non-Javadoc)
      * @see
      * org.apache.sling.jackrabbit.usermanager.post.AbstractAuthorizablePostServlet
-     * #handleOperation(org.apache.sling.api.SlingHttpServletRequest,
-     * org.apache.sling.api.servlets.HtmlResponse, java.util.List)
+     * #handleOperation(org.apache.sling.api.SlingJakartaHttpServletRequest,
+     * org.apache.sling.servlets.post.JakartaPostResponse, java.util.List)
      */
     @Override
-    protected void handleOperation(SlingHttpServletRequest request,
-            PostResponse response, List<Modification> changes)
+    protected void handleOperation(SlingJakartaHttpServletRequest request,
+            JakartaPostResponse response, List<Modification> changes)
             throws RepositoryException {
 
         Resource resource = request.getResource();
@@ -260,8 +257,8 @@ public class ChangeUserPasswordServlet extends AbstractAuthorizablePostServlet i
         User user;
         UserManager userManager = ((JackrabbitSession)jcrSession).getUserManager();
         Authorizable authorizable = userManager.getAuthorizable(name);
-        if (authorizable instanceof User) {
-            user = (User)authorizable;
+        if (authorizable instanceof User u) {
+            user = u;
         } else {
             throw new ResourceNotFoundException(
                 "User to update could not be determined");
@@ -281,8 +278,8 @@ public class ChangeUserPasswordServlet extends AbstractAuthorizablePostServlet i
                 if (!administrator) {
                     //check if the user is a member of the 'User administrator' group
                     Authorizable userAdmin = um.getAuthorizable(this.userAdminGroupName);
-                    if (userAdmin instanceof Group) {
-                        boolean isMember = ((Group)userAdmin).isMember(currentUser);
+                    if (userAdmin instanceof Group userAdminGroup) {
+                        boolean isMember = userAdminGroup.isMember(currentUser);
                         if (isMember) {
                             administrator = true;
                         }

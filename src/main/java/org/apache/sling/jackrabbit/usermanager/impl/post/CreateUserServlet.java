@@ -24,7 +24,6 @@ import javax.jcr.RepositoryException;
 import javax.jcr.Session;
 import javax.jcr.security.AccessControlManager;
 import javax.jcr.security.Privilege;
-import javax.servlet.Servlet;
 
 import org.apache.jackrabbit.api.JackrabbitSession;
 import org.apache.jackrabbit.api.security.user.Authorizable;
@@ -34,17 +33,17 @@ import org.apache.jackrabbit.oak.spi.security.privilege.PrivilegeConstants;
 import org.apache.jackrabbit.oak.spi.security.user.AuthorizableType;
 import org.apache.jackrabbit.oak.spi.security.user.UserConfiguration;
 import org.apache.jackrabbit.oak.spi.security.user.UserConstants;
-import org.apache.sling.api.SlingHttpServletRequest;
+import org.apache.sling.api.SlingJakartaHttpServletRequest;
 import org.apache.sling.jackrabbit.usermanager.CreateUser;
 import org.apache.sling.jackrabbit.usermanager.PrincipalNameFilter;
 import org.apache.sling.jackrabbit.usermanager.PrincipalNameGenerator;
 import org.apache.sling.jackrabbit.usermanager.resource.SystemUserManagerPaths;
 import org.apache.sling.jcr.api.SlingRepository;
 import org.apache.sling.serviceusermapping.ServiceUserMapped;
+import org.apache.sling.servlets.post.JakartaPostResponse;
+import org.apache.sling.servlets.post.JakartaPostResponseCreator;
 import org.apache.sling.servlets.post.Modification;
 import org.apache.sling.servlets.post.ModificationType;
-import org.apache.sling.servlets.post.PostResponse;
-import org.apache.sling.servlets.post.PostResponseCreator;
 import org.apache.sling.servlets.post.SlingPostConstants;
 import org.apache.sling.servlets.post.impl.helper.RequestProperty;
 import org.osgi.service.component.annotations.Activate;
@@ -59,6 +58,8 @@ import org.osgi.service.metatype.annotations.Designate;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import jakarta.servlet.Servlet;
 
 /**
  * <p>
@@ -119,6 +120,11 @@ import org.slf4j.LoggerFactory;
            AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=yyyy-MM-dd",
            AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=dd.MM.yyyy HH:mm:ss",
            AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=dd.MM.yyyy"
+},
+reference = {
+        @Reference(name="SystemUserManagerPaths",
+                bind = "bindSystemUserManagerPaths",
+                service = SystemUserManagerPaths.class)
 })
 @Designate(ocd = CreateUserServlet.Config.class)
 public class CreateUserServlet extends AbstractAuthorizablePostServlet implements CreateUser {
@@ -151,9 +157,9 @@ public class CreateUserServlet extends AbstractAuthorizablePostServlet implement
      */
     @Reference
     private transient ServiceUserMapped serviceUserMapped;
-    
+
     private String usersPath;
-    
+
     @Reference(cardinality=ReferenceCardinality.OPTIONAL, policy = ReferencePolicy.DYNAMIC)
     private void bindUserConfiguration(UserConfiguration userConfig, Map<String, Object> properties) {
         usersPath = (String)properties.get(UserConstants.PARAM_USER_PATH);
@@ -162,7 +168,7 @@ public class CreateUserServlet extends AbstractAuthorizablePostServlet implement
     private void unbindUserConfiguration(UserConfiguration userConfig, Map<String, Object> properties) {
         usersPath = null;
     }
-    
+
     /**
      * Returns an administrative session to the default workspace.
      */
@@ -223,33 +229,24 @@ public class CreateUserServlet extends AbstractAuthorizablePostServlet implement
         super.unbindPrincipalNameFilter(filter);
     }
 
-    /* (non-Javadoc)
-     * @see org.apache.sling.jackrabbit.usermanager.impl.post.AbstractAuthorizablePostServlet#bindSystemUserManagerPaths(org.apache.sling.jackrabbit.usermanager.impl.resource.SystemUserManagerPaths)
-     */
-    @Reference
-    @Override
-    protected void bindSystemUserManagerPaths(SystemUserManagerPaths sump) {
-        super.bindSystemUserManagerPaths(sump);
-    }
-
     /**
      * Overridden since the @Reference annotation is not inherited from the super method
      *  
-     * @see org.apache.sling.jackrabbit.usermanager.impl.post.AbstractPostServlet#bindPostResponseCreator(org.apache.sling.servlets.post.PostResponseCreator, java.util.Map)
+     * @see org.apache.sling.jackrabbit.usermanager.impl.post.AbstractPostServlet#bindPostResponseCreator(org.apache.sling.servlets.post.JakartaPostResponseCreator, java.util.Map)
      */
     @Override
-    @Reference(service = PostResponseCreator.class,
+    @Reference(service = JakartaPostResponseCreator.class,
         cardinality = ReferenceCardinality.MULTIPLE,
         policy = ReferencePolicy.DYNAMIC)
-    protected void bindPostResponseCreator(PostResponseCreator creator, Map<String, Object> properties) {
+    protected void bindPostResponseCreator(JakartaPostResponseCreator creator, Map<String, Object> properties) {
         super.bindPostResponseCreator(creator, properties);
     }
 
     /* (non-Javadoc)
-     * @see org.apache.sling.jackrabbit.usermanager.impl.post.AbstractPostServlet#unbindPostResponseCreator(org.apache.sling.servlets.post.PostResponseCreator, java.util.Map)
+     * @see org.apache.sling.jackrabbit.usermanager.impl.post.AbstractPostServlet#unbindPostResponseCreator(org.apache.sling.servlets.post.JakartaPostResponseCreator, java.util.Map)
      */
     @Override
-    protected void unbindPostResponseCreator(PostResponseCreator creator, Map<String, Object> properties) { //NOSONAR
+    protected void unbindPostResponseCreator(JakartaPostResponseCreator creator, Map<String, Object> properties) { //NOSONAR
         super.unbindPostResponseCreator(creator, properties);
     }
     
@@ -257,12 +254,12 @@ public class CreateUserServlet extends AbstractAuthorizablePostServlet implement
      * (non-Javadoc)
      * @see
      * org.apache.sling.jackrabbit.usermanager.post.AbstractAuthorizablePostServlet
-     * #handleOperation(org.apache.sling.api.SlingHttpServletRequest,
-     * org.apache.sling.api.servlets.HtmlResponse, java.util.List)
+     * #handleOperation(org.apache.sling.api.SlingJakartaHttpServletRequest,
+     * org.apache.sling.servlets.post.JakartaPostResponse, java.util.List)
      */
     @Override
-    protected void handleOperation(SlingHttpServletRequest request,
-            PostResponse response, List<Modification> changes)
+    protected void handleOperation(SlingJakartaHttpServletRequest request,
+            JakartaPostResponse response, List<Modification> changes)
             throws RepositoryException {
 
 
@@ -404,8 +401,8 @@ public class CreateUserServlet extends AbstractAuthorizablePostServlet implement
                     //lookup the user from the user session so we can return a live object
                     UserManager userManager2 = ((JackrabbitSession)jcrSession).getUserManager();
                     Authorizable authorizable2 = userManager2.getAuthorizable(user.getID());
-                    if (authorizable2 instanceof User) {
-                        user = (User)authorizable2;
+                    if (authorizable2 instanceof User u) {
+                        user = u;
                     } else {
                         user = null;
                     }

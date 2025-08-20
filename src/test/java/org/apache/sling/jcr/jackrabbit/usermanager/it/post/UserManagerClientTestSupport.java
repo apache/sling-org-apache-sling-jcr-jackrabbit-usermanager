@@ -45,7 +45,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import javax.inject.Inject;
-import javax.servlet.http.HttpServletResponse;
 
 import org.apache.http.Header;
 import org.apache.http.HttpHost;
@@ -76,7 +75,7 @@ import org.apache.sling.api.resource.LoginException;
 import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.api.resource.ResourceResolverFactory;
 import org.apache.sling.jcr.jackrabbit.usermanager.it.UserManagerTestSupport;
-import org.apache.sling.servlets.post.PostResponseCreator;
+import org.apache.sling.servlets.post.JakartaPostResponseCreator;
 import org.awaitility.Awaitility;
 import org.junit.After;
 import org.junit.Before;
@@ -90,6 +89,7 @@ import org.osgi.service.cm.ConfigurationAdmin;
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonReader;
+import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * base class for tests doing http requests to verify calls to the usermanager
@@ -117,7 +117,7 @@ public abstract class UserManagerClientTestSupport extends UserManagerTestSuppor
     @Inject
     protected ResourceResolverFactory resourceResolverFactory;
 
-    protected ServiceRegistration<PostResponseCreator> serviceReg;
+    protected ServiceRegistration<JakartaPostResponseCreator> serviceReg;
 
     protected static final String COOKIE_SLING_FORMAUTH = "sling.formauth";
     protected static final String COOKIE_SLING_FORMAUTH_DOMAIN = "sling.formauth.cookie.domain";
@@ -184,7 +184,7 @@ public abstract class UserManagerClientTestSupport extends UserManagerTestSuppor
     public void before() throws IOException, URISyntaxException {
         Bundle bundle = FrameworkUtil.getBundle(getClass());
         Dictionary<String, Object> props = new Hashtable<>(); // NOSONAR
-        serviceReg = bundle.getBundleContext().registerService(PostResponseCreator.class,
+        serviceReg = bundle.getBundleContext().registerService(JakartaPostResponseCreator.class,
                 new CustomPostResponseCreatorImpl(), props);
 
         // wait for the health checks to be OK

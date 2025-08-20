@@ -145,9 +145,9 @@ public class AuthorizablePrivilegesInfoImpl implements AuthorizablePrivilegesInf
         boolean hasRights = false;
         try {
             UserManager userManager = ((JackrabbitSession)jcrSession).getUserManager();
-            Authorizable currentUser = userManager.getAuthorizable(jcrSession.getUserID());
+            Authorizable currentUserAuthorizable = userManager.getAuthorizable(jcrSession.getUserID());
 
-            if (currentUser instanceof User && ((User)currentUser).isAdmin()) {
+            if (currentUserAuthorizable instanceof User currentUser && currentUser.isAdmin()) {
                 hasRights = true; //admin user has full control
             } else {
                 if (groupsPath != null) {
@@ -179,8 +179,8 @@ public class AuthorizablePrivilegesInfoImpl implements AuthorizablePrivilegesInf
                 hasRights = true;
             } else {
                 UserManager userManager = ((JackrabbitSession)jcrSession).getUserManager();
-                Authorizable currentUser = userManager.getAuthorizable(jcrSession.getUserID());
-                if (currentUser instanceof User && ((User)currentUser).isAdmin()) {
+                Authorizable currentUserAuthorizable = userManager.getAuthorizable(jcrSession.getUserID());
+                if (currentUserAuthorizable instanceof User currentUser && currentUser.isAdmin()) {
                     hasRights = true;  //admin user has full control
                 } else {
                     if (usersPath != null) {
@@ -217,7 +217,7 @@ public class AuthorizablePrivilegesInfoImpl implements AuthorizablePrivilegesInf
             if (authorizableChecker != null && !authorizableChecker.isValid(authorizable)) {
                 // no rights, so skip the rest
             } else {
-                if (currentUser instanceof User && ((User)currentUser).isAdmin()){
+                if (currentUser instanceof User u && u.isAdmin()){
                     hasRights = true; //admin user has full control
                 } else {
                     String path = authorizable.getPath();
@@ -361,8 +361,8 @@ public class AuthorizablePrivilegesInfoImpl implements AuthorizablePrivilegesInf
         try {
             hasRights = checkAuthorizablePath(jcrSession, userId,
                     //system users and anonymous have no passwords
-                    authorizable -> authorizable instanceof User &&
-                        !((User)authorizable).isSystemUser() && !"anonymous".equals(authorizable.getID()),
+                    authorizable -> authorizable instanceof User u &&
+                        !u.isSystemUser() && !"anonymous".equals(authorizable.getID()),
                     path -> {
                         boolean allowed = false;
                         //check if the non-admin user has sufficient rights on the home folder
@@ -395,17 +395,17 @@ public class AuthorizablePrivilegesInfoImpl implements AuthorizablePrivilegesInf
             // can't change your own password without the old password
             if (!jcrSession.getUserID().equals(userId)) {
                 UserManager um = ((JackrabbitSession)jcrSession).getUserManager();
-                Authorizable currentUser = um.getAuthorizable(jcrSession.getUserID());
-                if (currentUser instanceof User) {
-                    Authorizable targetUser = um.getAuthorizable(userId);
+                Authorizable currentAuthorizable = um.getAuthorizable(jcrSession.getUserID());
+                if (currentAuthorizable instanceof User currentUser) {
+                    Authorizable targetAuthorizable = um.getAuthorizable(userId);
                     //system users and anonymous have no passwords
-                    if (targetUser instanceof User && !((User)targetUser).isSystemUser() && !"anonymous".equals(targetUser.getID())) {
-                        if (((User)currentUser).isAdmin()) {
+                    if (targetAuthorizable instanceof User targetUser && !targetUser.isSystemUser() && !"anonymous".equals(targetUser.getID())) {
+                        if (currentUser.isAdmin()) {
                             can = true;
                         } else if (userAdminGroupName != null) {
-                            Authorizable group = um.getAuthorizable(userAdminGroupName);
-                            if (group instanceof Group) {
-                                can = ((Group)group).isMember(currentUser);
+                            Authorizable groupAuthorizable = um.getAuthorizable(userAdminGroupName);
+                            if (groupAuthorizable instanceof Group group) {
+                                can = group.isMember(currentUser);
                             }
                         }
                     }

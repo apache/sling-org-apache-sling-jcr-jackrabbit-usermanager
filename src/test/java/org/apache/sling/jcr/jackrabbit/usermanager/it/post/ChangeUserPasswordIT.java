@@ -28,8 +28,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Dictionary;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
 import javax.inject.Inject;
@@ -39,6 +38,7 @@ import javax.jcr.Session;
 import javax.jcr.SimpleCredentials;
 import javax.jcr.security.Privilege;
 
+import org.apache.jackrabbit.api.security.user.Group;
 import org.apache.jackrabbit.api.security.user.User;
 import org.apache.jackrabbit.oak.api.CommitFailedException;
 import org.apache.jackrabbit.oak.spi.security.privilege.PrivilegeConstants;
@@ -48,8 +48,7 @@ import org.apache.sling.jackrabbit.usermanager.CreateGroup;
 import org.apache.sling.jackrabbit.usermanager.CreateUser;
 import org.apache.sling.jackrabbit.usermanager.DeleteUser;
 import org.apache.sling.jcr.api.SlingRepository;
-import org.apache.sling.jcr.jackrabbit.accessmanager.DeleteAces;
-import org.apache.sling.jcr.jackrabbit.accessmanager.ModifyAce;
+import org.apache.sling.jcr.jackrabbit.usermanager.it.AceTools;
 import org.apache.sling.jcr.jackrabbit.usermanager.it.UserManagerTestSupport;
 import org.jetbrains.annotations.NotNull;
 import org.junit.After;
@@ -94,12 +93,6 @@ public class ChangeUserPasswordIT extends UserManagerTestSupport {
     private CreateGroup createGroup;
 
     @Inject
-    private ModifyAce modifyAce;
-
-    @Inject
-    private DeleteAces deleteAces;
-
-    @Inject
     private DeleteUser deleteUser;
 
     @Inject
@@ -126,13 +119,8 @@ public class ChangeUserPasswordIT extends UserManagerTestSupport {
 
         //change the ACE for the user home folder to the minimum privileges
         // and without rep:userManagement
-        deleteAces.deleteAces(adminSession, user1.getPath(), new String[] {user1.getID()});
-        Map<String, String> privileges = new HashMap<>();
-        privileges.put(String.format("privilege@%s", Privilege.JCR_READ), "granted");
-        privileges.put(String.format("privilege@%s", PrivilegeConstants.REP_ALTER_PROPERTIES), "granted");
-        modifyAce.modifyAce(adminSession, user1.getPath(), user1.getID(),
-                privileges,
-                "first");
+        AceTools.deleteAces(adminSession, user1.getPath(), user1);
+        AceTools.modifyAce(adminSession, user1.getPath(), user1, Set.of(Privilege.JCR_READ, PrivilegeConstants.REP_ALTER_PROPERTIES), null);
         if (adminSession.hasPendingChanges()) {
             adminSession.save();
         }
@@ -347,28 +335,26 @@ public class ChangeUserPasswordIT extends UserManagerTestSupport {
 
             // figure out what the user admin group name has been configured as
             serviceReference = bundleContext.getServiceReference(ChangeUserPassword.class);
-            String userAdminGroup = (String)serviceReference.getProperty("user.admin.group.name");
-            if (userAdminGroup == null || userAdminGroup.isEmpty()) {
-                userAdminGroup = "UserAdmin"; // fallback to the default
+            String userAdminGroupName = (String)serviceReference.getProperty("user.admin.group.name");
+            if (userAdminGroupName == null || userAdminGroupName.isEmpty()) {
+                userAdminGroupName = "UserAdmin"; // fallback to the default
             }
 
             // add user1 to the UserAdmin group
-            createGroup.createGroup(adminSession, userAdminGroup,
+            Group userAdminGroup = createGroup.createGroup(adminSession, userAdminGroupName,
                     Collections.singletonMap(":member", user1.getID()), new ArrayList<>());
             if (adminSession.hasPendingChanges()) {
                 adminSession.save();
             }
 
             //make sure the UserAdmin group has the expected privileges granted
-            Map<String, String> privileges = new HashMap<>();
-            privileges.put(String.format("privilege@%s", Privilege.JCR_READ), "granted");
-            privileges.put(String.format("privilege@%s", Privilege.JCR_READ_ACCESS_CONTROL), "granted");
-            privileges.put(String.format("privilege@%s", Privilege.JCR_MODIFY_ACCESS_CONTROL), "granted");
-            privileges.put(String.format("privilege@%s", PrivilegeConstants.REP_WRITE), "granted");
-            privileges.put(String.format("privilege@%s", PrivilegeConstants.REP_USER_MANAGEMENT), "granted");
-            modifyAce.modifyAce(adminSession, user2.getPath(), userAdminGroup,
-                    privileges,
-                    "first");
+            AceTools.modifyAce(adminSession, user2.getPath(), userAdminGroup, Set.of(
+                        Privilege.JCR_READ,
+                        Privilege.JCR_READ_ACCESS_CONTROL,
+                        Privilege.JCR_MODIFY_ACCESS_CONTROL,
+                        PrivilegeConstants.REP_WRITE,
+                        PrivilegeConstants.REP_USER_MANAGEMENT
+                    ), null);
 
 
             // create a fresh session so changes from the adminSession are picked up
@@ -461,12 +447,10 @@ public class ChangeUserPasswordIT extends UserManagerTestSupport {
             assertNotNull(changeUserPassword);
 
             //make sure the user1 has the expected privileges granted
-            Map<String, String> privileges = new HashMap<>();
-            privileges.put(String.format("privilege@%s", Privilege.JCR_READ), "granted");
-            privileges.put(String.format("privilege@%s", PrivilegeConstants.REP_USER_MANAGEMENT), "granted");
-            modifyAce.modifyAce(adminSession, user2.getPath(), user1.getID(),
-                    privileges,
-                    "first");
+            AceTools.modifyAce(adminSession, user2.getPath(), user1, Set.of(
+                    Privilege.JCR_READ,
+                    PrivilegeConstants.REP_USER_MANAGEMENT
+                    ), null);
 
 
             // create a fresh session so changes from the adminSession are picked up
