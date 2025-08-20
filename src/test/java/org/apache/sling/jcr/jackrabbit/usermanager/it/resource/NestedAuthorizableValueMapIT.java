@@ -18,14 +18,10 @@
  */
 package org.apache.sling.jcr.jackrabbit.usermanager.it.resource;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.ops4j.pax.exam.cm.ConfigurationAdminOptions.newConfiguration;
+import javax.jcr.RepositoryException;
 
 import java.util.Collections;
 import java.util.Map;
-
-import javax.jcr.RepositoryException;
 
 import org.apache.jackrabbit.api.security.user.Authorizable;
 import org.apache.sling.api.resource.LoginException;
@@ -40,6 +36,10 @@ import org.ops4j.pax.exam.junit.PaxExam;
 import org.ops4j.pax.exam.spi.reactors.ExamReactorStrategy;
 import org.ops4j.pax.exam.spi.reactors.PerClass;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.ops4j.pax.exam.cm.ConfigurationAdminOptions.newConfiguration;
+
 /**
  * Basic test of NestedAuthorizableValueMap
  */
@@ -50,7 +50,7 @@ public class NestedAuthorizableValueMapIT extends BaseAuthorizableValueMapIT {
     @Override
     protected Option[] additionalOptions() {
         return new Option[] {
-                newConfiguration("org.apache.sling.jackrabbit.usermanager.impl.resource.AuthorizableResourceProvider")
+            newConfiguration("org.apache.sling.jackrabbit.usermanager.impl.resource.AuthorizableResourceProvider")
                     .put("resources.for.nested.properties", true)
                     .asOption()
         };
@@ -63,12 +63,15 @@ public class NestedAuthorizableValueMapIT extends BaseAuthorizableValueMapIT {
 
     @Override
     protected ValueMap getValueMap(Authorizable a) throws LoginException, RepositoryException {
-        try (ResourceResolver resourceResolver = resourceResolverFactory.getResourceResolver(Collections.singletonMap(JcrResourceConstants.AUTHENTICATION_INFO_SESSION, adminSession))) {
+        try (ResourceResolver resourceResolver = resourceResolverFactory.getResourceResolver(
+                Collections.singletonMap(JcrResourceConstants.AUTHENTICATION_INFO_SESSION, adminSession))) {
             Resource resource;
             if (a.isGroup()) {
-                resource = resourceResolver.resolve(String.format("%s%s/nested", userManagerPaths.getGroupPrefix(), a.getID()));
+                resource = resourceResolver.resolve(
+                        String.format("%s%s/nested", userManagerPaths.getGroupPrefix(), a.getID()));
             } else {
-                resource = resourceResolver.resolve(String.format("%s%s/nested", userManagerPaths.getUserPrefix(), a.getID()));
+                resource = resourceResolver.resolve(
+                        String.format("%s%s/nested", userManagerPaths.getUserPrefix(), a.getID()));
             }
             assertNotNull(resource);
             ValueMap vm = resource.adaptTo(ValueMap.class);
@@ -88,5 +91,4 @@ public class NestedAuthorizableValueMapIT extends BaseAuthorizableValueMapIT {
         int size2 = vm2.size();
         assertEquals(27, size2);
     }
-
 }

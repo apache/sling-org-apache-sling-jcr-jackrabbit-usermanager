@@ -1,18 +1,20 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 package org.apache.sling.jackrabbit.usermanager;
 
@@ -31,22 +33,22 @@ public interface AuthorizablePrivilegesInfo {
          * @deprecated use {@link #ADD_PROPERTY} instead
          */
         @Deprecated
-        addProperty, //NOSONAR
+        addProperty, // NOSONAR
         /**
          * @deprecated use {@link #ADD_NESTED_PROPERTY} instead
          */
         @Deprecated
-        addNestedProperty, //NOSONAR
+        addNestedProperty, // NOSONAR
         /**
          * @deprecated use {@link #ALTER_PROPERTY} instead
          */
         @Deprecated
-        alterProperty, //NOSONAR
+        alterProperty, // NOSONAR
         /**
          * @deprecated use {@link #REMOVE_PROPERTY} instead
          */
         @Deprecated
-        removeProperty, //NOSONAR
+        removeProperty, // NOSONAR
 
         ADD_PROPERTY,
         ADD_NESTED_PROPERTY,
@@ -62,13 +64,13 @@ public interface AuthorizablePrivilegesInfo {
          */
         public static PropertyUpdateTypes convertDeprecated(PropertyUpdateTypes updateType) {
             PropertyUpdateTypes converted = null;
-            if (addProperty.equals(updateType)) { //NOSONAR
+            if (addProperty.equals(updateType)) { // NOSONAR
                 converted = ADD_PROPERTY;
-            } else if (addNestedProperty.equals(updateType)) { //NOSONAR
+            } else if (addNestedProperty.equals(updateType)) { // NOSONAR
                 converted = ADD_NESTED_PROPERTY;
-            } else if (alterProperty.equals(updateType)) { //NOSONAR
+            } else if (alterProperty.equals(updateType)) { // NOSONAR
                 converted = ALTER_PROPERTY;
-            } else if (removeProperty.equals(updateType)) { //NOSONAR
+            } else if (removeProperty.equals(updateType)) { // NOSONAR
                 converted = REMOVE_PROPERTY;
             }
 
@@ -84,7 +86,7 @@ public interface AuthorizablePrivilegesInfo {
     /**
      * Checks whether the current user has been granted privileges
      * to add a new user.
-     *  
+     *
      * @param jcrSession the JCR session of the current user
      * @return true if the current user has the privileges, false otherwise
      */
@@ -93,23 +95,22 @@ public interface AuthorizablePrivilegesInfo {
     /**
      * Checks whether the current user has been granted privileges
      * to add a new group.
-     *  
+     *
      * @param jcrSession the JCR session of the current user
      * @return true if the current user has the privileges, false otherwise
      */
     boolean canAddGroup(Session jcrSession);
-    
+
     /**
      * Checks whether the current user has been granted privileges
      * to update the properties of the specified user or group.
      * Equivalent of: #canUpdateProperties(Session, String, PropertyUpdateTypes.addProperty, PropertyUpdateTypes.addNestedProperty, PropertyUpdateTypes.alterProperty, PropertyUpdateTypes.removeProperty)
-     *  
+     *
      * @param jcrSession the JCR session of the current user
      * @param principalId the user or group id to check
      * @return true if the current user has the privileges, false otherwise
      */
-    boolean canUpdateProperties(Session jcrSession,
-            String principalId);
+    boolean canUpdateProperties(Session jcrSession, String principalId);
 
     /**
      * Checks whether the current user has been granted privileges
@@ -120,32 +121,30 @@ public interface AuthorizablePrivilegesInfo {
      * @param propertyUpdateTypes specify the types of property updates that may be supplied. See: {@link PropertyUpdateTypes}
      * @return true if the current user has the privileges, false otherwise
      */
-    default boolean canUpdateProperties(Session jcrSession,
-            String principalId, PropertyUpdateTypes ... propertyUpdateTypes) {
+    default boolean canUpdateProperties(
+            Session jcrSession, String principalId, PropertyUpdateTypes... propertyUpdateTypes) {
         throw new UnsupportedOperationException();
     }
 
     /**
      * Checks whether the current user has been granted privileges
      * to remove the specified user or group.
-     *  
+     *
      * @param jcrSession the JCR session of the current user
      * @param principalId the user or group id to check
      * @return true if the current user has the privileges, false otherwise
      */
-    boolean canRemove(Session jcrSession,
-            String principalId);
-    
+    boolean canRemove(Session jcrSession, String principalId);
+
     /**
      * Checks whether the current user has been granted privileges
      * to update the membership of the specified group.
-     *  
+     *
      * @param jcrSession the JCR session of the current user
      * @param groupId the group id to check
      * @return true if the current user has the privileges, false otherwise
      */
-    boolean canUpdateGroupMembers(Session jcrSession,
-            String groupId);
+    boolean canUpdateGroupMembers(Session jcrSession, String groupId);
 
     /**
      * Checks whether the current user has been granted privileges
@@ -155,8 +154,7 @@ public interface AuthorizablePrivilegesInfo {
      * @param userId the user id to check
      * @return true if the current user has the privileges, false otherwise
      */
-    default boolean canDisable(Session jcrSession,
-            String userId) {
+    default boolean canDisable(Session jcrSession, String userId) {
         throw new UnsupportedOperationException();
     }
 
@@ -168,8 +166,7 @@ public interface AuthorizablePrivilegesInfo {
      * @param userId the user id to check
      * @return true if the current user has the privileges, false otherwise
      */
-    default boolean canChangePassword(Session jcrSession,
-            String userId) {
+    default boolean canChangePassword(Session jcrSession, String userId) {
         throw new UnsupportedOperationException();
     }
 
@@ -182,9 +179,7 @@ public interface AuthorizablePrivilegesInfo {
      * @param userId the user id to check
      * @return true if the current user has the privileges, false otherwise
      */
-    default boolean canChangePasswordWithoutOldPassword(@NotNull Session jcrSession,
-            @NotNull String userId) {
+    default boolean canChangePasswordWithoutOldPassword(@NotNull Session jcrSession, @NotNull String userId) {
         throw new UnsupportedOperationException();
     }
-
 }

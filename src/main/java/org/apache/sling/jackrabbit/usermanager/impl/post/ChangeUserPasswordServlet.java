@@ -1,29 +1,32 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 package org.apache.sling.jackrabbit.usermanager.impl.post;
-
-import java.util.List;
-import java.util.Map;
 
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
 import javax.jcr.security.AccessControlManager;
 import javax.jcr.security.Privilege;
 
+import java.util.List;
+import java.util.Map;
+
+import jakarta.servlet.Servlet;
 import org.apache.jackrabbit.api.JackrabbitSession;
 import org.apache.jackrabbit.api.security.user.Authorizable;
 import org.apache.jackrabbit.api.security.user.Group;
@@ -52,8 +55,6 @@ import org.osgi.service.metatype.annotations.Designate;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import jakarta.servlet.Servlet;
 
 /**
  * <h2>
@@ -95,36 +96,40 @@ import jakarta.servlet.Servlet;
  *
  * <h3>Notes</h3>
  */
-
-@Component(service = {Servlet.class, ChangeUserPassword.class},
-           property = {
-                   "sling.servlet.resourceTypes=sling/user",
-                   "sling.servlet.methods=POST",
-                   "sling.servlet.selectors=changePassword",
-                   "sling.servlet.prefix:Integer=-1",
-                   AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=EEE MMM dd yyyy HH:mm:ss 'GMT'Z",
-                   AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=yyyy-MM-dd'T'HH:mm:ss.SSSZ",
-                   AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=yyyy-MM-dd'T'HH:mm:ss",
-                   AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=yyyy-MM-dd",
-                   AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=dd.MM.yyyy HH:mm:ss",
-                   AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=dd.MM.yyyy"
-           },
-           reference = {
-                   @Reference(name="SystemUserManagerPaths",
-                           bind = "bindSystemUserManagerPaths",
-                           service = SystemUserManagerPaths.class)
-           })
-@Designate(ocd=ChangeUserPasswordServlet.Config.class)
+@Component(
+        service = {Servlet.class, ChangeUserPassword.class},
+        property = {
+            "sling.servlet.resourceTypes=sling/user",
+            "sling.servlet.methods=POST",
+            "sling.servlet.selectors=changePassword",
+            "sling.servlet.prefix:Integer=-1",
+            AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=EEE MMM dd yyyy HH:mm:ss 'GMT'Z",
+            AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=yyyy-MM-dd'T'HH:mm:ss.SSSZ",
+            AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=yyyy-MM-dd'T'HH:mm:ss",
+            AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=yyyy-MM-dd",
+            AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=dd.MM.yyyy HH:mm:ss",
+            AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=dd.MM.yyyy"
+        },
+        reference = {
+            @Reference(
+                    name = "SystemUserManagerPaths",
+                    bind = "bindSystemUserManagerPaths",
+                    service = SystemUserManagerPaths.class)
+        })
+@Designate(ocd = ChangeUserPasswordServlet.Config.class)
 public class ChangeUserPasswordServlet extends AbstractAuthorizablePostServlet implements ChangeUserPassword {
 
-    @ObjectClassDefinition(name ="Apache Sling Change User Password")
+    @ObjectClassDefinition(name = "Apache Sling Change User Password")
     public @interface Config {
 
-        @AttributeDefinition(name = "User Admin Group Name",
-                description = "Specifies the name of the group whose members are allowed to reset the password of another user.")
-        String user_admin_group_name() default DEFAULT_USER_ADMIN_GROUP_NAME; //NOSONAR
+        @AttributeDefinition(
+                name = "User Admin Group Name",
+                description =
+                        "Specifies the name of the group whose members are allowed to reset the password of another user.")
+        String user_admin_group_name() default DEFAULT_USER_ADMIN_GROUP_NAME; // NOSONAR
 
-        @AttributeDefinition(name = "Allow Self Password Change",
+        @AttributeDefinition(
+                name = "Allow Self Password Change",
                 description = "Specifies whether a user is allowed to change their own password.")
         boolean allowSelfChangePassword() default true;
     }
@@ -178,14 +183,15 @@ public class ChangeUserPasswordServlet extends AbstractAuthorizablePostServlet i
 
         if (props.containsKey("alwaysAllowSelfChangePassword")) {
             // log warning about the wrong property name
-            log.warn("Obsolete 'alwaysAllowSelfChangePassword' configuration key was detected. Please change the key name in your configuration to 'allowSelfChangePassword'");
+            log.warn(
+                    "Obsolete 'alwaysAllowSelfChangePassword' configuration key was detected. Please change the key name in your configuration to 'allowSelfChangePassword'");
             allowSelfChangePassword = OsgiUtil.toBoolean(props.get("alwaysAllowSelfChangePassword"), false);
         } else {
             allowSelfChangePassword = OsgiUtil.toBoolean(props.get("allowSelfChangePassword"), false);
         }
 
-        this.userAdminGroupName = OsgiUtil.toString(props.get(PAR_USER_ADMIN_GROUP_NAME),
-                DEFAULT_USER_ADMIN_GROUP_NAME);
+        this.userAdminGroupName =
+                OsgiUtil.toString(props.get(PAR_USER_ADMIN_GROUP_NAME), DEFAULT_USER_ADMIN_GROUP_NAME);
         log.debug("User Admin Group Name {}", this.userAdminGroupName);
     }
 
@@ -197,13 +203,14 @@ public class ChangeUserPasswordServlet extends AbstractAuthorizablePostServlet i
 
     /**
      * Overridden since the @Reference annotation is not inherited from the super method
-     *  
+     *
      * @see org.apache.sling.jackrabbit.usermanager.impl.post.AbstractPostServlet#bindPostResponseCreator(org.apache.sling.servlets.post.JakartaPostResponseCreator, java.util.Map)
      */
     @Override
-    @Reference(service = JakartaPostResponseCreator.class,
-        cardinality = ReferenceCardinality.MULTIPLE,
-        policy = ReferencePolicy.DYNAMIC)
+    @Reference(
+            service = JakartaPostResponseCreator.class,
+            cardinality = ReferenceCardinality.MULTIPLE,
+            policy = ReferencePolicy.DYNAMIC)
     protected void bindPostResponseCreator(JakartaPostResponseCreator creator, Map<String, Object> properties) {
         super.bindPostResponseCreator(creator, properties);
     }
@@ -212,7 +219,8 @@ public class ChangeUserPasswordServlet extends AbstractAuthorizablePostServlet i
      * @see org.apache.sling.jackrabbit.usermanager.impl.post.AbstractPostServlet#unbindPostResponseCreator(org.apache.sling.servlets.post.JakartaPostResponseCreator, java.util.Map)
      */
     @Override
-    protected void unbindPostResponseCreator(JakartaPostResponseCreator creator, Map<String, Object> properties) { //NOSONAR
+    protected void unbindPostResponseCreator(
+            JakartaPostResponseCreator creator, Map<String, Object> properties) { // NOSONAR
         super.unbindPostResponseCreator(creator, properties);
     }
 
@@ -224,13 +232,14 @@ public class ChangeUserPasswordServlet extends AbstractAuthorizablePostServlet i
      * org.apache.sling.servlets.post.JakartaPostResponse, java.util.List)
      */
     @Override
-    protected void handleOperation(SlingJakartaHttpServletRequest request,
-            JakartaPostResponse response, List<Modification> changes)
+    protected void handleOperation(
+            SlingJakartaHttpServletRequest request, JakartaPostResponse response, List<Modification> changes)
             throws RepositoryException {
 
         Resource resource = request.getResource();
         Session session = request.getResourceResolver().adaptTo(Session.class);
-        changePassword(session,
+        changePassword(
+                session,
                 resource.getName(),
                 request.getParameter("oldPwd"),
                 request.getParameter("newPwd"),
@@ -241,42 +250,41 @@ public class ChangeUserPasswordServlet extends AbstractAuthorizablePostServlet i
     /* (non-Javadoc)
      * @see org.apache.sling.jackrabbit.usermanager.ChangeUserPassword#changePassword(javax.jcr.Session, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.util.List)
      */
-    public User changePassword(Session jcrSession,
-                                String name,
-                                String oldPassword,
-                                String newPassword,
-                                String newPasswordConfirm,
-                                List<Modification> changes)
-                throws RepositoryException {
+    public User changePassword(
+            Session jcrSession,
+            String name,
+            String oldPassword,
+            String newPassword,
+            String newPasswordConfirm,
+            List<Modification> changes)
+            throws RepositoryException {
 
         if ("anonymous".equals(name)) {
-            throw new RepositoryException(
-                "Can not change the password of the anonymous user.");
+            throw new RepositoryException("Can not change the password of the anonymous user.");
         }
 
         User user;
-        UserManager userManager = ((JackrabbitSession)jcrSession).getUserManager();
+        UserManager userManager = ((JackrabbitSession) jcrSession).getUserManager();
         Authorizable authorizable = userManager.getAuthorizable(name);
         if (authorizable instanceof User u) {
             user = u;
         } else {
-            throw new ResourceNotFoundException(
-                "User to update could not be determined");
+            throw new ResourceNotFoundException("User to update could not be determined");
         }
 
-        //SLING-2069: if the current user is an administrator, then a missing oldPwd is ok,
+        // SLING-2069: if the current user is an administrator, then a missing oldPwd is ok,
         // otherwise the oldPwd must be supplied.
         boolean administrator = false;
 
         // check that the submitted parameter values have valid values.
         if (oldPassword == null || oldPassword.length() == 0) {
             try {
-                UserManager um = ((JackrabbitSession)jcrSession).getUserManager();
+                UserManager um = ((JackrabbitSession) jcrSession).getUserManager();
                 User currentUser = (User) um.getAuthorizable(jcrSession.getUserID());
                 administrator = currentUser.isAdmin();
 
                 if (!administrator) {
-                    //check if the user is a member of the 'User administrator' group
+                    // check if the user is a member of the 'User administrator' group
                     Authorizable userAdmin = um.getAuthorizable(this.userAdminGroupName);
                     if (userAdmin instanceof Group userAdminGroup) {
                         boolean isMember = userAdminGroup.isMember(currentUser);
@@ -284,9 +292,8 @@ public class ChangeUserPasswordServlet extends AbstractAuthorizablePostServlet i
                             administrator = true;
                         }
                     }
-
                 }
-            } catch ( Exception ex ) {
+            } catch (Exception ex) {
                 log.warn("Failed to determine if the user is an admin, assuming not. Cause: {}", ex.getMessage());
                 administrator = false;
             }
@@ -298,8 +305,7 @@ public class ChangeUserPasswordServlet extends AbstractAuthorizablePostServlet i
             throw new RepositoryException("New Password was not submitted");
         }
         if (!newPassword.equals(newPasswordConfirm)) {
-            throw new RepositoryException(
-                "New Password does not match the confirmation password");
+            throw new RepositoryException("New Password does not match the confirmation password");
         }
 
         if (oldPassword != null && oldPassword.length() > 0) {
@@ -308,9 +314,9 @@ public class ChangeUserPasswordServlet extends AbstractAuthorizablePostServlet i
                 // first check if the current user has enough permissions to do this without
                 //   the aid of a service session
                 AccessControlManager acm = jcrSession.getAccessControlManager();
-                boolean hasRights = acm.hasPrivileges(authorizable.getPath(), new Privilege[] {
-                                        acm.privilegeFromName(PrivilegeConstants.REP_USER_MANAGEMENT)
-                                });
+                boolean hasRights = acm.hasPrivileges(
+                        authorizable.getPath(),
+                        new Privilege[] {acm.privilegeFromName(PrivilegeConstants.REP_USER_MANAGEMENT)});
 
                 if (hasRights) {
                     // we are good to do this without an extra service session
@@ -321,7 +327,7 @@ public class ChangeUserPasswordServlet extends AbstractAuthorizablePostServlet i
                     Session svcSession = null;
                     try {
                         svcSession = repository.loginService(null, null);
-                        UserManager um = ((JackrabbitSession)svcSession).getUserManager();
+                        UserManager um = ((JackrabbitSession) svcSession).getUserManager();
                         User user2 = (User) um.getAuthorizable(name);
                         user2.changePassword(newPassword, oldPassword);
                         if (svcSession.hasPendingChanges()) {

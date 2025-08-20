@@ -18,18 +18,13 @@
  */
 package org.apache.sling.jcr.jackrabbit.usermanager.it.resource;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import javax.jcr.RepositoryException;
 
 import java.io.IOException;
 import java.security.Principal;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
-
-import javax.jcr.RepositoryException;
 
 import org.apache.jackrabbit.oak.spi.security.principal.EveryonePrincipal;
 import org.apache.sling.api.resource.LoginException;
@@ -45,6 +40,11 @@ import org.ops4j.pax.exam.junit.PaxExam;
 import org.ops4j.pax.exam.spi.reactors.ExamReactorStrategy;
 import org.ops4j.pax.exam.spi.reactors.PerClass;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+
 /**
  * SLING-11098 Basic test of AuthorizableResourceProvider component providing
  * resources that are a Principal but not an Authorizable
@@ -58,7 +58,8 @@ public class PrincipalResourcesIT extends BaseAuthorizableResourcesIT {
      */
     @Test
     public void getResource() throws LoginException, RepositoryException, IOException {
-        try (ResourceResolver resourceResolver = resourceResolverFactory.getResourceResolver(Collections.singletonMap(JcrResourceConstants.AUTHENTICATION_INFO_SESSION, adminSession))) {
+        try (ResourceResolver resourceResolver = resourceResolverFactory.getResourceResolver(
+                Collections.singletonMap(JcrResourceConstants.AUTHENTICATION_INFO_SESSION, adminSession))) {
             Resource resource = resourceResolver.resolve("/system/userManager/group/" + EveryonePrincipal.NAME);
             assertNotNull(resource);
             assertEquals(EveryonePrincipal.NAME, resource.getName());
@@ -70,10 +71,12 @@ public class PrincipalResourcesIT extends BaseAuthorizableResourcesIT {
      */
     @Test
     public void checkResourceType() throws LoginException, RepositoryException, IOException {
-        try (ResourceResolver resourceResolver = resourceResolverFactory.getResourceResolver(Collections.singletonMap(JcrResourceConstants.AUTHENTICATION_INFO_SESSION, adminSession))) {
+        try (ResourceResolver resourceResolver = resourceResolverFactory.getResourceResolver(
+                Collections.singletonMap(JcrResourceConstants.AUTHENTICATION_INFO_SESSION, adminSession))) {
             Resource resource = resourceResolver.resolve("/system/userManager/group/" + EveryonePrincipal.NAME);
             assertNotNull(resource);
-            assertTrue("Expected resource type of sling/group for: " + resource.getPath(),
+            assertTrue(
+                    "Expected resource type of sling/group for: " + resource.getPath(),
                     resource.isResourceType("sling/group"));
         }
     }
@@ -83,15 +86,16 @@ public class PrincipalResourcesIT extends BaseAuthorizableResourcesIT {
      */
     @Test
     public void listGroupsChildren() throws LoginException, RepositoryException, IOException {
-        try (ResourceResolver resourceResolver = resourceResolverFactory.getResourceResolver(Collections.singletonMap(JcrResourceConstants.AUTHENTICATION_INFO_SESSION, adminSession))) {
+        try (ResourceResolver resourceResolver = resourceResolverFactory.getResourceResolver(
+                Collections.singletonMap(JcrResourceConstants.AUTHENTICATION_INFO_SESSION, adminSession))) {
             Resource resource = resourceResolver.resolve("/system/userManager/group");
-            assertTrue("Expected resource type of sling/groups for: " + resource.getPath(),
+            assertTrue(
+                    "Expected resource type of sling/groups for: " + resource.getPath(),
                     resource.isResourceType("sling/groups"));
 
             boolean foundGroup = false;
-            @NotNull
-            Iterable<Resource> children = resource.getChildren();
-            for (Iterator<Resource> iterator = children.iterator(); iterator.hasNext();) {
+            @NotNull Iterable<Resource> children = resource.getChildren();
+            for (Iterator<Resource> iterator = children.iterator(); iterator.hasNext(); ) {
                 Resource child = (Resource) iterator.next();
                 if (child.isResourceType("sling/group") && EveryonePrincipal.NAME.equals(child.getName())) {
                     foundGroup = true;
@@ -102,33 +106,36 @@ public class PrincipalResourcesIT extends BaseAuthorizableResourcesIT {
     }
 
     @Test
-    public void adaptResourceToMap() throws LoginException, RepositoryException  {
-        try (ResourceResolver resourceResolver = resourceResolverFactory.getResourceResolver(Collections.singletonMap(JcrResourceConstants.AUTHENTICATION_INFO_SESSION, adminSession))) {
-            Resource groupResource = resourceResolver.resolve(String.format("%s%s", userManagerPaths.getGroupPrefix(), EveryonePrincipal.NAME));
-            @Nullable
-            Map<?, ?> groupMap = groupResource.adaptTo(Map.class);
+    public void adaptResourceToMap() throws LoginException, RepositoryException {
+        try (ResourceResolver resourceResolver = resourceResolverFactory.getResourceResolver(
+                Collections.singletonMap(JcrResourceConstants.AUTHENTICATION_INFO_SESSION, adminSession))) {
+            Resource groupResource = resourceResolver.resolve(
+                    String.format("%s%s", userManagerPaths.getGroupPrefix(), EveryonePrincipal.NAME));
+            @Nullable Map<?, ?> groupMap = groupResource.adaptTo(Map.class);
             assertNotNull(groupMap);
             assertTrue(groupMap.isEmpty());
         }
     }
 
     @Test
-    public void adaptResourceToValueMap() throws LoginException, RepositoryException  {
-        try (ResourceResolver resourceResolver = resourceResolverFactory.getResourceResolver(Collections.singletonMap(JcrResourceConstants.AUTHENTICATION_INFO_SESSION, adminSession))) {
-            Resource groupResource = resourceResolver.resolve(String.format("%s%s", userManagerPaths.getGroupPrefix(), EveryonePrincipal.NAME));
-            @Nullable
-            ValueMap groupMap = groupResource.adaptTo(ValueMap.class);
+    public void adaptResourceToValueMap() throws LoginException, RepositoryException {
+        try (ResourceResolver resourceResolver = resourceResolverFactory.getResourceResolver(
+                Collections.singletonMap(JcrResourceConstants.AUTHENTICATION_INFO_SESSION, adminSession))) {
+            Resource groupResource = resourceResolver.resolve(
+                    String.format("%s%s", userManagerPaths.getGroupPrefix(), EveryonePrincipal.NAME));
+            @Nullable ValueMap groupMap = groupResource.adaptTo(ValueMap.class);
             assertNotNull(groupMap);
             assertTrue(groupMap.isEmpty());
         }
     }
 
     @Test
-    public void adaptResourceToPrincipal() throws LoginException, RepositoryException  {
-        try (ResourceResolver resourceResolver = resourceResolverFactory.getResourceResolver(Collections.singletonMap(JcrResourceConstants.AUTHENTICATION_INFO_SESSION, adminSession))) {
-            Resource groupResource = resourceResolver.resolve(String.format("%s%s", userManagerPaths.getGroupPrefix(), EveryonePrincipal.NAME));
-            @Nullable
-            Principal groupPrincipal = groupResource.adaptTo(Principal.class);
+    public void adaptResourceToPrincipal() throws LoginException, RepositoryException {
+        try (ResourceResolver resourceResolver = resourceResolverFactory.getResourceResolver(
+                Collections.singletonMap(JcrResourceConstants.AUTHENTICATION_INFO_SESSION, adminSession))) {
+            Resource groupResource = resourceResolver.resolve(
+                    String.format("%s%s", userManagerPaths.getGroupPrefix(), EveryonePrincipal.NAME));
+            @Nullable Principal groupPrincipal = groupResource.adaptTo(Principal.class);
             assertNotNull(groupPrincipal);
             assertEquals(EveryonePrincipal.NAME, groupPrincipal.getName());
         }
@@ -138,13 +145,14 @@ public class PrincipalResourcesIT extends BaseAuthorizableResourcesIT {
      * For code coverage, test some adaption that falls through to the super class impl
      */
     @Test
-    public void adaptResourceToSomethingElse() throws LoginException, RepositoryException  {
-        try (ResourceResolver resourceResolver = resourceResolverFactory.getResourceResolver(Collections.singletonMap(JcrResourceConstants.AUTHENTICATION_INFO_SESSION, adminSession))) {
-            Resource groupResource = resourceResolver.resolve(String.format("%s%s", userManagerPaths.getGroupPrefix(), EveryonePrincipal.NAME));
+    public void adaptResourceToSomethingElse() throws LoginException, RepositoryException {
+        try (ResourceResolver resourceResolver = resourceResolverFactory.getResourceResolver(
+                Collections.singletonMap(JcrResourceConstants.AUTHENTICATION_INFO_SESSION, adminSession))) {
+            Resource groupResource = resourceResolver.resolve(
+                    String.format("%s%s", userManagerPaths.getGroupPrefix(), EveryonePrincipal.NAME));
             @Nullable
             NestedAuthorizableResourcesIT groupObj = groupResource.adaptTo(NestedAuthorizableResourcesIT.class);
             assertNull(groupObj);
         }
     }
-
 }

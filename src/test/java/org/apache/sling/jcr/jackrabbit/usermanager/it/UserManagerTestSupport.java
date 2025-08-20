@@ -18,26 +18,7 @@
  */
 package org.apache.sling.jcr.jackrabbit.usermanager.it;
 
-import static org.apache.felix.hc.api.FormattingResultLog.msHumanReadable;
-import static org.apache.sling.testing.paxexam.SlingOptions.awaitility;
-import static org.apache.sling.testing.paxexam.SlingOptions.paxLoggingApi;
-import static org.apache.sling.testing.paxexam.SlingOptions.slingQuickstartOakTar;
-import static org.apache.sling.testing.paxexam.SlingOptions.versionResolver;
-import static org.apache.sling.testing.paxexam.SlingVersionResolver.SLING_GROUP_ID;
-import static org.awaitility.Awaitility.await;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.ops4j.pax.exam.CoreOptions.composite;
-import static org.ops4j.pax.exam.CoreOptions.junitBundles;
-import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
-import static org.ops4j.pax.exam.CoreOptions.streamBundle;
-import static org.ops4j.pax.exam.CoreOptions.systemProperty;
-import static org.ops4j.pax.exam.CoreOptions.vmOption;
-import static org.ops4j.pax.exam.CoreOptions.when;
-import static org.ops4j.pax.exam.cm.ConfigurationAdminOptions.factoryConfiguration;
-import static org.ops4j.pax.tinybundles.TinyBundles.bndBuilder;
+import javax.inject.Inject;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -51,8 +32,7 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import javax.inject.Inject;
-
+import jakarta.json.JsonArray;
 import org.apache.felix.hc.api.Result;
 import org.apache.felix.hc.api.ResultLog;
 import org.apache.felix.hc.api.execution.HealthCheckExecutionResult;
@@ -75,7 +55,26 @@ import org.osgi.framework.ServiceReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import jakarta.json.JsonArray;
+import static org.apache.felix.hc.api.FormattingResultLog.msHumanReadable;
+import static org.apache.sling.testing.paxexam.SlingOptions.awaitility;
+import static org.apache.sling.testing.paxexam.SlingOptions.paxLoggingApi;
+import static org.apache.sling.testing.paxexam.SlingOptions.slingQuickstartOakTar;
+import static org.apache.sling.testing.paxexam.SlingOptions.versionResolver;
+import static org.apache.sling.testing.paxexam.SlingVersionResolver.SLING_GROUP_ID;
+import static org.awaitility.Awaitility.await;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.ops4j.pax.exam.CoreOptions.composite;
+import static org.ops4j.pax.exam.CoreOptions.junitBundles;
+import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
+import static org.ops4j.pax.exam.CoreOptions.streamBundle;
+import static org.ops4j.pax.exam.CoreOptions.systemProperty;
+import static org.ops4j.pax.exam.CoreOptions.vmOption;
+import static org.ops4j.pax.exam.CoreOptions.when;
+import static org.ops4j.pax.exam.cm.ConfigurationAdminOptions.factoryConfiguration;
+import static org.ops4j.pax.tinybundles.TinyBundles.bndBuilder;
 
 /**
  * Base class for UserManager related paxexam tests
@@ -105,9 +104,8 @@ public abstract class UserManagerTestSupport extends TestSupport {
          */
         @Override
         protected void finished(Description description) {
-           logger.info("Finished test: {}", description.getMethodName());
+            logger.info("Finished test: {}", description.getMethodName());
         }
-
     };
 
     /**
@@ -121,8 +119,13 @@ public abstract class UserManagerTestSupport extends TestSupport {
         private Object expectedValue;
         private Class<?> serviceClass;
 
-        public WaitForServiceUpdated(long timeoutMsec, long nextIterationDelay, BundleContext bundleContext,
-                Class<?> serviceClass, String expectedKey, Object expectedValue) {
+        public WaitForServiceUpdated(
+                long timeoutMsec,
+                long nextIterationDelay,
+                BundleContext bundleContext,
+                Class<?> serviceClass,
+                String expectedKey,
+                Object expectedValue) {
             super(timeoutMsec, nextIterationDelay, false);
             this.bundleContext = bundleContext;
             this.serviceClass = serviceClass;
@@ -162,51 +165,55 @@ public abstract class UserManagerTestSupport extends TestSupport {
         versionResolver.setVersionFromProject("org.apache.sling", "org.apache.sling.servlets.post");
 
         return composite(
-            super.baseConfiguration(),
-            when(vmOption != null).useOptions(vmOption),
-            optionalRemoteDebug(),
-            quickstart(),
-            paxLoggingApi(), // newer version to provide the 2.x version of slf4j
-            systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value("INFO"),
-            // SLING-9809 - add server user for the o.a.s.jcr.jackrabbit.usermanager bundle
-            factoryConfiguration("org.apache.sling.jcr.repoinit.RepositoryInitializer")
-                .put("scripts", new String[] {
-                        """
+                        super.baseConfiguration(),
+                        when(vmOption != null).useOptions(vmOption),
+                        optionalRemoteDebug(),
+                        quickstart(),
+                        paxLoggingApi(), // newer version to provide the 2.x version of slf4j
+                        systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level")
+                                .value("INFO"),
+                        // SLING-9809 - add server user for the o.a.s.jcr.jackrabbit.usermanager bundle
+                        factoryConfiguration("org.apache.sling.jcr.repoinit.RepositoryInitializer")
+                                .put("scripts", new String[] {
+                                    """
                         create service user sling-jcr-usermanager with path system/sling
 
                         set ACL for sling-jcr-usermanager
                             allow jcr:read,jcr:readAccessControl,jcr:modifyAccessControl,rep:write,rep:userManagement on /home
                         end
                         """
-                    })
-                .asOption(),
-            factoryConfiguration("org.apache.sling.serviceusermapping.impl.ServiceUserMapperImpl.amended")
-                .put("user.mapping", new String[]{"org.apache.sling.jcr.jackrabbit.usermanager=sling-jcr-usermanager"})
-                .asOption(),
+                                })
+                                .asOption(),
+                        factoryConfiguration("org.apache.sling.serviceusermapping.impl.ServiceUserMapperImpl.amended")
+                                .put("user.mapping", new String[] {
+                                    "org.apache.sling.jcr.jackrabbit.usermanager=sling-jcr-usermanager"
+                                })
+                                .asOption(),
 
-            // Sling JCR UserManager
-            testBundle("bundle.filename"),
-            // SLING-12312 - begin extra bundles for sling api 3.x
-            mavenBundle()
-                    .groupId("org.apache.felix")
-                    .artifactId("org.apache.felix.http.wrappers")
-                    .version("6.1.0"),
-            mavenBundle()
-                    .groupId("org.apache.sling")
-                    .artifactId("org.apache.sling.commons.johnzon")
-                    .version("2.0.0"),
-            // end extra bundles for sling api 3.x
-            junitBundles(),
-            awaitility()
-        ).add(
-            additionalOptions()
-        ).remove(
-            mavenBundle() .groupId(SLING_GROUP_ID).artifactId("org.apache.sling.jcr.jackrabbit.usermanager").version(versionResolver)
-        ).getOptions();
+                        // Sling JCR UserManager
+                        testBundle("bundle.filename"),
+                        // SLING-12312 - begin extra bundles for sling api 3.x
+                        mavenBundle()
+                                .groupId("org.apache.felix")
+                                .artifactId("org.apache.felix.http.wrappers")
+                                .version("6.1.0"),
+                        mavenBundle()
+                                .groupId("org.apache.sling")
+                                .artifactId("org.apache.sling.commons.johnzon")
+                                .version("2.0.0"),
+                        // end extra bundles for sling api 3.x
+                        junitBundles(),
+                        awaitility())
+                .add(additionalOptions())
+                .remove(mavenBundle()
+                        .groupId(SLING_GROUP_ID)
+                        .artifactId("org.apache.sling.jcr.jackrabbit.usermanager")
+                        .version(versionResolver))
+                .getOptions();
     }
 
     protected Option[] additionalOptions() {
-        return new Option[]{};
+        return new Option[] {};
     }
 
     /**
@@ -221,13 +228,15 @@ public abstract class UserManagerTestSupport extends TestSupport {
         }
         return composite(option);
     }
+
     protected ModifiableCompositeOption quickstart() {
         final int httpPort = findFreePort();
         final String workingDirectory = workingDirectory();
         return slingQuickstartOakTar(workingDirectory, httpPort);
     }
 
-    protected Dictionary<String, Object> replaceConfigProp(Dictionary<String, Object> originalProps, String newPropKey, Object newPropValue) {
+    protected Dictionary<String, Object> replaceConfigProp(
+            Dictionary<String, Object> originalProps, String newPropKey, Object newPropValue) {
         Hashtable<String, Object> newProps = new Hashtable<>(); // NOSONAR
         if (originalProps != null) {
             Enumeration<String> keys = originalProps.keys();
@@ -300,16 +309,21 @@ public abstract class UserManagerTestSupport extends TestSupport {
      * Produce a human readable report of the health check results that is suitable for
      * debugging or writing to a log
      */
-    protected String toHealthCheckResultInfo(final HealthCheckExecutionResult exResult, final boolean debug)  throws IOException {
+    protected String toHealthCheckResultInfo(final HealthCheckExecutionResult exResult, final boolean debug)
+            throws IOException {
         String value = null;
-        try (StringWriter resultWriter = new StringWriter(); BufferedWriter writer = new BufferedWriter(resultWriter)) {
+        try (StringWriter resultWriter = new StringWriter();
+                BufferedWriter writer = new BufferedWriter(resultWriter)) {
             final Result result = exResult.getHealthCheckResult();
 
-            writer.append('"').append(exResult.getHealthCheckMetadata().getTitle()).append('"');
+            writer.append('"')
+                    .append(exResult.getHealthCheckMetadata().getTitle())
+                    .append('"');
             writer.append(" result is: ").append(result.getStatus().toString());
             writer.newLine();
-            writer.append("   Finished: ").append(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(exResult.getFinishedAt()) + " after "
-                    + msHumanReadable(exResult.getElapsedTimeInMs()));
+            writer.append("   Finished: ")
+                    .append(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(exResult.getFinishedAt()) + " after "
+                            + msHumanReadable(exResult.getElapsedTimeInMs()));
 
             for (final ResultLog.Entry e : result) {
                 if (!debug && e.isDebug()) {
@@ -364,7 +378,9 @@ public abstract class UserManagerTestSupport extends TestSupport {
         final TinyBundle bundle = TinyBundles.bundle();
         bundle.setHeader(Constants.BUNDLE_SYMBOLICNAME, BUNDLE_SYMBOLICNAME);
         bundle.setHeader(SLING_BUNDLE_RESOURCES_HEADER, header);
-        bundle.setHeader("Require-Capability", "osgi.extender;filter:=\"(&(osgi.extender=org.apache.sling.bundleresource)(version<=1.1.0)(!(version>=2.0.0)))\"");
+        bundle.setHeader(
+                "Require-Capability",
+                "osgi.extender;filter:=\"(&(osgi.extender=org.apache.sling.bundleresource)(version<=1.1.0)(!(version>=2.0.0)))\"");
 
         for (final String entry : content) {
             try {
@@ -373,18 +389,17 @@ public abstract class UserManagerTestSupport extends TestSupport {
                 fail(String.format("Failed to add content to the bundle: %s.  Reason: %s", entry, e.getMessage()));
             }
         }
-        return streamBundle(
-            bundle.build(bndBuilder())
-        ).start();
+        return streamBundle(bundle.build(bndBuilder())).start();
     }
 
     protected void assertContains(JsonArray json, String value) {
         assertContains("Did not find the expected value in the array", json, value);
     }
+
     protected void assertContains(String message, JsonArray json, String value) {
         assertNotNull(json);
         boolean found = false;
-        for (int i = 0; i < json.size(); i++) {  // iterate through the JsonArray
+        for (int i = 0; i < json.size(); i++) { // iterate through the JsonArray
             if (json.getString(i).equals(value)) {
                 found = true;
                 break;
@@ -392,5 +407,4 @@ public abstract class UserManagerTestSupport extends TestSupport {
         }
         assertTrue(message, found);
     }
-
 }

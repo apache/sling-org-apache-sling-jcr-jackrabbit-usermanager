@@ -18,10 +18,10 @@
  */
 package org.apache.sling.jackrabbit.usermanager;
 
-import java.util.List;
-
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
+
+import java.util.List;
 
 import org.apache.sling.servlets.post.Modification;
 
@@ -31,22 +31,18 @@ import org.apache.sling.servlets.post.Modification;
  * This interface is not intended to be implemented by bundles. It is
  * implemented by this bundle and may be used by client bundles.
  * </p>
- * 
+ *
  * @since 2.2.0
  */
 public interface DeleteGroup {
 
     /**
      * Deletes a group from the repository
-     * 
+     *
      * @param jcrSession the JCR session of the user creating the user
      * @param name The name of the group to delete (required)
      * @param changes The list of changes for this operation (optional)
      * @throws RepositoryException if group can't be deleted
      */
-    public void deleteGroup(Session jcrSession,
-                            String name,
-                            List<Modification> changes
-                ) throws RepositoryException;
-    
+    public void deleteGroup(Session jcrSession, String name, List<Modification> changes) throws RepositoryException;
 }

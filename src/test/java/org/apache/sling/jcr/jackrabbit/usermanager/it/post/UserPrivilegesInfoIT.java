@@ -1,29 +1,31 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 package org.apache.sling.jcr.jackrabbit.usermanager.it.post;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import jakarta.json.JsonException;
+import jakarta.json.JsonObject;
+import jakarta.servlet.http.HttpServletResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.auth.Credentials;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -35,9 +37,8 @@ import org.ops4j.pax.exam.junit.PaxExam;
 import org.ops4j.pax.exam.spi.reactors.ExamReactorStrategy;
 import org.ops4j.pax.exam.spi.reactors.PerClass;
 
-import jakarta.json.JsonException;
-import jakarta.json.JsonObject;
-import jakarta.servlet.http.HttpServletResponse;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 @RunWith(PaxExam.class)
 @ExamReactorStrategy(PerClass.class)
@@ -56,7 +57,6 @@ public class UserPrivilegesInfoIT extends UserManagerClientTestSupport {
         public String propName() {
             return propName;
         }
-
     }
 
     enum CanChangeUser {
@@ -74,7 +74,6 @@ public class UserPrivilegesInfoIT extends UserManagerClientTestSupport {
         public String propName() {
             return propName;
         }
-
     }
 
     enum CanChangeGroup {
@@ -91,7 +90,6 @@ public class UserPrivilegesInfoIT extends UserManagerClientTestSupport {
         public String propName() {
             return propName;
         }
-
     }
 
     @Override
@@ -124,7 +122,7 @@ public class UserPrivilegesInfoIT extends UserManagerClientTestSupport {
         testUserId = createTestUser();
         String getUrl = String.format("%s/system/userManager/user/%s.privileges-info.json", baseServerUri, testUserId);
 
-        //fetch the JSON for the test page to verify the settings.
+        // fetch the JSON for the test page to verify the settings.
         Credentials testUserCreds = new UsernamePasswordCredentials(testUserId, "testPwd");
 
         String json = getAuthenticatedContent(testUserCreds, getUrl, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
@@ -133,7 +131,7 @@ public class UserPrivilegesInfoIT extends UserManagerClientTestSupport {
 
         assertEquals(false, jsonObj.getBoolean(can.propName()));
 
-        //try admin user
+        // try admin user
         testUserCreds = new UsernamePasswordCredentials("admin", "admin");
 
         json = getAuthenticatedContent(testUserCreds, getUrl, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
@@ -142,7 +140,7 @@ public class UserPrivilegesInfoIT extends UserManagerClientTestSupport {
 
         assertEquals(true, jsonObj.getBoolean(can.propName()));
 
-        //try non-admin with sufficient privileges
+        // try non-admin with sufficient privileges
         testUserId3 = createTestUser();
         grantUserManagerRights(testUserId3);
 
@@ -162,35 +160,33 @@ public class UserPrivilegesInfoIT extends UserManagerClientTestSupport {
     private void testCanChange(CanChangeUser can) throws IOException {
         testUserId = createTestUser();
 
-        //1. verify user can update their own properties
+        // 1. verify user can update their own properties
         String getUrl = String.format("%s/system/userManager/user/%s.privileges-info.json", baseServerUri, testUserId);
 
-        //fetch the JSON for the test page to verify the settings.
+        // fetch the JSON for the test page to verify the settings.
         Credentials testUserCreds = new UsernamePasswordCredentials(testUserId, "testPwd");
 
         String json = getAuthenticatedContent(testUserCreds, getUrl, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
         assertNotNull(json);
         JsonObject jsonObj = parseJson(json);
 
-        //user can update their own properties
+        // user can update their own properties
         assertEquals(true, jsonObj.getBoolean(can.propName()));
 
-
-        //2. now try another user
+        // 2. now try another user
         testUserId2 = createTestUser();
 
-        //fetch the JSON for the test page to verify the settings.
+        // fetch the JSON for the test page to verify the settings.
         Credentials testUser2Creds = new UsernamePasswordCredentials(testUserId2, "testPwd");
 
         String json2 = getAuthenticatedContent(testUser2Creds, getUrl, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
         assertNotNull(json2);
         JsonObject jsonObj2 = parseJson(json2);
 
-        //user can not update other users properties
+        // user can not update other users properties
         assertEquals(false, jsonObj2.getBoolean(can.propName()));
 
-
-        //try admin user
+        // try admin user
         testUserCreds = new UsernamePasswordCredentials("admin", "admin");
 
         json = getAuthenticatedContent(testUserCreds, getUrl, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
@@ -199,7 +195,7 @@ public class UserPrivilegesInfoIT extends UserManagerClientTestSupport {
 
         assertEquals(true, jsonObj.getBoolean(can.propName()));
 
-        //try non-admin with sufficient privileges
+        // try non-admin with sufficient privileges
         testUserId3 = createTestUser();
         grantUserManagerRights(testUserId3);
 
@@ -220,21 +216,21 @@ public class UserPrivilegesInfoIT extends UserManagerClientTestSupport {
         testGroupId = createTestGroup();
         testUserId = createTestUser();
 
-        //1. Verify non admin user can not update group properties
-        String getUrl = String.format("%s/system/userManager/group/%s.privileges-info.json", baseServerUri, testGroupId);
+        // 1. Verify non admin user can not update group properties
+        String getUrl =
+                String.format("%s/system/userManager/group/%s.privileges-info.json", baseServerUri, testGroupId);
 
-        //fetch the JSON for the test page to verify the settings.
+        // fetch the JSON for the test page to verify the settings.
         Credentials testUserCreds = new UsernamePasswordCredentials(testUserId, "testPwd");
 
         String json = getAuthenticatedContent(testUserCreds, getUrl, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
         assertNotNull(json);
         JsonObject jsonObj = parseJson(json);
 
-        //normal user can not update group properties
+        // normal user can not update group properties
         assertEquals(false, jsonObj.getBoolean(can.propName()));
 
-
-        //try admin user
+        // try admin user
         testUserCreds = new UsernamePasswordCredentials("admin", "admin");
 
         json = getAuthenticatedContent(testUserCreds, getUrl, CONTENT_TYPE_JSON, HttpServletResponse.SC_OK);
@@ -243,7 +239,7 @@ public class UserPrivilegesInfoIT extends UserManagerClientTestSupport {
 
         assertEquals(true, jsonObj.getBoolean(can.propName()));
 
-        //try non-admin with sufficient privileges
+        // try non-admin with sufficient privileges
         testUserId3 = createTestUser();
         grantUserManagerRights(testUserId3);
 
@@ -336,5 +332,4 @@ public class UserPrivilegesInfoIT extends UserManagerClientTestSupport {
     public void testCanDisable() throws IOException, JsonException {
         testCanChange(CanChangeUser.DISABLE);
     }
-
 }

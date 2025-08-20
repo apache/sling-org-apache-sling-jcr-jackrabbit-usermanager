@@ -18,11 +18,11 @@
  */
 package org.apache.sling.jackrabbit.usermanager;
 
-import java.util.List;
-import java.util.Map;
-
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
+
+import java.util.List;
+import java.util.Map;
 
 import org.apache.jackrabbit.api.security.user.Group;
 import org.apache.sling.servlets.post.Modification;
@@ -33,14 +33,14 @@ import org.apache.sling.servlets.post.Modification;
  * This interface is not intended to be implemented by bundles. It is
  * implemented by this bundle and may be used by client bundles.
  * </p>
- * 
+ *
  * @since 2.2.0
  */
 public interface CreateGroup {
 
     /**
      * Create a new group for the repository
-     * 
+     *
      * @param jcrSession the JCR session of the user creating the group
      * @param name The name of the new group.  If null or empty, the name is calculated from the supplied properties (per SLING-10902).
      * @param properties Extra properties to update on the group.  The entry values should be either a String or String[] (optional)
@@ -48,27 +48,21 @@ public interface CreateGroup {
      * @return the group that was created
      * @throws RepositoryException if group can't be created
      */
-    public Group createGroup(Session jcrSession,
-                            String name,
-                            Map<String, ?> properties,
-                            List<Modification> changes
-                ) throws RepositoryException;
+    public Group createGroup(Session jcrSession, String name, Map<String, ?> properties, List<Modification> changes)
+            throws RepositoryException;
 
     /**
-     * Create a new group for the repository.  The name is calculated from the 
+     * Create a new group for the repository.  The name is calculated from the
      * supplied properties (per SLING-10902).
-     * 
+     *
      * @param jcrSession the JCR session of the user creating the group
      * @param properties Extra properties to update on the group.  The entry values should be either a String or String[] (optional)
      * @param changes The list of changes for this operation (optional)
      * @return the group that was created
      * @throws RepositoryException if group can't be created
      */
-    public default Group createGroup(Session jcrSession,
-                            Map<String, ?> properties,
-                            List<Modification> changes
-                ) throws RepositoryException {
+    public default Group createGroup(Session jcrSession, Map<String, ?> properties, List<Modification> changes)
+            throws RepositoryException {
         return createGroup(jcrSession, null, properties, changes);
     }
-
 }

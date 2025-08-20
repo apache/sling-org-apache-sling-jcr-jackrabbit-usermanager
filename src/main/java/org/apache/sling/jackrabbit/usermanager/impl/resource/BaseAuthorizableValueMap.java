@@ -1,20 +1,28 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 package org.apache.sling.jackrabbit.usermanager.impl.resource;
+
+import javax.jcr.Binary;
+import javax.jcr.PropertyType;
+import javax.jcr.RepositoryException;
+import javax.jcr.Value;
+import javax.jcr.ValueFormatException;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -28,12 +36,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import javax.jcr.Binary;
-import javax.jcr.PropertyType;
-import javax.jcr.RepositoryException;
-import javax.jcr.Value;
-import javax.jcr.ValueFormatException;
 
 import org.apache.jackrabbit.api.security.user.Authorizable;
 import org.apache.sling.api.resource.ValueMap;
@@ -166,16 +168,16 @@ public abstract class BaseAuthorizableValueMap implements ValueMap {
             case PropertyType.LONG:
                 return value.getLong();
             case PropertyType.NAME, // fall through
-                PropertyType.PATH, // fall through
-                PropertyType.REFERENCE, // fall through
-                PropertyType.STRING, // fall through
-                PropertyType.UNDEFINED: // not actually expected
+                    PropertyType.PATH, // fall through
+                    PropertyType.REFERENCE, // fall through
+                    PropertyType.STRING, // fall through
+                    PropertyType.UNDEFINED: // not actually expected
             default: // not actually expected
                 return value.getString();
         }
     }
-    protected Object valuesToJavaObject(Value[] values)
-            throws RepositoryException {
+
+    protected Object valuesToJavaObject(Value[] values) throws RepositoryException {
         if (values == null) {
             return null;
         } else if (values.length == 1) {
@@ -238,16 +240,14 @@ public abstract class BaseAuthorizableValueMap implements ValueMap {
 
                 if (multiValue) {
                     if (array) {
-                        result = (T) convertToArray(values,
-                            type.getComponentType());
+                        result = (T) convertToArray(values, type.getComponentType());
                     } else if (values.length > 0) {
                         result = convertToType(values[0], type);
                     }
                 } else {
                     Value value = values[0];
                     if (array) {
-                        result = (T) convertToArray(new Value[] { value },
-                            type.getComponentType());
+                        result = (T) convertToArray(new Value[] {value}, type.getComponentType());
                     } else {
                         result = convertToType(value, type);
                     }
@@ -267,8 +267,7 @@ public abstract class BaseAuthorizableValueMap implements ValueMap {
         return result;
     }
 
-    private <T> T[] convertToArray(Value[] jcrValues, Class<T> type)
-            throws RepositoryException {
+    private <T> T[] convertToArray(Value[] jcrValues, Class<T> type) throws RepositoryException {
         // lazy create this list in case there are no valid type conversions
         List<T> values = null;
         for (int i = 0; i < jcrValues.length; i++) {
@@ -291,8 +290,7 @@ public abstract class BaseAuthorizableValueMap implements ValueMap {
     }
 
     @SuppressWarnings("unchecked")
-    private <T> T convertToType(Value jcrValue, Class<T> type)
-            throws RepositoryException {
+    private <T> T convertToType(Value jcrValue, Class<T> type) throws RepositoryException {
 
         if (String.class == type) {
             return (T) jcrValue.getString();
@@ -307,7 +305,7 @@ public abstract class BaseAuthorizableValueMap implements ValueMap {
         } else if (Long.class == type) {
             return (T) Long.valueOf(jcrValue.getLong());
         } else if (Float.class == type) {
-            return (T) Float.valueOf((float)jcrValue.getDouble());
+            return (T) Float.valueOf((float) jcrValue.getDouble());
         } else if (Double.class == type) {
             return (T) Double.valueOf(jcrValue.getDouble());
         } else if (Boolean.class == type) {
@@ -425,6 +423,5 @@ public abstract class BaseAuthorizableValueMap implements ValueMap {
             }
             return delegatee;
         }
-
     }
 }

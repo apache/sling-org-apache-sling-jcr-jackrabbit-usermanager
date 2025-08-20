@@ -18,9 +18,9 @@
  */
 package org.apache.sling.jcr.jackrabbit.usermanager.it;
 
-import static org.awaitility.Awaitility.await;
-
 import java.util.concurrent.TimeUnit;
+
+import static org.awaitility.Awaitility.await;
 
 /** Simple Retry loop for tests */
 public abstract class Retry {

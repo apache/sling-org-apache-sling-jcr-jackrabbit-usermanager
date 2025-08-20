@@ -1,30 +1,33 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 package org.apache.sling.jackrabbit.usermanager.impl.post;
-
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
 
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
 import javax.jcr.security.AccessControlManager;
 import javax.jcr.security.Privilege;
 
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+
+import jakarta.servlet.Servlet;
 import org.apache.jackrabbit.api.JackrabbitSession;
 import org.apache.jackrabbit.api.security.user.Authorizable;
 import org.apache.jackrabbit.api.security.user.User;
@@ -58,8 +61,6 @@ import org.osgi.service.metatype.annotations.Designate;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import jakarta.servlet.Servlet;
 
 /**
  * <p>
@@ -108,35 +109,39 @@ import jakarta.servlet.Servlet;
  * curl -F:name=ieb -Fpwd=password -FpwdConfirm=password -Fproperty1=value1 http://localhost:8080/system/userManager/user.create.html
  * </code>
  */
-@Component(service = {Servlet.class, CreateUser.class},
-    property = {
-           "sling.servlet.resourceTypes=sling/users",
-           "sling.servlet.methods=POST",
-           "sling.servlet.selectors=create",
-           "sling.servlet.prefix:Integer=-1",
-           AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=EEE MMM dd yyyy HH:mm:ss 'GMT'Z",
-           AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=yyyy-MM-dd'T'HH:mm:ss.SSSZ",
-           AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=yyyy-MM-dd'T'HH:mm:ss",
-           AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=yyyy-MM-dd",
-           AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=dd.MM.yyyy HH:mm:ss",
-           AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=dd.MM.yyyy"
-},
-reference = {
-        @Reference(name="SystemUserManagerPaths",
-                bind = "bindSystemUserManagerPaths",
-                service = SystemUserManagerPaths.class)
-})
+@Component(
+        service = {Servlet.class, CreateUser.class},
+        property = {
+            "sling.servlet.resourceTypes=sling/users",
+            "sling.servlet.methods=POST",
+            "sling.servlet.selectors=create",
+            "sling.servlet.prefix:Integer=-1",
+            AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=EEE MMM dd yyyy HH:mm:ss 'GMT'Z",
+            AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=yyyy-MM-dd'T'HH:mm:ss.SSSZ",
+            AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=yyyy-MM-dd'T'HH:mm:ss",
+            AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=yyyy-MM-dd",
+            AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=dd.MM.yyyy HH:mm:ss",
+            AbstractAuthorizablePostServlet.PROP_DATE_FORMAT + "=dd.MM.yyyy"
+        },
+        reference = {
+            @Reference(
+                    name = "SystemUserManagerPaths",
+                    bind = "bindSystemUserManagerPaths",
+                    service = SystemUserManagerPaths.class)
+        })
 @Designate(ocd = CreateUserServlet.Config.class)
 public class CreateUserServlet extends AbstractAuthorizablePostServlet implements CreateUser {
     private static final long serialVersionUID = 6871481922737658675L;
 
-    @ObjectClassDefinition(name = "Apache Sling Create User",
+    @ObjectClassDefinition(
+            name = "Apache Sling Create User",
             description = "The Sling operation to handle create user requests in Sling.")
     public @interface Config {
 
-        @AttributeDefinition(name = "Self-Registration Enabled",
+        @AttributeDefinition(
+                name = "Self-Registration Enabled",
                 description = "When selected, the anonymous user is allowed to register a new user with the system.")
-        boolean self_registration_enabled() default false;  //NOSONAR
+        boolean self_registration_enabled() default false; // NOSONAR
     }
 
     /**
@@ -160,10 +165,11 @@ public class CreateUserServlet extends AbstractAuthorizablePostServlet implement
 
     private String usersPath;
 
-    @Reference(cardinality=ReferenceCardinality.OPTIONAL, policy = ReferencePolicy.DYNAMIC)
+    @Reference(cardinality = ReferenceCardinality.OPTIONAL, policy = ReferencePolicy.DYNAMIC)
     private void bindUserConfiguration(UserConfiguration userConfig, Map<String, Object> properties) {
-        usersPath = (String)properties.get(UserConstants.PARAM_USER_PATH);
+        usersPath = (String) properties.get(UserConstants.PARAM_USER_PATH);
     }
+
     @SuppressWarnings("unused")
     private void unbindUserConfiguration(UserConfiguration userConfig, Map<String, Object> properties) {
         usersPath = null;
@@ -204,8 +210,7 @@ public class CreateUserServlet extends AbstractAuthorizablePostServlet implement
         super.deactivate();
     }
 
-    @Reference(cardinality = ReferenceCardinality.MULTIPLE,
-            policy = ReferencePolicy.DYNAMIC)
+    @Reference(cardinality = ReferenceCardinality.MULTIPLE, policy = ReferencePolicy.DYNAMIC)
     @Override
     protected void bindPrincipalNameGenerator(PrincipalNameGenerator generator, Map<String, Object> properties) {
         super.bindPrincipalNameGenerator(generator, properties);
@@ -216,7 +221,8 @@ public class CreateUserServlet extends AbstractAuthorizablePostServlet implement
         super.unbindPrincipalNameGenerator(generator);
     }
 
-    @Reference(cardinality = ReferenceCardinality.OPTIONAL,
+    @Reference(
+            cardinality = ReferenceCardinality.OPTIONAL,
             policy = ReferencePolicy.DYNAMIC,
             policyOption = ReferencePolicyOption.GREEDY)
     @Override
@@ -231,13 +237,14 @@ public class CreateUserServlet extends AbstractAuthorizablePostServlet implement
 
     /**
      * Overridden since the @Reference annotation is not inherited from the super method
-     *  
+     *
      * @see org.apache.sling.jackrabbit.usermanager.impl.post.AbstractPostServlet#bindPostResponseCreator(org.apache.sling.servlets.post.JakartaPostResponseCreator, java.util.Map)
      */
     @Override
-    @Reference(service = JakartaPostResponseCreator.class,
-        cardinality = ReferenceCardinality.MULTIPLE,
-        policy = ReferencePolicy.DYNAMIC)
+    @Reference(
+            service = JakartaPostResponseCreator.class,
+            cardinality = ReferenceCardinality.MULTIPLE,
+            policy = ReferencePolicy.DYNAMIC)
     protected void bindPostResponseCreator(JakartaPostResponseCreator creator, Map<String, Object> properties) {
         super.bindPostResponseCreator(creator, properties);
     }
@@ -246,10 +253,11 @@ public class CreateUserServlet extends AbstractAuthorizablePostServlet implement
      * @see org.apache.sling.jackrabbit.usermanager.impl.post.AbstractPostServlet#unbindPostResponseCreator(org.apache.sling.servlets.post.JakartaPostResponseCreator, java.util.Map)
      */
     @Override
-    protected void unbindPostResponseCreator(JakartaPostResponseCreator creator, Map<String, Object> properties) { //NOSONAR
+    protected void unbindPostResponseCreator(
+            JakartaPostResponseCreator creator, Map<String, Object> properties) { // NOSONAR
         super.unbindPostResponseCreator(creator, properties);
     }
-    
+
     /*
      * (non-Javadoc)
      * @see
@@ -258,19 +266,19 @@ public class CreateUserServlet extends AbstractAuthorizablePostServlet implement
      * org.apache.sling.servlets.post.JakartaPostResponse, java.util.List)
      */
     @Override
-    protected void handleOperation(SlingJakartaHttpServletRequest request,
-            JakartaPostResponse response, List<Modification> changes)
+    protected void handleOperation(
+            SlingJakartaHttpServletRequest request, JakartaPostResponse response, List<Modification> changes)
             throws RepositoryException {
-
 
         Session session = request.getResourceResolver().adaptTo(Session.class);
         String principalName = request.getParameter(SlingPostConstants.RP_NODE_NAME);
-        User user = createUser(session,
-                            principalName,
-                            request.getParameter("pwd"),
-                            request.getParameter("pwdConfirm"),
-                            request.getRequestParameterMap(),
-                            changes);
+        User user = createUser(
+                session,
+                principalName,
+                request.getParameter("pwd"),
+                request.getParameter("pwdConfirm"),
+                request.getRequestParameterMap(),
+                changes);
 
         String userPath = null;
         if (user == null) {
@@ -281,27 +289,26 @@ public class CreateUserServlet extends AbstractAuthorizablePostServlet implement
                 }
             }
         } else {
-            userPath = systemUserManagerPaths.getUserPrefix()
-                    + user.getID();
+            userPath = systemUserManagerPaths.getUserPrefix() + user.getID();
         }
 
         if (userPath != null) {
             response.setPath(userPath);
             response.setLocation(externalizePath(request, userPath));
         }
-        response.setParentLocation(externalizePath(request,
-                systemUserManagerPaths.getUsersPath()));
+        response.setParentLocation(externalizePath(request, systemUserManagerPaths.getUsersPath()));
     }
 
     /* (non-Javadoc)
      * @see org.apache.sling.jackrabbit.usermanager.CreateUser#createUser(javax.jcr.Session, java.lang.String, java.lang.String, java.lang.String, java.util.Map, java.util.List)
      */
-    public User createUser(Session jcrSession,
-                            String name,
-                            String password,
-                            String passwordConfirm,
-                            Map<String, ?> properties,
-                            List<Modification> changes)
+    public User createUser(
+            Session jcrSession,
+            String name,
+            String password,
+            String passwordConfirm,
+            Map<String, ?> properties,
+            List<Modification> changes)
             throws RepositoryException {
 
         if (jcrSession == null) {
@@ -318,33 +325,31 @@ public class CreateUserServlet extends AbstractAuthorizablePostServlet implement
         // check for an administrator
         boolean administrator = false;
         try {
-            UserManager um = ((JackrabbitSession)jcrSession).getUserManager();
+            UserManager um = ((JackrabbitSession) jcrSession).getUserManager();
             User currentUser = (User) um.getAuthorizable(jcrSession.getUserID());
             administrator = currentUser.isAdmin();
 
             if (!administrator && usersPath != null) {
-                //check if the current user has the minimum privileges needed to create a user
+                // check if the current user has the minimum privileges needed to create a user
                 AccessControlManager acm = jcrSession.getAccessControlManager();
                 administrator = acm.hasPrivileges(usersPath, new Privilege[] {
-                                        acm.privilegeFromName(Privilege.JCR_READ),
-                                        acm.privilegeFromName(Privilege.JCR_READ_ACCESS_CONTROL),
-                                        acm.privilegeFromName(Privilege.JCR_MODIFY_ACCESS_CONTROL),
-                                        acm.privilegeFromName(PrivilegeConstants.REP_WRITE),
-                                        acm.privilegeFromName(PrivilegeConstants.REP_USER_MANAGEMENT)
-                                });
+                    acm.privilegeFromName(Privilege.JCR_READ),
+                    acm.privilegeFromName(Privilege.JCR_READ_ACCESS_CONTROL),
+                    acm.privilegeFromName(Privilege.JCR_MODIFY_ACCESS_CONTROL),
+                    acm.privilegeFromName(PrivilegeConstants.REP_WRITE),
+                    acm.privilegeFromName(PrivilegeConstants.REP_USER_MANAGEMENT)
+                });
             }
-        } catch ( Exception ex ) {
+        } catch (Exception ex) {
             log.warn("Failed to determine if the user is an admin, assuming not. Cause: {}", ex.getMessage());
             administrator = false;
         }
 
-
         // make sure user self-registration is enabled
         if (!administrator && !selfRegistrationEnabled) {
             throw new RepositoryException(
-                "Sorry, registration of new users is not currently enabled.  Please try again later.");
+                    "Sorry, registration of new users is not currently enabled.  Please try again later.");
         }
-
 
         // check that the submitted parameter values have valid values.
         if (principalName == null || principalName.length() == 0) {
@@ -354,8 +359,7 @@ public class CreateUserServlet extends AbstractAuthorizablePostServlet implement
             throw new RepositoryException("Password was not submitted");
         }
         if (!password.equals(passwordConfirm)) {
-            throw new RepositoryException(
-                "Password value does not match the confirmation password");
+            throw new RepositoryException("Password value does not match the confirmation password");
         }
 
         User user = null;
@@ -363,24 +367,21 @@ public class CreateUserServlet extends AbstractAuthorizablePostServlet implement
         boolean useAdminSession = !administrator && selfRegistrationEnabled;
         try {
             if (useAdminSession) {
-                //the current user doesn't have permission to create the user,
+                // the current user doesn't have permission to create the user,
                 // but self-registration is enabled, so use an admin session
                 // to do the work.
                 selfRegSession = getSession();
             }
 
-            UserManager userManager = ((JackrabbitSession)selfRegSession).getUserManager();
+            UserManager userManager = ((JackrabbitSession) selfRegSession).getUserManager();
             Authorizable authorizable = userManager.getAuthorizable(principalName);
 
             if (authorizable != null) {
                 // user already exists!
-                throw new RepositoryException(
-                    "A principal already exists with the requested name: "
-                        + principalName);
+                throw new RepositoryException("A principal already exists with the requested name: " + principalName);
             } else {
                 user = userManager.createUser(principalName, password);
-                String userPath = systemUserManagerPaths.getUserPrefix()
-                    + user.getID();
+                String userPath = systemUserManagerPaths.getUserPrefix() + user.getID();
 
                 Map<String, RequestProperty> reqPropertiesMap = collectContentMap(properties);
                 Collection<RequestProperty> reqPropertyValues = reqPropertiesMap.values();
@@ -398,8 +399,8 @@ public class CreateUserServlet extends AbstractAuthorizablePostServlet implement
                 }
 
                 if (useAdminSession) {
-                    //lookup the user from the user session so we can return a live object
-                    UserManager userManager2 = ((JackrabbitSession)jcrSession).getUserManager();
+                    // lookup the user from the user session so we can return a live object
+                    UserManager userManager2 = ((JackrabbitSession) jcrSession).getUserManager();
                     Authorizable authorizable2 = userManager2.getAuthorizable(user.getID());
                     if (authorizable2 instanceof User u) {
                         user = u;
@@ -410,12 +411,11 @@ public class CreateUserServlet extends AbstractAuthorizablePostServlet implement
             }
         } finally {
             if (useAdminSession) {
-                //done with the self-reg admin session, so clean it up
+                // done with the self-reg admin session, so clean it up
                 ungetSession(selfRegSession);
             }
         }
 
         return user;
     }
-
 }

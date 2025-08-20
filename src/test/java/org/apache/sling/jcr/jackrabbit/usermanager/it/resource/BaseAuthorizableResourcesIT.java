@@ -18,17 +18,15 @@
  */
 package org.apache.sling.jcr.jackrabbit.usermanager.it.resource;
 
-import static org.junit.Assert.assertNotNull;
+import javax.inject.Inject;
+import javax.jcr.RepositoryException;
+import javax.jcr.Session;
+import javax.jcr.SimpleCredentials;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
-
-import javax.inject.Inject;
-import javax.jcr.RepositoryException;
-import javax.jcr.Session;
-import javax.jcr.SimpleCredentials;
 
 import org.apache.jackrabbit.api.security.user.Group;
 import org.apache.jackrabbit.api.security.user.User;
@@ -49,6 +47,8 @@ import org.osgi.framework.BundleContext;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.junit.Assert.assertNotNull;
 
 /**
  * Basic test of AuthorizableResourceProvider component
@@ -137,17 +137,15 @@ public abstract class BaseAuthorizableResourcesIT extends UserManagerTestSupport
         nestedProps.put("private/key2", "value2");
         nestedProps.put("private/sub/key3", "value3");
 
-        group1 = createGroup.createGroup(adminSession, createUniqueName("group"),
-                nestedProps, new ArrayList<>());
+        group1 = createGroup.createGroup(adminSession, createUniqueName("group"), nestedProps, new ArrayList<>());
         assertNotNull("Expected group1 to not be null", group1);
-        
-        user1 = createUser.createUser(adminSession, createUniqueName("user"), "testPwd", "testPwd",
-                nestedProps, new ArrayList<>());
+
+        user1 = createUser.createUser(
+                adminSession, createUniqueName("user"), "testPwd", "testPwd", nestedProps, new ArrayList<>());
         assertNotNull("Expected user1 to not be null", user1);
 
         if (adminSession.hasPendingChanges()) {
             adminSession.save();
         }
     }
-
 }

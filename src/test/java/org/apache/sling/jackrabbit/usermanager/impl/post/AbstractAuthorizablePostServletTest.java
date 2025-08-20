@@ -1,38 +1,32 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 package org.apache.sling.jackrabbit.usermanager.impl.post;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
-
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 
 import javax.jcr.AccessDeniedException;
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
 import javax.jcr.ValueFactory;
+
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.apache.jackrabbit.JcrConstants;
 import org.apache.jackrabbit.api.JackrabbitSession;
@@ -57,6 +51,14 @@ import org.apache.sling.testing.mock.sling.junit.SlingContext;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Mockito;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 
 /**
  *
@@ -136,27 +138,39 @@ public class AbstractAuthorizablePostServletTest {
         Session jcrSession = context.resourceResolver().adaptTo(Session.class);
 
         // try with no bound PrincipalNameGenerator
-        assertEquals("test", taps.getOrGeneratePrincipalName(jcrSession, 
-                Map.of(SlingPostConstants.RP_NODE_NAME, "test"), AuthorizableType.USER));
-        assertEquals("test1", taps.getOrGeneratePrincipalName(jcrSession, 
-                Map.of(SlingPostConstants.RP_NODE_NAME, new String[] {"test1"}), AuthorizableType.USER));
-        assertNull(taps.getOrGeneratePrincipalName(jcrSession, 
-                Map.of(SlingPostConstants.RP_NODE_NAME, new String[] {"test1", "test2"}), AuthorizableType.USER));
-        assertNull(taps.getOrGeneratePrincipalName(jcrSession, 
-                Map.of(SlingPostConstants.RP_NODE_NAME, new Object()), AuthorizableType.USER));
+        assertEquals(
+                "test",
+                taps.getOrGeneratePrincipalName(
+                        jcrSession, Map.of(SlingPostConstants.RP_NODE_NAME, "test"), AuthorizableType.USER));
+        assertEquals(
+                "test1",
+                taps.getOrGeneratePrincipalName(
+                        jcrSession,
+                        Map.of(SlingPostConstants.RP_NODE_NAME, new String[] {"test1"}),
+                        AuthorizableType.USER));
+        assertNull(taps.getOrGeneratePrincipalName(
+                jcrSession,
+                Map.of(SlingPostConstants.RP_NODE_NAME, new String[] {"test1", "test2"}),
+                AuthorizableType.USER));
+        assertNull(taps.getOrGeneratePrincipalName(
+                jcrSession, Map.of(SlingPostConstants.RP_NODE_NAME, new Object()), AuthorizableType.USER));
 
         // try with bound PrincipalNameGenerator
         taps.bindPrincipalNameGenerator(new PrincipalNameGeneratorImpl(), Map.of());
-        assertEquals("test", taps.getOrGeneratePrincipalName(jcrSession, 
-                Map.of(SlingPostConstants.RP_NODE_NAME, "test"), AuthorizableType.USER));
-        assertEquals("test", taps.getOrGeneratePrincipalName(jcrSession, 
-                Map.of(SlingPostConstants.RP_NODE_NAME_HINT, "test"), AuthorizableType.USER));
+        assertEquals(
+                "test",
+                taps.getOrGeneratePrincipalName(
+                        jcrSession, Map.of(SlingPostConstants.RP_NODE_NAME, "test"), AuthorizableType.USER));
+        assertEquals(
+                "test",
+                taps.getOrGeneratePrincipalName(
+                        jcrSession, Map.of(SlingPostConstants.RP_NODE_NAME_HINT, "test"), AuthorizableType.USER));
 
         // create a user to trigger unique name calculation
-        UserManager um = ((JackrabbitSession)jcrSession).getUserManager();
+        UserManager um = ((JackrabbitSession) jcrSession).getUserManager();
         um.createUser("test", "test");
-        String name = taps.getOrGeneratePrincipalName(jcrSession,
-                Map.of(SlingPostConstants.RP_NODE_NAME_HINT, "test"), AuthorizableType.USER);
+        String name = taps.getOrGeneratePrincipalName(
+                jcrSession, Map.of(SlingPostConstants.RP_NODE_NAME_HINT, "test"), AuthorizableType.USER);
         assertTrue(name.matches("test_\\d+"));
     }
 
@@ -169,10 +183,10 @@ public class AbstractAuthorizablePostServletTest {
                 "_charset_", "UTF-8",
                 ":item1", "value1",
                 "./item2/../subitem2", "value2",
-                "item3", "value3"
-                ));
+                "item3", "value3"));
         assertTrue(contentMap.isEmpty());
     }
+
     @Test
     public void testCollectContentMap() {
         Map<String, RequestProperty> contentMap = taps.collectContentMap(Map.of(
@@ -182,8 +196,7 @@ public class AbstractAuthorizablePostServletTest {
                 "item3@ValueFrom", "item1",
                 "item4@Delete", "true",
                 "item5@MoveFrom", "/tmp/item5",
-                "item6@CopyFrom", "/tmp/item6"
-                ));
+                "item6@CopyFrom", "/tmp/item6"));
         assertEquals(4, contentMap.size());
     }
 
@@ -194,7 +207,7 @@ public class AbstractAuthorizablePostServletTest {
     public void testProcessDeletes() throws RepositoryException {
         Session jcrSession = context.resourceResolver().adaptTo(Session.class);
         ValueFactory vf = jcrSession.getValueFactory();
-        UserManager um = ((JackrabbitSession)jcrSession).getUserManager();
+        UserManager um = ((JackrabbitSession) jcrSession).getUserManager();
         Authorizable user = um.createUser("test", "test");
         user.setProperty("prop1", vf.createValue("value1"));
         user.setProperty("prop2", vf.createValue("value2"));
@@ -207,9 +220,7 @@ public class AbstractAuthorizablePostServletTest {
         // not existing prop
         RequestProperty reqProp3 = new RequestProperty("/prop3");
         reqProp3.setDelete(true);
-        List<RequestProperty> reqProperties = List.of(
-                reqProp1, reqProp2
-                );
+        List<RequestProperty> reqProperties = List.of(reqProp1, reqProp2);
         List<Modification> changes = new ArrayList<>();
         taps.processDeletes(user, reqProperties, changes);
         assertEquals(1, changes.size());
@@ -229,48 +240,44 @@ public class AbstractAuthorizablePostServletTest {
     @Test
     public void testProcessCreate() throws RepositoryException {
         Session jcrSession = context.resourceResolver().adaptTo(Session.class);
-        UserManager um = ((JackrabbitSession)jcrSession).getUserManager();
+        UserManager um = ((JackrabbitSession) jcrSession).getUserManager();
         Authorizable user = um.createUser("test", "test");
 
         String relPath1 = "/subnode1/prop1";
         RequestProperty reqProp1 = toRequestProperty(relPath1, "value1");
         String absPath1 = user.getPath() + relPath1;
 
-        Map<String, RequestProperty> reqProperties = Map.of(
-                absPath1, reqProp1
-                );
+        Map<String, RequestProperty> reqProperties = Map.of(absPath1, reqProp1);
         List<Modification> changes = new ArrayList<>();
         taps.processCreate(jcrSession, user, reqProperties, changes);
         assertTrue(changes.isEmpty());
     }
+
     @Test
     public void testProcessCreateWithPrimaryTypeOnRoot() throws RepositoryException {
         Session jcrSession = context.resourceResolver().adaptTo(Session.class);
-        UserManager um = ((JackrabbitSession)jcrSession).getUserManager();
+        UserManager um = ((JackrabbitSession) jcrSession).getUserManager();
         Authorizable user = um.createUser("test", "test");
 
         String relPath1 = "/" + JcrConstants.JCR_PRIMARYTYPE;
         RequestProperty reqProp1 = toRequestProperty(relPath1, "value1");
         String absPath1 = user.getPath() + relPath1;
 
-        Map<String, RequestProperty> reqProperties = Map.of(
-                absPath1, reqProp1
-                );
+        Map<String, RequestProperty> reqProperties = Map.of(absPath1, reqProp1);
         List<Modification> changes = new ArrayList<>();
         assertThrows(AccessDeniedException.class, () -> taps.processCreate(jcrSession, user, reqProperties, changes));
     }
+
     @Test
     public void testProcessCreateWithPrimaryType() throws RepositoryException {
         Session jcrSession = context.resourceResolver().adaptTo(Session.class);
-        UserManager um = ((JackrabbitSession)jcrSession).getUserManager();
+        UserManager um = ((JackrabbitSession) jcrSession).getUserManager();
         Authorizable user = um.createUser("test", "test");
 
         String relPath = "/subnode1/" + JcrConstants.JCR_PRIMARYTYPE;
         RequestProperty reqProp1 = toRequestProperty(relPath, "nt:folder");
         String absPath = user.getPath() + relPath;
-        Map<String, RequestProperty> reqProperties = Map.of(
-                absPath, reqProp1
-                );
+        Map<String, RequestProperty> reqProperties = Map.of(absPath, reqProp1);
         List<Modification> changes = new ArrayList<>();
         taps.processCreate(jcrSession, user, reqProperties, changes);
         assertEquals(1, changes.size());
@@ -280,10 +287,11 @@ public class AbstractAuthorizablePostServletTest {
         taps.processCreate(jcrSession, user, reqProperties, changes);
         assertTrue(changes.isEmpty());
     }
+
     @Test
     public void testProcessCreateWithMixin() throws RepositoryException {
         Session jcrSession = context.resourceResolver().adaptTo(Session.class);
-        UserManager um = ((JackrabbitSession)jcrSession).getUserManager();
+        UserManager um = ((JackrabbitSession) jcrSession).getUserManager();
         Authorizable user = um.createUser("test", "test");
 
         String relPath1 = "/" + JcrConstants.JCR_MIXINTYPES;
@@ -301,8 +309,7 @@ public class AbstractAuthorizablePostServletTest {
         Map<String, RequestProperty> reqProperties = Map.of(
                 absPath1, reqProp1,
                 absPath2, reqProp2,
-                absPath3, reqProp3
-                );
+                absPath3, reqProp3);
         List<Modification> changes = new ArrayList<>();
         taps.processCreate(jcrSession, user, reqProperties, changes);
         assertEquals(4, changes.size());
@@ -323,7 +330,7 @@ public class AbstractAuthorizablePostServletTest {
         Session jcrSession = context.resourceResolver().adaptTo(Session.class);
         List<Modification> changes = new ArrayList<>();
 
-        UserManager um = ((JackrabbitSession)jcrSession).getUserManager();
+        UserManager um = ((JackrabbitSession) jcrSession).getUserManager();
         User user = um.createUser("test", "test");
 
         String relPath = "/subnode1/key1";
@@ -340,18 +347,17 @@ public class AbstractAuthorizablePostServletTest {
         Session jcrSession = context.resourceResolver().adaptTo(Session.class);
         List<Modification> changes = new ArrayList<>();
 
-        UserManager um = ((JackrabbitSession)jcrSession).getUserManager();
+        UserManager um = ((JackrabbitSession) jcrSession).getUserManager();
         User user = um.createUser("testUser", "test");
 
-        RequestProperty reqProp1 = toRequestProperty( "/subnode1/" + JcrConstants.JCR_PRIMARYTYPE, "value1");
+        RequestProperty reqProp1 = toRequestProperty("/subnode1/" + JcrConstants.JCR_PRIMARYTYPE, "value1");
         RequestProperty reqProp2 = toRequestProperty("/subnode1/" + JcrConstants.JCR_MIXINTYPES, "value1");
 
         RequestProperty reqProp3 = toRequestProperty("/userId", "value1");
         RequestProperty reqProp4 = toRequestProperty("/pwd", "value1");
         RequestProperty reqProp5 = toRequestProperty("/pwdConfirm", "value1");
 
-        List<RequestProperty> reqProperties = List.of(reqProp1, reqProp2,
-                reqProp3, reqProp4, reqProp5);
+        List<RequestProperty> reqProperties = List.of(reqProp1, reqProp2, reqProp3, reqProp4, reqProp5);
         taps.writeContent(jcrSession, user, reqProperties, changes);
         assertTrue(changes.isEmpty());
 
@@ -362,32 +368,30 @@ public class AbstractAuthorizablePostServletTest {
         String reqProp7RelPath = "/fileUpload";
         RequestProperty reqProp7 = new RequestProperty(reqProp7RelPath);
         reqProp7.setValues(new RequestParameter[] {
-                Builders.newRequestParameter(reqProp7RelPath, "value1".getBytes(), "filename.txt", "text/plain")
-                });
+            Builders.newRequestParameter(reqProp7RelPath, "value1".getBytes(), "filename.txt", "text/plain")
+        });
 
-        reqProperties = List.of(reqProp1, reqProp2,
-                reqProp6, reqProp7);
+        reqProperties = List.of(reqProp1, reqProp2, reqProp6, reqProp7);
         changes.clear();
         taps.writeContent(jcrSession, group, reqProperties, changes);
         assertTrue(changes.isEmpty());
-    
     }
 
     protected RequestProperty toRequestProperty(String relPath, String value) {
         RequestProperty reqProp1 = new RequestProperty(relPath);
-        reqProp1.setValues(new RequestParameter[] {
-                Builders.newRequestParameter(relPath, value)
-                });
+        reqProp1.setValues(new RequestParameter[] {Builders.newRequestParameter(relPath, value)});
         return reqProp1;
     }
 
     /**
-     * 
+     *
      */
     protected void mockSystemUserManagerPaths() {
         SystemUserManagerPaths mockSump = Mockito.mock(SystemUserManagerPaths.class);
-        Mockito.when(mockSump.getUserPrefix()).thenReturn(String.format("%s/user/", AuthorizableResourceProvider.DEFAULT_SYSTEM_USER_MANAGER_PATH));
-        Mockito.when(mockSump.getGroupPrefix()).thenReturn(String.format("%s/group/", AuthorizableResourceProvider.DEFAULT_SYSTEM_USER_MANAGER_PATH));
+        Mockito.when(mockSump.getUserPrefix())
+                .thenReturn(String.format("%s/user/", AuthorizableResourceProvider.DEFAULT_SYSTEM_USER_MANAGER_PATH));
+        Mockito.when(mockSump.getGroupPrefix())
+                .thenReturn(String.format("%s/group/", AuthorizableResourceProvider.DEFAULT_SYSTEM_USER_MANAGER_PATH));
         taps.bindSystemUserManagerPaths(mockSump);
     }
 
@@ -444,8 +448,8 @@ public class AbstractAuthorizablePostServletTest {
 
         // value as RequestParameter[]
         str = taps.convertToString(new RequestParameter[] {
-                Builders.newRequestParameter("param1", "value1"),
-                Builders.newRequestParameter("param1", "value2")});
+            Builders.newRequestParameter("param1", "value1"), Builders.newRequestParameter("param1", "value2")
+        });
         assertNotNull(str);
         assertEquals("value1", str);
         str = taps.convertToString(new RequestParameter[0]);
@@ -482,8 +486,8 @@ public class AbstractAuthorizablePostServletTest {
 
         // value as RequestParameter[]
         strArray = taps.convertToStringArray(new RequestParameter[] {
-                Builders.newRequestParameter("param1", "value1"),
-                Builders.newRequestParameter("param1", "value2")});
+            Builders.newRequestParameter("param1", "value1"), Builders.newRequestParameter("param1", "value2")
+        });
         assertNotNull(strArray);
         assertEquals(2, strArray.length);
         assertEquals("value1", strArray[0]);
@@ -521,8 +525,8 @@ public class AbstractAuthorizablePostServletTest {
 
         // value as RequestParameter[]
         rpArray = taps.convertToRequestParameterArray("param1", new RequestParameter[] {
-                Builders.newRequestParameter("param1", "value1"),
-                Builders.newRequestParameter("param1", "value2")});
+            Builders.newRequestParameter("param1", "value1"), Builders.newRequestParameter("param1", "value2")
+        });
         assertNotNull(rpArray);
         assertEquals(2, rpArray.length);
         assertEquals("value1", rpArray[0].getString());
@@ -534,13 +538,13 @@ public class AbstractAuthorizablePostServletTest {
         assertEquals(0, rpArray.length);
     }
 
-
     private class TestAuthorizablePostServlet extends AbstractAuthorizablePostServlet {
         private static final long serialVersionUID = -2948341218853558959L;
 
         @Override
-        protected void handleOperation(SlingJakartaHttpServletRequest request, JakartaPostResponse response,
-                List<Modification> changes) throws RepositoryException {
+        protected void handleOperation(
+                SlingJakartaHttpServletRequest request, JakartaPostResponse response, List<Modification> changes)
+                throws RepositoryException {
             // do nothing
         }
     }
